@@ -91,6 +91,39 @@
     font-size: 16px; line-height: 1.7; font-weight: 500;
     color: var(--accent); min-height: 24px; word-break: break-word;
   }
+
+  /* ترجمه */
+  .translation-text {
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: #5f7a6e;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #b8cec4;
+    word-break: break-word;
+    font-style: italic;
+  }
+  .translation-text.ltr {
+    direction: ltr;
+    text-align: left;
+  }
+  .translation-text.rtl {
+    direction: rtl;
+    text-align: right;
+  }
+  .translation-label {
+    display: inline-block;
+    font-size: 9.5px;
+    font-family: var(--mono);
+    background: rgba(47,93,80,0.1);
+    color: #5f7a6e;
+    padding: 1px 6px;
+    border-radius: 10px;
+    margin-bottom: 4px;
+    font-style: normal;
+    font-weight: 600;
+  }
+
   .suggestion-row {
     display: flex; justify-content: space-between; align-items: center;
     gap: 10px; margin-bottom: 8px;
@@ -131,6 +164,7 @@
     word-break: break-word;
   }
   .history-item .h-suggest { color: #6b8578; margin-top: 2px; }
+  .history-item .h-trans { color: #8aa398; margin-top: 2px; font-style: italic; }
 
   footer {
     padding: 16px;
@@ -230,7 +264,7 @@
 
 <header>
   <h1>دستیار مکالمه</h1>
-  <p>گوش می‌ده · جواب پیشنهاد می‌ده · اگه بخوای با صدا هم می‌خونه</p>
+  <p>گوش می‌ده · جواب + ترجمه پیشنهاد می‌ده · اگه بخوای با صدا هم می‌خونه</p>
   <div class="badge-row">
     <span class="badge badge-live" id="badgeMode">Pollinations.AI</span>
     <span class="badge badge-demo" id="badgeFallback" style="display:none;">حالت جایگزین (آفلاین)</span>
@@ -248,7 +282,7 @@
   <div id="emptyState" class="empty-state">
     <span class="big">🎧</span>
     وقتی شروع کنی، هر چی طرف مقابل بگه اینجا میاد<br>
-    و یه پیشنهاد جواب زیرش نشون داده می‌شه<br>
+    و یه پیشنهاد جواب + ترجمه‌ش زیرش نشون داده می‌شه<br>
     <span style="font-size:11.5px; color:#c0baa9;">(برای تست، از نمونه‌های پایین صفحه هم می‌تونی استفاده کنی)</span>
   </div>
 
@@ -262,11 +296,12 @@
       <div class="suggestion-row">
         <div class="card-label" style="margin-bottom:0;">پیشنهاد جواب</div>
         <div class="suggestion-actions">
-          <button class="copy-btn" id="copyBtn" title="کپی">⧉</button>
+          <button class="copy-btn" id="copyBtn" title="کپی جواب + ترجمه">⧉</button>
           <button class="speak-btn" id="speakBtn" title="با صدا بخون">🔊</button>
         </div>
       </div>
       <div class="suggestion-text" id="suggestionText">—</div>
+      <div class="translation-text" id="translationText" style="display:none;"></div>
     </div>
   </div>
 
@@ -325,6 +360,11 @@
     </label>
 
     <label class="check-row">
+      <input type="checkbox" id="showTranslation" checked>
+      نمایش ترجمه زیر پیشنهاد
+    </label>
+
+    <label class="check-row">
       <input type="checkbox" id="useFallback">
       در صورت خطا، از پاسخ‌های پیش‌فرض استفاده کن
     </label>
@@ -340,7 +380,7 @@
 
     <div class="hint">
       این برنامه به Pollinations.AI وصل می‌شه. کلید API رو از enter.pollinations.ai بگیر.
-      اگه خطا داد و گزینه‌ی «استفاده از پاسخ‌های پیش‌فرض» فعال باشه، از پاسخ‌های آماده استفاده می‌کنه.
+      جواب + ترجمه‌ش با هم از سرور گرفته می‌شن.
     </div>
   </div>
 </footer>
@@ -356,6 +396,7 @@ const statusText     = document.getElementById('statusText');
 const toggleBtn      = document.getElementById('toggleBtn');
 const heardText      = document.getElementById('heardText');
 const suggestionText = document.getElementById('suggestionText');
+const translationText = document.getElementById('translationText');
 const speakBtn       = document.getElementById('speakBtn');
 const copyBtn        = document.getElementById('copyBtn');
 const historyEl      = document.getElementById('history');
@@ -366,6 +407,7 @@ const settingsToggle = document.getElementById('settingsToggle');
 const settingsPanel  = document.getElementById('settingsPanel');
 const contextInput   = document.getElementById('contextInput');
 const autoSpeak      = document.getElementById('autoSpeak');
+const showTranslation = document.getElementById('showTranslation');
 const useFallback    = document.getElementById('useFallback');
 const recogLang      = document.getElementById('recogLang');
 const toastEl        = document.getElementById('toast');
@@ -381,6 +423,7 @@ const badgeFallback  = document.getElementById('badgeFallback');
 let recognition = null;
 let isListening = false;
 let lastSuggestion = '';
+let lastTranslation = '';
 let history = [];
 let debounceTimer = null;
 let suppressResults = false;
@@ -390,7 +433,7 @@ let currentAbort = null;
 /* ============================================================
    بخش ۳ — تنظیمات
    ============================================================ */
-const SETTINGS_KEY = 'convassist_pollinations_v1';
+const SETTINGS_KEY = 'convassist_pollinations_v2';
 
 function loadSettings() {
   try {
@@ -400,7 +443,8 @@ function loadSettings() {
     if (s.recogLang)   recogLang.value = s.recogLang;
     if (s.context)     contextInput.value = s.context;
     autoSpeak.checked  = !!s.autoSpeak;
-    useFallback.checked = s.useFallback !== false; // پیش‌فرض: فعال
+    showTranslation.checked = s.showTranslation !== false;
+    useFallback.checked = s.useFallback !== false;
   } catch (e) {}
 }
 function saveSettings() {
@@ -411,6 +455,7 @@ function saveSettings() {
       recogLang: recogLang.value,
       context: contextInput.value,
       autoSpeak: autoSpeak.checked,
+      showTranslation: showTranslation.checked,
       useFallback: useFallback.checked
     }));
   } catch (e) {}
@@ -419,7 +464,12 @@ function saveSettings() {
   el.addEventListener('change', saveSettings);
   el.addEventListener('blur', saveSettings);
 });
-[autoSpeak, useFallback].forEach(el => el.addEventListener('change', saveSettings));
+[autoSpeak, showTranslation, useFallback].forEach(el => el.addEventListener('change', () => {
+  saveSettings();
+  if (el === showTranslation) {
+    updateTranslationVisibility();
+  }
+}));
 recogLang.addEventListener('change', () => {
   saveSettings();
   if (isListening && recognition) {
@@ -433,6 +483,14 @@ recogLang.addEventListener('change', () => {
   }
 });
 loadSettings();
+
+function updateTranslationVisibility() {
+  if (!lastTranslation) {
+    translationText.style.display = 'none';
+    return;
+  }
+  translationText.style.display = showTranslation.checked ? 'block' : 'none';
+}
 
 /* ============================================================
    بخش ۴ — ابزارک‌های UI
@@ -471,6 +529,26 @@ function setModeBadge(mode) {
     badgeMode.style.display = 'inline-block';
     badgeFallback.style.display = 'none';
   }
+}
+
+function isPersianText(text) {
+  return /[\u0600-\u06FF]/.test(text || '');
+}
+
+function renderTranslation(translation) {
+  lastTranslation = translation || '';
+  if (!lastTranslation) {
+    translationText.style.display = 'none';
+    translationText.innerHTML = '';
+    return;
+  }
+
+  const isFa = isPersianText(lastTranslation);
+  translationText.className = 'translation-text ' + (isFa ? 'rtl' : 'ltr');
+  translationText.innerHTML =
+    `<span class="translation-label">${isFa ? 'ترجمه فارسی' : 'English translation'}</span><br>` +
+    escapeHtml(lastTranslation);
+  translationText.style.display = showTranslation.checked ? 'block' : 'none';
 }
 
 settingsToggle.addEventListener('click', () => {
@@ -701,6 +779,54 @@ const FALLBACK_RULES = [
     replies: ['برنامه‌ام فعلاً بازه، تو بگو کی مناسبته.', 'فردا صبح خوبه؟ یا عصر راحت‌تری؟'] },
 ];
 
+// ترجمه‌های انگلیسی برای حالت جایگزین
+const FALLBACK_TRANSLATIONS = {
+  'ممنون، خوبم. تو چطوری؟': "Thanks, I'm fine. How are you?",
+  'خوبم، مرسی که پرسیدی. تو چطوری؟': "I'm good, thanks for asking. How are you?",
+  'خواهش می‌کنم، خوشحالم.': "You're welcome, glad to help.",
+  'قابلی نداشت.': "No problem at all.",
+  'اسم من [نام شما] است. خوشحالم که آشنا شدیم.': "My name is [your name]. Nice to meet you.",
+  'من [نام شما] هستم، خوشوقتم.': "I'm [your name], pleased to meet you.",
+  'بله، جلسه رو یادم هست. ساعتش رو تأیید می‌کنی؟': "Yes, I remember the meeting. Can you confirm the time?",
+  'باشه، من هستم. لینک یا محل جلسه رو می‌فرستی؟': "Sure, I'm in. Can you send the link or location?",
+  'باشه، در مورد پروژه صحبت کنیم. اولویت فعلی چیه؟': "OK, let's talk about the project. What's the current priority?",
+  'متوجه شدم. آخرین وضعیت پروژه رو می‌تونی خلاصه بگی؟': "Got it. Can you summarize the latest project status?",
+  'تا کی باید تحویل داده بشه؟ بذار برنامه‌ریزی کنم.': "When does it need to be delivered? Let me plan.",
+  'باشه، ددلاین رو یادداشت کردم. بقیه‌ی جزئیات چیه؟': "OK, I noted the deadline. What are the other details?",
+  'گزارش رو آماده می‌کنم و برات می‌فرستم.': "I'll prepare the report and send it to you.",
+  'باشه، تا آخر امروز گزارش رو می‌فرستم.': "Sure, I'll send the report by the end of today.",
+  'حتماً، بگو چطور می‌تونم کمک کنم.': "Of course, tell me how I can help.",
+  'بله، در خدمتم. دقیقاً چی نیاز داری؟': "Yes, at your service. What exactly do you need?",
+  'به نظرم اول باید اطلاعات بیشتری داشته باشیم، بعد تصمیم بگیریم.': "I think we need more information first, then decide.",
+  'نظرم اینه که قبل از تصمیم، مزایا و معایب رو کنار هم بذاریم.': "I think we should weigh the pros and cons before deciding.",
+  'بله موافقم، ولی یه نکته‌ی کوچیک هم هست.': "Yes, I agree, but there's a small point too.",
+  'کاملاً موافقم، بریم جلو.': "I completely agree, let's go ahead.",
+  'بذار دوباره بررسی کنم... بله، تقریباً مطمئنم.': "Let me check again... yes, I'm fairly sure.",
+  'تا جایی که می‌دونم بله، ولی بهتره دوباره تأیید کنیم.': "As far as I know, yes, but we should verify again.",
+  'خداحافظ، مراقب خودت باش.': "Goodbye, take care.",
+  'خدانگهدار، روز خوبی داشته باشی.': "Goodbye, have a nice day.",
+  'مشکلی نیست، اصلاً نگران نباش.': "No problem, don't worry at all.",
+  'فدای سرت، پیش میاد.': "It's fine, these things happen.",
+  'باشه، تماس می‌گیرم. الان وقت مناسبیه؟': "OK, I'll call. Is now a good time?",
+  'الان می‌تونم تماس بگیرم، شماره رو بفرست.': "I can call now, send me the number.",
+  'من هستم، کجا بریم؟': "I'm in, where should we go?",
+  'باشه، من پایه‌ام. پیشنهادت چیه؟': "Sure, I'm up for it. What's your suggestion?",
+  'بذار فکر کنم... به نظرم بستگی به شرایط داره. تو چی فکر می‌کنی؟': "Let me think... it depends on the situation. What do you think?",
+  'سؤال خوبیه. بذار یه کم دقیق‌تر بررسی کنیم.': "Good question. Let's look into it more carefully.",
+  'آدرس رو برات می‌فرستم. حدوداً نیم ساعته اونجام.': "I'll send you the address. I'll be there in about 30 minutes.",
+  'بذار لوکیشن رو بفرستم، ۱۵ دقیقه‌ای می‌رسم.': "Let me send the location, I'll arrive in 15 minutes.",
+  'برنامه‌ام فعلاً بازه، تو بگو کی مناسبته.': "My schedule is open for now, you tell me what works.",
+  'فردا صبح خوبه؟ یا عصر راحت‌تری؟': "Is tomorrow morning good? Or do you prefer the afternoon?",
+  'متوجه شدم. می‌تونی بیشتر توضیح بدی؟': "Got it. Can you explain more?",
+  'آها، جالبه. بگو ادامه بده.': "Oh, interesting. Go on.",
+  'باشه، در جریانم. چیز دیگه‌ای هم هست؟': "OK, I'm following. Anything else?",
+  'خب... بذار یه لحظه فکر کنم. آره، منطقیه.': "Well... let me think for a moment. Yeah, that makes sense.",
+  'درسته، با حرفت موافقم.': "Right, I agree with you.",
+  'ممنون که گفتی. پس نظرت اینه که بریم جلو؟': "Thanks for telling me. So you think we should go ahead?",
+  'جالبه، از این زاویه فکر نکرده بودم.': "Interesting, I hadn't thought of it from that angle.",
+  'اوکی، پس برنامه اینه. کار دیگه‌ای هست؟': "OK, so that's the plan. Anything else?",
+};
+
 const FALLBACK_REPLIES = [
   'متوجه شدم. می‌تونی بیشتر توضیح بدی؟',
   'آها، جالبه. بگو ادامه بده.',
@@ -729,16 +855,15 @@ function pickFallbackReply(chunk) {
 }
 
 /* ============================================================
-   بخش ۸ — فراخوانی Pollinations.AI
+   بخش ۸ — فراخوانی Pollinations.AI (با ترجمه)
    ============================================================ */
 async function getSuggestion(heardChunk) {
   const apiKey = apiKeyInput.value.trim();
 
-  // اگه کلید نبود و fallback فعال بود، از fallback استفاده کن
   if (!apiKey) {
     if (useFallback.checked) {
       setModeBadge('fallback');
-      await useFallbackReply(heardChunk, 'کلید API وارد نشده');
+      await useFallbackReply(heardChunk);
       return;
     } else {
       showError('اول کلید API Pollinations رو در تنظیمات وارد کن.');
@@ -748,7 +873,6 @@ async function getSuggestion(heardChunk) {
     }
   }
 
-  // لغو درخواست قبلی
   if (currentAbort) currentAbort.abort();
   currentAbort = new AbortController();
 
@@ -756,8 +880,19 @@ async function getSuggestion(heardChunk) {
   setStatus('thinking', 'در حال فکر کردن...');
 
   const contextNote = contextInput.value.trim();
-  const systemPrompt = `تو دستیار یک مکالمه‌ی زنده هستی. جمله‌ای که شنیده شد را در نظر بگیر و فقط یک جواب کوتاه (حداکثر ۲ جمله)، طبیعی و مناسب موقعیت بنویس. فقط متن جواب را بنویس، بدون هیچ توضیح یا مقدمه.` +
-    (contextNote ? `\nزمینه‌ی مکالمه: ${contextNote}` : '');
+
+  const systemPrompt =
+    `تو دستیار یک مکالمه‌ی زنده هستی. جمله‌ای که از طرف مقابل شنیده می‌شود به تو داده می‌شود.
+
+تو باید فقط و فقط یک آبجکت JSON معتبر برگردانی با این ساختار دقیق:
+{"suggestion": "متن جواب پیشنهادی", "translation": "متن ترجمه"}
+
+قوانین:
+- "suggestion": یک جواب کوتاه (حداکثر ۲ جمله)، طبیعی، محاوره‌ای و مناسب موقعیت، به همان زبانی که طرف مقابل صحبت کرده است.
+- "translation": ترجمه‌ی دقیق و روان همان جواب به زبان دیگر. اگر متن اصلی فارسی بود، ترجمه انگلیسی؛ و اگر انگلیسی بود، ترجمه فارسی.
+- هیچ متن اضافه‌ای بیرون از JSON نگذار. از backtick، markdown، توضیح یا مقدمه استفاده نکن.
+- داخل مقادیر JSON از newline واقعی استفاده نکن (از \\n استفاده کن).` +
+    (contextNote ? `\n- زمینه‌ی مکالمه: ${contextNote}` : '');
 
   const model = modelSelect.value || 'openai';
 
@@ -770,7 +905,7 @@ async function getSuggestion(heardChunk) {
       },
       body: JSON.stringify({
         model: model,
-        max_tokens: 200,
+        max_tokens: 400,
         temperature: 0.7,
         stream: false,
         messages: [
@@ -791,17 +926,21 @@ async function getSuggestion(heardChunk) {
     }
 
     const data = await res.json();
-    const suggestion = (data?.choices?.[0]?.message?.content || '').trim();
+    const raw = (data?.choices?.[0]?.message?.content || '').trim();
 
-    if (!suggestion) throw new Error('جواب خالی برگشت.');
+    if (!raw) throw new Error('جواب خالی برگشت.');
 
-    lastSuggestion = suggestion;
-    suggestionText.textContent = suggestion;
+    // پارس کردن JSON
+    const parsed = parseSuggestionJSON(raw);
+
+    lastSuggestion = parsed.suggestion;
+    suggestionText.textContent = parsed.suggestion;
+    renderTranslation(parsed.translation);
     clearError();
-    addToHistory(heardChunk, suggestion);
+    addToHistory(heardChunk, parsed.suggestion, parsed.translation);
     setModeBadge('live');
 
-    if (autoSpeak.checked) speak(suggestion);
+    if (autoSpeak.checked) speak(parsed.suggestion);
 
   } catch (err) {
     if (err.name === 'AbortError') return;
@@ -809,7 +948,7 @@ async function getSuggestion(heardChunk) {
 
     if (useFallback.checked) {
       setModeBadge('fallback');
-      await useFallbackReply(heardChunk, err.message);
+      await useFallbackReply(heardChunk);
     } else {
       showError('مشکلی پیش اومد: ' + err.message);
     }
@@ -822,15 +961,59 @@ async function getSuggestion(heardChunk) {
   }
 }
 
-/* استفاده از پاسخ جایگزین */
-async function useFallbackReply(heardChunk, reason) {
+/* پارس کردن JSON با مقاومت بالا */
+function parseSuggestionJSON(raw) {
+  let text = raw.trim();
+
+  // حذف ```json ... ``` در صورت وجود
+  text = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+
+  // تلاش برای JSON.parse
+  try {
+    const obj = JSON.parse(text);
+    if (obj && typeof obj === 'object') {
+      return {
+        suggestion: String(obj.suggestion || obj.reply || obj.answer || '').trim() || text,
+        translation: String(obj.translation || obj.translate || obj.en || obj.fa || '').trim()
+      };
+    }
+  } catch (e) { /* ادامه بده */ }
+
+  // تلاش با regex برای استخراج suggestion و translation
+  const sugMatch = text.match(/"suggestion"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  const transMatch = text.match(/"translation"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+
+  if (sugMatch) {
+    return {
+      suggestion: unescapeJSONString(sugMatch[1]),
+      translation: transMatch ? unescapeJSONString(transMatch[1]) : ''
+    };
+  }
+
+  // آخرین تلاش: کل متن رو به عنوان suggestion در نظر بگیر
+  return { suggestion: text, translation: '' };
+}
+
+function unescapeJSONString(s) {
+  return s
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, '\t')
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, '\\');
+}
+
+/* استفاده از پاسخ جایگزین (آفلاین) */
+async function useFallbackReply(heardChunk) {
   setStatus('thinking', 'در حال فکر کردن (آفلاین)...');
   await new Promise(r => setTimeout(r, 400 + Math.random() * 400));
 
   const suggestion = pickFallbackReply(heardChunk);
+  const translation = FALLBACK_TRANSLATIONS[suggestion] || '';
+
   lastSuggestion = suggestion;
   suggestionText.textContent = suggestion;
-  addToHistory(heardChunk, suggestion);
+  renderTranslation(translation);
+  addToHistory(heardChunk, suggestion, translation);
   setModeBadge('fallback');
 
   if (isListening) setStatus('live', 'در حال گوش دادن...');
@@ -842,8 +1025,8 @@ async function useFallbackReply(heardChunk, reason) {
 /* ============================================================
    بخش ۹ — تاریخچه
    ============================================================ */
-function addToHistory(heard, suggestion) {
-  history.unshift({ heard, suggestion });
+function addToHistory(heard, suggestion, translation) {
+  history.unshift({ heard, suggestion, translation: translation || '' });
   if (history.length > 8) history.pop();
   renderHistory();
 }
@@ -856,6 +1039,7 @@ function renderHistory() {
       <div class="history-item">
         <div>${escapeHtml(item.heard)}</div>
         <div class="h-suggest">→ ${escapeHtml(item.suggestion)}</div>
+        ${item.translation ? `<div class="h-trans">↳ ${escapeHtml(item.translation)}</div>` : ''}
       </div>
     `).join('');
 
@@ -867,21 +1051,25 @@ function renderHistory() {
 }
 
 /* ============================================================
-   بخش ۱۰ — کپی
+   بخش ۱۰ — کپی (جواب + ترجمه)
    ============================================================ */
 copyBtn.addEventListener('click', async () => {
   if (!lastSuggestion) return;
+  const textToCopy = lastTranslation
+    ? `${lastSuggestion}\n---\n${lastTranslation}`
+    : lastSuggestion;
+
   try {
-    await navigator.clipboard.writeText(lastSuggestion);
-    toast('کپی شد');
+    await navigator.clipboard.writeText(textToCopy);
+    toast(lastTranslation ? 'جواب + ترجمه کپی شد' : 'کپی شد');
   } catch (e) {
     const ta = document.createElement('textarea');
-    ta.value = lastSuggestion;
+    ta.value = textToCopy;
     document.body.appendChild(ta);
     ta.select();
     document.execCommand('copy');
     ta.remove();
-    toast('کپی شد');
+    toast(lastTranslation ? 'جواب + ترجمه کپی شد' : 'کپی شد');
   }
 });
 
