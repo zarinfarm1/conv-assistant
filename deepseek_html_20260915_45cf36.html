@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>دستیار مکالمه — Pollinations.AI</title>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --paper: #f7f5f1;
+    --line: #d8d3c8;
+    --accent: #2f5d50;
+    --accent-soft: #e4ede9;
+    --warn: #8a4a2f;
+    --demo: #7a5c2f;
+    --demo-soft: #f4ecdc;
+    --mono: 'SF Mono', 'Courier New', monospace;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  header h1 { font-size: 17px; font-weight: 600; margin: 0 0 2px; letter-spacing: -0.01em; }
+  header p { margin: 0; font-size: 12.5px; color: #79746a; }
+
+  .badge-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .badge {
+    display: inline-block;
+    font-size: 10.5px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-family: var(--mono);
+  }
+  .badge-live { background: var(--accent-soft); color: var(--accent); border: 1px solid #c3d6cd; }
+  .badge-demo { background: var(--demo-soft); color: var(--demo); border: 1px solid #e0cfa8; }
+
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    gap: 12px;
+    overflow-y: auto;
+  }
+
+  .status-row {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 10px; font-size: 13px; color: #79746a;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #c9c2b3; transition: background 0.3s;
+  }
+  .dot.live { background: var(--warn); animation: pulse 1.4s infinite; }
+  .dot.thinking { background: var(--accent); animation: pulse 0.9s infinite; }
+  .dot.speaking { background: #b8860b; animation: pulse 0.7s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  .card {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .card-label {
+    font-size: 11px; color: #a39d8f; margin-bottom: 6px;
+    font-family: var(--mono);
+  }
+  .heard-text {
+    font-size: 14.5px; line-height: 1.6; color: #4a463d;
+    min-height: 22px; word-break: break-word;
+  }
+
+  .suggestion-card {
+    background: var(--accent-soft);
+    border: 1px solid #c3d6cd;
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .suggestion-text {
+    font-size: 16px; line-height: 1.7; font-weight: 500;
+    color: var(--accent); min-height: 24px; word-break: break-word;
+  }
+  .suggestion-row {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 10px; margin-bottom: 8px;
+  }
+  .suggestion-actions { display: flex; gap: 6px; }
+  .speak-btn {
+    flex-shrink: 0;
+    background: var(--accent); color: white; border: none;
+    border-radius: 8px; width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 16px;
+  }
+  .speak-btn:active { opacity: 0.7; }
+  .speak-btn.speaking { background: #b8860b; }
+  .copy-btn {
+    flex-shrink: 0;
+    background: transparent; color: var(--accent);
+    border: 1px solid #a9c3b8; border-radius: 8px;
+    width: 36px; height: 36px; cursor: pointer; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .copy-btn:active { opacity: 0.6; }
+
+  .history { display: flex; flex-direction: column; gap: 8px; }
+  .history-head {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; color: #a39d8f; font-family: var(--mono);
+    padding: 0 2px;
+  }
+  .history-head button {
+    background: none; border: none; color: #a39d8f;
+    font-family: inherit; font-size: 11px; cursor: pointer;
+    text-decoration: underline; padding: 4px;
+  }
+  .history-item {
+    font-size: 12.5px; color: #a39d8f;
+    padding: 8px 12px; border-right: 2px solid var(--line);
+    word-break: break-word;
+  }
+  .history-item .h-suggest { color: #6b8578; margin-top: 2px; }
+
+  footer {
+    padding: 16px;
+    border-top: 1px solid var(--line);
+    background: var(--paper);
+  }
+  .controls { display: flex; gap: 10px; }
+  .btn-main {
+    flex: 1; padding: 15px; border-radius: 10px; border: none;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    transition: transform 0.1s; font-family: inherit;
+  }
+  .btn-main:active { transform: scale(0.98); }
+  .btn-main:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-start { background: var(--accent); color: white; }
+  .btn-stop { background: var(--warn); color: white; }
+
+  .settings-toggle {
+    text-align: center; font-size: 12px; color: #a39d8f;
+    padding: 10px 0 0; cursor: pointer; user-select: none;
+  }
+  .settings-panel {
+    display: none; padding: 12px 0 0; gap: 10px;
+    flex-direction: column;
+  }
+  .settings-panel.open { display: flex; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 11.5px; color: #a39d8f; line-height: 1.5; }
+  .field input, .field select, .field textarea {
+    width: 100%; border: 1px solid var(--line); border-radius: 8px;
+    padding: 9px 10px; font-size: 13px; font-family: inherit;
+    background: white; color: var(--ink);
+  }
+  .field textarea { min-height: 66px; resize: vertical; line-height: 1.6; }
+  .row2 { display: flex; gap: 8px; }
+  .row2 .field { flex: 1; }
+
+  .check-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12.5px; color: #6b6659; cursor: pointer;
+  }
+  .check-row input { width: 16px; height: 16px; accent-color: var(--accent); }
+
+  .hint {
+    font-size: 11px; color: #a39d8f; line-height: 1.7;
+    background: #fbf8f2; border: 1px dashed var(--line);
+    padding: 8px 10px; border-radius: 8px;
+  }
+
+  .test-row { display: flex; gap: 6px; }
+  .test-row input { flex: 1; }
+  .test-row button {
+    background: var(--accent); color: #fff; border: none;
+    border-radius: 8px; padding: 0 14px; cursor: pointer;
+    font-family: inherit; font-size: 15px;
+  }
+  .voice-info {
+    font-size: 10.5px; color: #a39d8f; line-height: 1.6;
+    font-family: var(--mono); word-break: break-word;
+  }
+
+  .empty-state {
+    text-align: center; color: #a39d8f; font-size: 13px;
+    padding: 40px 20px; line-height: 1.9;
+  }
+  .empty-state .big { font-size: 32px; display: block; margin-bottom: 10px; }
+  .error-banner {
+    background: #f6e6df; border: 1px solid #e0b8a3;
+    color: var(--warn); padding: 10px 14px; border-radius: 8px;
+    font-size: 12.5px; line-height: 1.7; display: none;
+    word-break: break-word;
+  }
+  .error-banner.show { display: block; }
+
+  .toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: #fff; font-size: 12.5px;
+    padding: 8px 16px; border-radius: 20px; opacity: 0;
+    pointer-events: none; transition: opacity 0.25s;
+    z-index: 50; max-width: 90vw; text-align: center;
+  }
+  .toast.show { opacity: 0.92; }
+
+  .demo-samples {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;
+  }
+  .demo-samples button {
+    background: white; border: 1px solid var(--line);
+    color: #6b6659; font-size: 11.5px; padding: 6px 10px;
+    border-radius: 20px; cursor: pointer; font-family: inherit;
+  }
+  .demo-samples button:active { background: #f0ede6; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>دستیار مکالمه</h1>
+  <p>گوش می‌ده · جواب پیشنهاد می‌ده · اگه بخوای با صدا هم می‌خونه</p>
+  <div class="badge-row">
+    <span class="badge badge-live" id="badgeMode">Pollinations.AI</span>
+    <span class="badge badge-demo" id="badgeFallback" style="display:none;">حالت جایگزین (آفلاین)</span>
+  </div>
+</header>
+
+<main id="main">
+  <div class="error-banner" id="errorBanner"></div>
+
+  <div class="status-row">
+    <div class="dot" id="statusDot"></div>
+    <span id="statusText">آماده — دکمه‌ی پایین رو بزن</span>
+  </div>
+
+  <div id="emptyState" class="empty-state">
+    <span class="big">🎧</span>
+    وقتی شروع کنی، هر چی طرف مقابل بگه اینجا میاد<br>
+    و یه پیشنهاد جواب زیرش نشون داده می‌شه<br>
+    <span style="font-size:11.5px; color:#c0baa9;">(برای تست، از نمونه‌های پایین صفحه هم می‌تونی استفاده کنی)</span>
+  </div>
+
+  <div id="liveArea" style="display:none;">
+    <div class="card">
+      <div class="card-label">شنیده شد</div>
+      <div class="heard-text" id="heardText">—</div>
+    </div>
+
+    <div class="suggestion-card" style="margin-top:12px;">
+      <div class="suggestion-row">
+        <div class="card-label" style="margin-bottom:0;">پیشنهاد جواب</div>
+        <div class="suggestion-actions">
+          <button class="copy-btn" id="copyBtn" title="کپی">⧉</button>
+          <button class="speak-btn" id="speakBtn" title="با صدا بخون">🔊</button>
+        </div>
+      </div>
+      <div class="suggestion-text" id="suggestionText">—</div>
+    </div>
+  </div>
+
+  <div class="history" id="history"></div>
+
+  <div id="demoSamples" class="demo-samples" style="padding: 0 4px;"></div>
+</main>
+
+<footer>
+  <div class="controls">
+    <button class="btn-main btn-start" id="toggleBtn">شروع گوش دادن</button>
+  </div>
+
+  <div class="settings-toggle" id="settingsToggle">تنظیمات ▾</div>
+
+  <div class="settings-panel" id="settingsPanel">
+
+    <div class="field">
+      <label>کلید API Pollinations (از enter.pollinations.ai)</label>
+      <input type="password" id="apiKey" placeholder="sk_..." dir="ltr" autocomplete="off">
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label>مدل</label>
+        <select id="modelSelect">
+          <option value="openai">openai (سریع، پیشنهادی)</option>
+          <option value="openai-fast">openai-fast</option>
+          <option value="claude">claude</option>
+          <option value="gemini">gemini</option>
+          <option value="deepseek">deepseek</option>
+          <option value="grok">grok</option>
+          <option value="mistral">mistral</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>زبان گفتار</label>
+        <select id="recogLang">
+          <option value="fa-IR">فارسی</option>
+          <option value="en-US">English (US)</option>
+          <option value="en-GB">English (UK)</option>
+          <option value="ar-SA">العربية</option>
+          <option value="tr-TR">Türkçe</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>زمینه‌ی مکالمه (اختیاری)</label>
+      <textarea id="contextInput" placeholder="مثلاً: دارم با همکارم درباره‌ی پروژه صحبت می‌کنم"></textarea>
+    </div>
+
+    <label class="check-row">
+      <input type="checkbox" id="autoSpeak">
+      خودکار با صدا بخون (بدون نیاز به دکمه)
+    </label>
+
+    <label class="check-row">
+      <input type="checkbox" id="useFallback">
+      در صورت خطا، از پاسخ‌های پیش‌فرض استفاده کن
+    </label>
+
+    <div class="field">
+      <label>تست صدا</label>
+      <div class="test-row">
+        <input type="text" id="voiceTestText" value="سلام، این یک تست صدا است.">
+        <button id="voiceTestBtn" title="پخش تست">🔊</button>
+      </div>
+      <div class="voice-info" id="voiceInfo">در حال بارگذاری لیست صداها...</div>
+    </div>
+
+    <div class="hint">
+      این برنامه به Pollinations.AI وصل می‌شه. کلید API رو از enter.pollinations.ai بگیر.
+      اگه خطا داد و گزینه‌ی «استفاده از پاسخ‌های پیش‌فرض» فعال باشه، از پاسخ‌های آماده استفاده می‌کنه.
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   بخش ۱ — المان‌ها
+   ============================================================ */
+const statusDot      = document.getElementById('statusDot');
+const statusText     = document.getElementById('statusText');
+const toggleBtn      = document.getElementById('toggleBtn');
+const heardText      = document.getElementById('heardText');
+const suggestionText = document.getElementById('suggestionText');
+const speakBtn       = document.getElementById('speakBtn');
+const copyBtn        = document.getElementById('copyBtn');
+const historyEl      = document.getElementById('history');
+const emptyState     = document.getElementById('emptyState');
+const liveArea       = document.getElementById('liveArea');
+const errorBanner    = document.getElementById('errorBanner');
+const settingsToggle = document.getElementById('settingsToggle');
+const settingsPanel  = document.getElementById('settingsPanel');
+const contextInput   = document.getElementById('contextInput');
+const autoSpeak      = document.getElementById('autoSpeak');
+const useFallback    = document.getElementById('useFallback');
+const recogLang      = document.getElementById('recogLang');
+const toastEl        = document.getElementById('toast');
+const demoSamplesEl  = document.getElementById('demoSamples');
+const apiKeyInput    = document.getElementById('apiKey');
+const modelSelect    = document.getElementById('modelSelect');
+const badgeMode      = document.getElementById('badgeMode');
+const badgeFallback  = document.getElementById('badgeFallback');
+
+/* ============================================================
+   بخش ۲ — وضعیت
+   ============================================================ */
+let recognition = null;
+let isListening = false;
+let lastSuggestion = '';
+let history = [];
+let debounceTimer = null;
+let suppressResults = false;
+let cachedVoices = [];
+let currentAbort = null;
+
+/* ============================================================
+   بخش ۳ — تنظیمات
+   ============================================================ */
+const SETTINGS_KEY = 'convassist_pollinations_v1';
+
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    if (s.apiKey)      apiKeyInput.value = s.apiKey;
+    if (s.model)       modelSelect.value = s.model;
+    if (s.recogLang)   recogLang.value = s.recogLang;
+    if (s.context)     contextInput.value = s.context;
+    autoSpeak.checked  = !!s.autoSpeak;
+    useFallback.checked = s.useFallback !== false; // پیش‌فرض: فعال
+  } catch (e) {}
+}
+function saveSettings() {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      apiKey: apiKeyInput.value.trim(),
+      model: modelSelect.value,
+      recogLang: recogLang.value,
+      context: contextInput.value,
+      autoSpeak: autoSpeak.checked,
+      useFallback: useFallback.checked
+    }));
+  } catch (e) {}
+}
+[apiKeyInput, modelSelect, recogLang, contextInput].forEach(el => {
+  el.addEventListener('change', saveSettings);
+  el.addEventListener('blur', saveSettings);
+});
+[autoSpeak, useFallback].forEach(el => el.addEventListener('change', saveSettings));
+recogLang.addEventListener('change', () => {
+  saveSettings();
+  if (isListening && recognition) {
+    try { recognition.stop(); } catch (e) {}
+    setTimeout(() => {
+      if (isListening) {
+        recognition.lang = recogLang.value;
+        try { recognition.start(); } catch (e) {}
+      }
+    }, 250);
+  }
+});
+loadSettings();
+
+/* ============================================================
+   بخش ۴ — ابزارک‌های UI
+   ============================================================ */
+function showError(msg) {
+  errorBanner.textContent = msg;
+  errorBanner.classList.add('show');
+}
+function clearError() { errorBanner.classList.remove('show'); }
+
+let toastTimer = null;
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2000);
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+
+function setStatus(mode, text) {
+  statusDot.classList.remove('live', 'thinking', 'speaking');
+  if (mode) statusDot.classList.add(mode);
+  if (text) statusText.textContent = text;
+}
+
+function setModeBadge(mode) {
+  if (mode === 'fallback') {
+    badgeMode.style.display = 'none';
+    badgeFallback.style.display = 'inline-block';
+  } else {
+    badgeMode.style.display = 'inline-block';
+    badgeFallback.style.display = 'none';
+  }
+}
+
+settingsToggle.addEventListener('click', () => {
+  settingsPanel.classList.toggle('open');
+  settingsToggle.textContent = settingsPanel.classList.contains('open')
+    ? 'تنظیمات ▴' : 'تنظیمات ▾';
+});
+
+/* ============================================================
+   بخش ۵ — SpeechSynthesis
+   ============================================================ */
+function refreshVoices() {
+  if (!('speechSynthesis' in window)) return;
+  const v = window.speechSynthesis.getVoices();
+  if (v && v.length) cachedVoices = v;
+}
+refreshVoices();
+
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.onvoiceschanged = refreshVoices;
+  let tries = 0;
+  const iv = setInterval(() => {
+    refreshVoices();
+    if (cachedVoices.length > 0 || ++tries > 12) {
+      clearInterval(iv);
+      updateVoiceInfo();
+    }
+  }, 250);
+}
+
+function pickVoiceForLang(lang) {
+  if (!cachedVoices.length) refreshVoices();
+  if (!cachedVoices.length) return null;
+
+  const lower = (lang || 'fa-IR').toLowerCase();
+  const prefix = lower.split('-')[0];
+
+  let v = cachedVoices.find(x => (x.lang || '').toLowerCase() === lower);
+  if (v) return v;
+
+  v = cachedVoices.find(x => (x.lang || '').toLowerCase().startsWith(prefix));
+  if (v) return v;
+
+  v = cachedVoices.find(x => /^(fa|ar|ur|tr)/i.test(x.lang || ''));
+  if (v) return v;
+
+  return null;
+}
+
+function updateVoiceInfo() {
+  const info = document.getElementById('voiceInfo');
+  if (!info) return;
+  refreshVoices();
+  if (!cachedVoices.length) {
+    info.textContent = 'هنوز صدایی بارگذاری نشده...';
+    return;
+  }
+  const langs = [...new Set(cachedVoices.map(v => v.lang))];
+  info.textContent = `صداهای موجود (${cachedVoices.length}): ${langs.slice(0, 8).join(' · ')}${langs.length > 8 ? ' …' : ''}`;
+}
+
+function speak(text) {
+  if (!text) { toast('چیزی برای خوندن نیست'); return; }
+  if (!('speechSynthesis' in window)) {
+    showError('مرورگرت از خواندن با صدا پشتیبانی نمی‌کنه.');
+    return;
+  }
+
+  try {
+    window.speechSynthesis.cancel();
+
+    setTimeout(() => {
+      const u = new SpeechSynthesisUtterance(text);
+      const lang = recogLang.value || 'fa-IR';
+      u.lang = lang;
+      u.rate = 0.95;
+      u.pitch = 1.0;
+      u.volume = 1.0;
+
+      const voice = pickVoiceForLang(lang);
+      if (voice) u.voice = voice;
+      else toast('صدای این زبان روی سیستمت نصب نیست — با صدای پیش‌فرض خونده می‌شه');
+
+      suppressResults = true;
+      speakBtn.classList.add('speaking');
+      setStatus('speaking', 'در حال خوندن با صدا...');
+
+      let finished = false;
+      const reset = () => {
+        if (finished) return;
+        finished = true;
+        suppressResults = false;
+        speakBtn.classList.remove('speaking');
+        if (isListening) setStatus('live', 'در حال گوش دادن...');
+        else setStatus(null, 'متوقف شد');
+      };
+
+      u.onend = reset;
+      u.onerror = (e) => { console.warn('speech error:', e); reset(); };
+
+      const safety = setTimeout(reset, Math.max(5000, text.length * 150));
+      u.onend = () => { clearTimeout(safety); reset(); };
+      u.onerror = () => { clearTimeout(safety); reset(); };
+
+      window.speechSynthesis.speak(u);
+
+      setTimeout(() => {
+        if (window.speechSynthesis.paused) {
+          try { window.speechSynthesis.resume(); } catch (e) {}
+        }
+      }, 200);
+    }, 60);
+  } catch (err) {
+    console.error(err);
+    showError('خطا در خواندن با صدا: ' + err.message);
+    suppressResults = false;
+    speakBtn.classList.remove('speaking');
+  }
+}
+
+speakBtn.addEventListener('click', () => speak(lastSuggestion));
+
+(function initVoiceTest() {
+  const btn = document.getElementById('voiceTestBtn');
+  const input = document.getElementById('voiceTestText');
+  if (!btn || !input) return;
+  btn.addEventListener('click', () => {
+    speak(input.value.trim() || 'تست');
+    setTimeout(updateVoiceInfo, 500);
+  });
+  setTimeout(updateVoiceInfo, 1000);
+})();
+
+/* ============================================================
+   بخش ۶ — تشخیص گفتار
+   ============================================================ */
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if (!SpeechRecognition) {
+  showError('مرورگرت از تشخیص گفتار پشتیبانی نمی‌کنه. از نمونه‌های پایین صفحه استفاده کن.');
+}
+
+function setupRecognition() {
+  recognition = new SpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = recogLang.value;
+  recognition.maxAlternatives = 1;
+
+  recognition.onresult = (event) => {
+    if (suppressResults) return;
+
+    let finalText = '';
+    let interimText = '';
+
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const t = event.results[i][0].transcript;
+      if (event.results[i].isFinal) finalText += t;
+      else interimText += t;
+    }
+
+    if (interimText) heardText.textContent = interimText;
+
+    if (finalText.trim().length > 1) {
+      heardText.textContent = finalText.trim();
+      clearTimeout(debounceTimer);
+      const chunk = finalText.trim();
+      debounceTimer = setTimeout(() => getSuggestion(chunk), 700);
+    }
+  };
+
+  recognition.onerror = (event) => {
+    if (event.error === 'no-speech' || event.error === 'aborted') return;
+    if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+      showError('دسترسی میکروفون رد شد. از نمونه‌های پایین صفحه استفاده کن.');
+      stopListening();
+    } else if (event.error === 'network') {
+      showError('اتصال اینترنت برای تشخیص گفتار برقرار نشد.');
+    }
+  };
+
+  recognition.onend = () => {
+    if (isListening) {
+      try { recognition.start(); } catch (e) {}
+    }
+  };
+}
+
+/* ============================================================
+   بخش ۷ — مغز جایگزین (کلیدواژه‌ای)
+   ============================================================ */
+const FALLBACK_RULES = [
+  { keys: ['چطوری', 'چطورید', 'حالت چطوره', 'خوبی', 'how are you'],
+    replies: ['ممنون، خوبم. تو چطوری؟', 'خوبم، مرسی که پرسیدی. تو چطوری؟'] },
+  { keys: ['خوبم', 'مرسی', 'ممنونم', 'thanks', 'thank you'],
+    replies: ['خواهش می‌کنم، خوشحالم.', 'قابلی نداشت.'] },
+  { keys: ['اسمت چیه', 'اسم شما', 'who are you'],
+    replies: ['اسم من [نام شما] است. خوشحالم که آشنا شدیم.', 'من [نام شما] هستم، خوشوقتم.'] },
+  { keys: ['جلسه', 'meeting', 'قرار', 'ساعت چند'],
+    replies: ['بله، جلسه رو یادم هست. ساعتش رو تأیید می‌کنی؟', 'باشه، من هستم. لینک یا محل جلسه رو می‌فرستی؟'] },
+  { keys: ['پروژه', 'project', 'کار', 'تسک', 'task'],
+    replies: ['باشه، در مورد پروژه صحبت کنیم. اولویت فعلی چیه؟', 'متوجه شدم. آخرین وضعیت پروژه رو می‌تونی خلاصه بگی؟'] },
+  { keys: ['ددلاین', 'deadline', 'مهلت', 'تحویل'],
+    replies: ['تا کی باید تحویل داده بشه؟ بذار برنامه‌ریزی کنم.', 'باشه، ددلاین رو یادداشت کردم. بقیه‌ی جزئیات چیه؟'] },
+  { keys: ['گزارش', 'report'],
+    replies: ['گزارش رو آماده می‌کنم و برات می‌فرستم.', 'باشه، تا آخر امروز گزارش رو می‌فرستم.'] },
+  { keys: ['می‌تونی', 'کمک', 'help', 'کمکم کن'],
+    replies: ['حتماً، بگو چطور می‌تونم کمک کنم.', 'بله، در خدمتم. دقیقاً چی نیاز داری؟'] },
+  { keys: ['نظرت چیه', 'نظر شما', 'what do you think', 'به نظرت'],
+    replies: ['به نظرم اول باید اطلاعات بیشتری داشته باشیم، بعد تصمیم بگیریم.', 'نظرم اینه که قبل از تصمیم، مزایا و معایب رو کنار هم بذاریم.'] },
+  { keys: ['موافقی', 'موافقید', 'agree'],
+    replies: ['بله موافقم، ولی یه نکته‌ی کوچیک هم هست.', 'کاملاً موافقم، بریم جلو.'] },
+  { keys: ['مطمئنی', 'مطمئنید', 'are you sure'],
+    replies: ['بذار دوباره بررسی کنم... بله، تقریباً مطمئنم.', 'تا جایی که می‌دونم بله، ولی بهتره دوباره تأیید کنیم.'] },
+  { keys: ['خداحافظ', 'خدافظ', 'بای', 'bye', 'goodbye'],
+    replies: ['خداحافظ، مراقب خودت باش.', 'خدانگهدار، روز خوبی داشته باشی.'] },
+  { keys: ['ببخشید', 'sorry', 'متأسفم', 'شرمنده'],
+    replies: ['مشکلی نیست، اصلاً نگران نباش.', 'فدای سرت، پیش میاد.'] },
+  { keys: ['تلفن', 'تماس', 'phone', 'call'],
+    replies: ['باشه، تماس می‌گیرم. الان وقت مناسبیه؟', 'الان می‌تونم تماس بگیرم، شماره رو بفرست.'] },
+  { keys: ['ناهار', 'شام', 'غذا', 'lunch', 'dinner'],
+    replies: ['من هستم، کجا بریم؟', 'باشه، من پایه‌ام. پیشنهادت چیه؟'] },
+  { keys: ['چرا', 'چیه', 'چیست', 'why', 'what is'],
+    replies: ['بذار فکر کنم... به نظرم بستگی به شرایط داره. تو چی فکر می‌کنی؟', 'سؤال خوبیه. بذار یه کم دقیق‌تر بررسی کنیم.'] },
+  { keys: ['کجا', 'where', 'آدرس'],
+    replies: ['آدرس رو برات می‌فرستم. حدوداً نیم ساعته اونجام.', 'بذار لوکیشن رو بفرستم، ۱۵ دقیقه‌ای می‌رسم.'] },
+  { keys: ['کی', 'وقتی', 'چه زمانی', 'when'],
+    replies: ['برنامه‌ام فعلاً بازه، تو بگو کی مناسبته.', 'فردا صبح خوبه؟ یا عصر راحت‌تری؟'] },
+];
+
+const FALLBACK_REPLIES = [
+  'متوجه شدم. می‌تونی بیشتر توضیح بدی؟',
+  'آها، جالبه. بگو ادامه بده.',
+  'باشه، در جریانم. چیز دیگه‌ای هم هست؟',
+  'خب... بذار یه لحظه فکر کنم. آره، منطقیه.',
+  'درسته، با حرفت موافقم.',
+  'ممنون که گفتی. پس نظرت اینه که بریم جلو؟',
+  'جالبه، از این زاویه فکر نکرده بودم.',
+  'اوکی، پس برنامه اینه. کار دیگه‌ای هست؟',
+];
+
+let lastReplyIndex = -1;
+
+function pickFallbackReply(chunk) {
+  const lower = chunk.toLowerCase();
+  for (const rule of FALLBACK_RULES) {
+    if (rule.keys.some(k => lower.includes(k.toLowerCase()))) {
+      return rule.replies[Math.floor(Math.random() * rule.replies.length)];
+    }
+  }
+  let idx;
+  do { idx = Math.floor(Math.random() * FALLBACK_REPLIES.length); }
+  while (idx === lastReplyIndex && FALLBACK_REPLIES.length > 1);
+  lastReplyIndex = idx;
+  return FALLBACK_REPLIES[idx];
+}
+
+/* ============================================================
+   بخش ۸ — فراخوانی Pollinations.AI
+   ============================================================ */
+async function getSuggestion(heardChunk) {
+  const apiKey = apiKeyInput.value.trim();
+
+  // اگه کلید نبود و fallback فعال بود، از fallback استفاده کن
+  if (!apiKey) {
+    if (useFallback.checked) {
+      setModeBadge('fallback');
+      await useFallbackReply(heardChunk, 'کلید API وارد نشده');
+      return;
+    } else {
+      showError('اول کلید API Pollinations رو در تنظیمات وارد کن.');
+      settingsPanel.classList.add('open');
+      settingsToggle.textContent = 'تنظیمات ▴';
+      return;
+    }
+  }
+
+  // لغو درخواست قبلی
+  if (currentAbort) currentAbort.abort();
+  currentAbort = new AbortController();
+
+  setModeBadge('live');
+  setStatus('thinking', 'در حال فکر کردن...');
+
+  const contextNote = contextInput.value.trim();
+  const systemPrompt = `تو دستیار یک مکالمه‌ی زنده هستی. جمله‌ای که شنیده شد را در نظر بگیر و فقط یک جواب کوتاه (حداکثر ۲ جمله)، طبیعی و مناسب موقعیت بنویس. فقط متن جواب را بنویس، بدون هیچ توضیح یا مقدمه.` +
+    (contextNote ? `\nزمینه‌ی مکالمه: ${contextNote}` : '');
+
+  const model = modelSelect.value || 'openai';
+
+  try {
+    const res = await fetch('https://gen.pollinations.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + apiKey
+      },
+      body: JSON.stringify({
+        model: model,
+        max_tokens: 200,
+        temperature: 0.7,
+        stream: false,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `طرف مقابل گفت: "${heardChunk}"` }
+        ]
+      }),
+      signal: currentAbort.signal
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      if (res.status === 401) throw new Error('کلید API معتبر نیست (۴۰۱).');
+      if (res.status === 402) throw new Error('اعتبار حساب Pollinations تموم شده (۴۰۲).');
+      if (res.status === 403) throw new Error('کلید API دسترسی لازم رو نداره (۴۰۳).');
+      if (res.status === 429) throw new Error('درخواست‌ها زیاد شده، چند لحظه صبر کن (۴۲۹).');
+      throw new Error('خطای سرور ' + res.status + (errText ? ' — ' + errText.slice(0, 160) : ''));
+    }
+
+    const data = await res.json();
+    const suggestion = (data?.choices?.[0]?.message?.content || '').trim();
+
+    if (!suggestion) throw new Error('جواب خالی برگشت.');
+
+    lastSuggestion = suggestion;
+    suggestionText.textContent = suggestion;
+    clearError();
+    addToHistory(heardChunk, suggestion);
+    setModeBadge('live');
+
+    if (autoSpeak.checked) speak(suggestion);
+
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    console.error(err);
+
+    if (useFallback.checked) {
+      setModeBadge('fallback');
+      await useFallbackReply(heardChunk, err.message);
+    } else {
+      showError('مشکلی پیش اومد: ' + err.message);
+    }
+  } finally {
+    if (isListening && !suppressResults) {
+      setStatus('live', 'در حال گوش دادن...');
+    } else if (!isListening) {
+      setStatus(null, 'آماده');
+    }
+  }
+}
+
+/* استفاده از پاسخ جایگزین */
+async function useFallbackReply(heardChunk, reason) {
+  setStatus('thinking', 'در حال فکر کردن (آفلاین)...');
+  await new Promise(r => setTimeout(r, 400 + Math.random() * 400));
+
+  const suggestion = pickFallbackReply(heardChunk);
+  lastSuggestion = suggestion;
+  suggestionText.textContent = suggestion;
+  addToHistory(heardChunk, suggestion);
+  setModeBadge('fallback');
+
+  if (isListening) setStatus('live', 'در حال گوش دادن...');
+  else setStatus(null, 'آماده');
+
+  if (autoSpeak.checked) speak(suggestion);
+}
+
+/* ============================================================
+   بخش ۹ — تاریخچه
+   ============================================================ */
+function addToHistory(heard, suggestion) {
+  history.unshift({ heard, suggestion });
+  if (history.length > 8) history.pop();
+  renderHistory();
+}
+
+function renderHistory() {
+  if (!history.length) { historyEl.innerHTML = ''; return; }
+  historyEl.innerHTML =
+    `<div class="history-head"><span>تاریخچه</span><button id="clearHistory">پاک کردن</button></div>` +
+    history.map(item => `
+      <div class="history-item">
+        <div>${escapeHtml(item.heard)}</div>
+        <div class="h-suggest">→ ${escapeHtml(item.suggestion)}</div>
+      </div>
+    `).join('');
+
+  const clearBtn = document.getElementById('clearHistory');
+  if (clearBtn) clearBtn.addEventListener('click', () => {
+    history = [];
+    renderHistory();
+  });
+}
+
+/* ============================================================
+   بخش ۱۰ — کپی
+   ============================================================ */
+copyBtn.addEventListener('click', async () => {
+  if (!lastSuggestion) return;
+  try {
+    await navigator.clipboard.writeText(lastSuggestion);
+    toast('کپی شد');
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = lastSuggestion;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    toast('کپی شد');
+  }
+});
+
+/* ============================================================
+   بخش ۱۱ — شروع / توقف
+   ============================================================ */
+function startListening() {
+  clearError();
+  isListening = true;
+  setStatus('live', 'در حال گوش دادن...');
+  toggleBtn.textContent = 'توقف';
+  toggleBtn.classList.remove('btn-start');
+  toggleBtn.classList.add('btn-stop');
+  emptyState.style.display = 'none';
+  liveArea.style.display = 'block';
+
+  if (!SpeechRecognition) {
+    showError('مرورگرت از تشخیص گفتار پشتیبانی نمی‌کنه. از نمونه‌های پایین صفحه استفاده کن.');
+    return;
+  }
+
+  if (!recognition) setupRecognition();
+  recognition.lang = recogLang.value;
+  try { recognition.start(); } catch (e) {}
+}
+
+function stopListening() {
+  isListening = false;
+  clearTimeout(debounceTimer);
+  if (currentAbort) currentAbort.abort();
+  if (recognition) { try { recognition.stop(); } catch (e) {} }
+
+  setStatus(null, 'متوقف شد');
+  toggleBtn.textContent = 'شروع گوش دادن';
+  toggleBtn.classList.remove('btn-stop');
+  toggleBtn.classList.add('btn-start');
+
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  suppressResults = false;
+  speakBtn.classList.remove('speaking');
+}
+
+toggleBtn.addEventListener('click', () => {
+  if (isListening) stopListening();
+  else startListening();
+});
+
+/* ============================================================
+   بخش ۱۲ — نمونه‌های تست دستی
+   ============================================================ */
+const SAMPLE_PHRASES = [
+  'سلام، چطوری؟',
+  'اسمت چیه؟',
+  'در مورد پروژه چه خبر؟',
+  'جلسه ساعت چنده؟',
+  'می‌تونی کمکم کنی؟',
+  'نظرت چیه؟',
+  'مطمئنی؟',
+  'می‌بینمت، خداحافظ',
+  'ناهار بریم؟',
+  'ببخشید، اشتباه کردم'
+];
+
+function renderSamples() {
+  demoSamplesEl.innerHTML =
+    '<div style="width:100%; font-size:11px; color:#a39d8f; font-family:var(--mono); margin-bottom:2px;">تست دستی (شبیه‌سازی گفتار):</div>' +
+    SAMPLE_PHRASES.map(p => `<button data-text="${escapeHtml(p)}">${escapeHtml(p)}</button>`).join('');
+
+  demoSamplesEl.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const text = btn.getAttribute('data-text');
+      if (liveArea.style.display === 'none') {
+        emptyState.style.display = 'none';
+        liveArea.style.display = 'block';
+      }
+      heardText.textContent = text;
+      getSuggestion(text);
+    });
+  });
+}
+renderSamples();
+</script>
+
+</body>
+</html>
