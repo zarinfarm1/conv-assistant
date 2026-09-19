@@ -230,7 +230,7 @@ function lev(a,b){const m=a.length,n=b.length,d=Array.from({length:m+1},(_,i)=>[
 const sim=(a,b)=>1-lev(a,b)/Math.max(a.length,b.length,1);
 
 /* ============ state ============ */
-let settings=Object.assign({key:'',model:'claude-sonnet-5',rate:'slow',voice:'',hands:false,autoplay:true,showFa:true},store.get('zy_settings',{}));
+let settings=Object.assign({key:'',model:'gpt-4o-mini',rate:'slow',voice:'',hands:false,autoplay:true,showFa:true},store.get('zy_settings',{}));
 let prog=Object.assign({xp:0,streak:0,last:'',done:{}},store.get('zy_prog',{}));
 let lessonCache=store.get('zy_lessons',{});
 let mistakes=store.get('zy_mistakes',[]);
@@ -358,15 +358,31 @@ quiz:[
  {q:'Choose the correct sentence:',options:['I from Iran.','Am from Iran.','I is from Iran.','I am from Iran.'],answer:3,why_fa:'ساختار درست: I + am + from + مکان.'}],
 speaking_goal:'خودت را معرفی کن: اسم، کشور و حالت را بگو. سپس از معلم سؤال کن.'};
 
-/* ============ Claude API ============ */
-async function callClaude(system,messages,max=1500){
+/* ============ 1xai API (OpenAI-compatible) ============ */
+async function callAI(system,messages,max=1500){
   if(!settings.key)throw new Error('NOKEY');
-  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
-    headers:{'content-type':'application/json','x-api-key':settings.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({model:settings.model,max_tokens:max,system,messages})});
-  if(!r.ok){let m='';try{m=(await r.json()).error.message}catch(e){}throw new Error(r.status+' '+m)}
+  const r=await fetch('https://1xai.ir/v1/chat/completions',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'Authorization':'Bearer '+settings.key
+    },
+    body:JSON.stringify({
+      model:settings.model,
+      max_tokens:max,
+      messages:[
+        {role:'system',content:system},
+        ...messages
+      ]
+    })
+  });
+  if(!r.ok){
+    let m='';
+    try{const d=await r.json();m=d.error?.message||d.error||''}catch(e){}
+    throw new Error(r.status+(m?' — '+m:''));
+  }
   const d=await r.json();
-  return d.content.filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+  return (d.choices?.[0]?.message?.content||'').trim();
 }
 function parseJSON(t){t=t.replace(/```json|```/g,'');const a=t.indexOf('{'),b=t.lastIndexOf('}');if(a<0||b<0)throw new Error('bad json');return JSON.parse(t.slice(a,b+1))}
 function errText(e){return e.message==='NOKEY'?'اول کلید API را در «تنظیمات» وارد کنید.':'خطا در ارتباط با هوش مصنوعی: '+e.message}
@@ -460,7 +476,7 @@ function openLesson(level,idx){
 async function genLesson(){
   const C=lessonCtx;C.loading=true;C.err=null;render();
   try{
-    const raw=await callClaude(LESSON_SYS,[{role:'user',content:`CEFR level: ${C.level}\nUnit: "${C.unit[0]}" (${C.unit[1]})\nFocus: ${C.unit[2]}`}],5000);
+    const raw=await callAI(LESSON_SYS,[{role:'user',content:`CEFR level: ${C.level}\nUnit: "${C.unit[0]}" (${C.unit[1]})\nFocus: ${C.unit[2]}`}],5000);
     const j=parseJSON(raw);
     if(!j.vocab||!j.quiz)throw new Error('incomplete lesson');
     lessonCache[C.id]=j;store.set('zy_lessons',lessonCache);C.lesson=j;
@@ -552,7 +568,7 @@ function startTalk(o){
 async function aiTurn(content,ut){
   talk.busy=true;drawChat();
   try{
-    const raw=await callClaude(talkSystem(),[...talk.history,{role:'user',content}],1400);
+    const raw=await callAI(talkSystem(),[...talk.history,{role:'user',content}],1400);
     let j;try{j=parseJSON(raw)}catch(e){j={reply:raw,reply_fa:'',mistakes:[],is_correct:true}}
     talk.history.push({role:'user',content},{role:'assistant',content:raw});
     talk.history=talk.history.slice(-16);
@@ -654,7 +670,7 @@ async function endTalk(){
   talk.reporting=true;$('#report').innerHTML=`<div class="card"><b>در حال تهیه‌ی گزارش…</b><div class="skel"></div><div class="skel" style="width:70%"></div></div>`;
   const tr=talk.turns.map(t=>t.role==='ai'?'Tutor: '+t.text:'Learner: '+t.text+(t.an&&t.an.corrected&&norm(t.an.corrected)!==norm(t.text)?'  [corrected: '+t.an.corrected+']':'')).join('\n');
   try{
-    const raw=await callClaude(`You are an English teacher writing a short session report for a Persian-speaking learner (target level ${talk.level}). Return ONLY valid JSON: {"summary_fa":string,"level_estimate":string,"strengths_fa":[string],"weak_points_fa":[string],"next_steps_fa":[string],"vocab_to_review":[{"en":string,"fa":string}]}. Be specific, kind and honest; all text Persian except English items.`,[{role:'user',content:tr}],1200);
+    const raw=await callAI(`You are an English teacher writing a short session report for a Persian-speaking learner (target level ${talk.level}). Return ONLY valid JSON: {"summary_fa":string,"level_estimate":string,"strengths_fa":[string],"weak_points_fa":[string],"next_steps_fa":[string],"vocab_to_review":[{"en":string,"fa":string}]}. Be specific, kind and honest; all text Persian except English items.`,[{role:'user',content:tr}],1200);
     talk.report=parseJSON(raw);award(20);
     if(talk.unitId){const d=prog.done[talk.unitId]=prog.done[talk.unitId]||{};d.talk=true;saveProg()}
     talk.reporting=false;drawReport();
@@ -683,7 +699,7 @@ function renderNotes(){
     const box=$('#drillBox');box.innerHTML=`<div class="card"><b>در حال ساخت تمرین…</b><div class="skel"></div></div>`;
     try{
       const src=mistakes.slice(0,15).map(m=>`wrong: ${m.original} | right: ${m.fix}`).join('\n');
-      const raw=await callClaude(`Create 6 multiple-choice exercises that make a Persian-speaking English learner practise exactly these mistakes (new sentences, not copies). Return ONLY JSON: {"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}]} where answer is the 0-based index and why_fa is in Persian.`,[{role:'user',content:src}],2500);
+      const raw=await callAI(`Create 6 multiple-choice exercises that make a Persian-speaking English learner practise exactly these mistakes (new sentences, not copies). Return ONLY JSON: {"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}]} where answer is the 0-based index and why_fa is in Persian.`,[{role:'user',content:src}],2500);
       const j=parseJSON(raw);
       box.innerHTML=`<div class="card"><h2>تمرین شخصی‌سازی‌شده</h2><div id="dq">${quizHTML(j.quiz)}</div></div>`;
       bindQuiz($('#dq'),j.quiz,(s,n)=>{award(s*2);$('.qres',$('#dq')).textContent=`نتیجه: ${fa(s)} از ${fa(n)}`});
@@ -695,8 +711,17 @@ function renderNotes(){
 function renderSettings(){
   loadVoices();
   $('#main').innerHTML=`<h1>تنظیمات</h1><div class="card stack" style="margin-top:14px">
-  <div class="field"><label for="k">کلید API از Anthropic</label><input type="password" id="k" dir="ltr" placeholder="sk-ant-…" value="${esc(settings.key)}" autocomplete="off"><span class="sub" style="font-size:.85rem">کلید فقط در مرورگر خودت ذخیره می‌شود و مستقیم به Anthropic فرستاده می‌شود. آن را هرگز داخل کد یا گیت‌هاب نگذار.</span></div>
-  <div class="field"><label for="m">مدل</label><select id="m"><option value="claude-sonnet-5">Claude Sonnet 5 (پیشنهادی)</option><option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (سریع‌تر و ارزان‌تر)</option><option value="claude-opus-5">Claude Opus 5 (قوی‌ترین)</option></select></div>
+  <div class="field"><label for="k">کلید API از 1xai.ir</label><input type="password" id="k" dir="ltr" placeholder="1xai-..." value="${esc(settings.key)}" autocomplete="off"><span class="sub" style="font-size:.85rem">کلید فقط در مرورگر خودت ذخیره می‌شود و مستقیم به 1xai.ir فرستاده می‌شود. آن را هرگز داخل کد یا گیت‌هاب نگذار.</span></div>
+  <div class="field"><label for="m">مدل</label><select id="m">
+    <option value="gpt-4o-mini">gpt-4o-mini (سریع و ارزان — پیشنهادی)</option>
+    <option value="gpt-4.1-mini">gpt-4.1-mini (قوی‌تر)</option>
+    <option value="deepseek-chat">deepseek-chat (کیفیت بالا، قیمت مناسب)</option>
+    <option value="deepseek-reasoner">deepseek-reasoner (استدلال عمیق‌تر)</option>
+    <option value="claude-3-5-haiku">claude-3-5-haiku (سریع)</option>
+    <option value="claude-sonnet-4-6">claude-sonnet-4-6 (قوی‌ترین)</option>
+    <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite (ارزان)</option>
+    <option value="gemini-2.5-flash">gemini-2.5-flash (متعادل)</option>
+  </select></div>
   <div class="field"><label for="r">سرعت صحبت معلم</label><select id="r"><option value="slow">آهسته (مناسب مبتدی)</option><option value="normal">عادی</option><option value="fast">سریع</option></select></div>
   <div class="field"><label for="v">صدای معلم</label><select id="v"><option value="">پیش‌فرض مرورگر</option>${voices.map(v=>`<option value="${esc(v.name)}">${esc(v.name)} (${esc(v.lang)})</option>`).join('')}</select></div>
   <div class="row"><button class="btn brand" id="sv">ذخیره</button><button class="btn ghost" id="ts">آزمایش اتصال</button><button class="btn ghost" id="rs">پاک کردن پیشرفت</button></div></div>
@@ -704,7 +729,7 @@ function renderSettings(){
   $('#m').value=settings.model;$('#r').value=settings.rate;$('#v').value=settings.voice;
   const save=()=>{settings.key=$('#k').value.trim();settings.model=$('#m').value;settings.rate=$('#r').value;settings.voice=$('#v').value;store.set('zy_settings',settings)};
   $('#sv').onclick=()=>{save();toast('ذخیره شد.')};
-  $('#ts').onclick=async()=>{save();try{await callClaude('Reply with the single word: ok',[{role:'user',content:'ping'}],20);toast('اتصال موفق بود.')}catch(e){toast(errText(e),6000)}};
+  $('#ts').onclick=async()=>{save();try{await callAI('Reply with the single word: ok',[{role:'user',content:'ping'}],20);toast('اتصال موفق بود.')}catch(e){toast(errText(e),6000)}};
   $('#rs').onclick=()=>{if(confirm('امتیاز، پیشرفت و درس‌های ذخیره‌شده پاک شود؟')){prog={xp:0,streak:0,last:'',done:{}};lessonCache={};store.set('zy_lessons',{});saveProg();toast('پاک شد.')}};
 }
 
