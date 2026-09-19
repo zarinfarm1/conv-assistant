@@ -571,14 +571,23 @@ Rules: exactly 10 vocab items ("say" = Persian-letter pronunciation for A1 and A
 
 function openLesson(level,idx){
   const id=unitId(level,idx), unit=LEVELS.find(l=>l.id===level).units[idx];
-  lessonCtx={id,level,idx,unit,lesson:null,step:'learn',loading:false,err:null,quizDone:false};
-  if(id==='A1-0')lessonCtx.lesson=DEMO;
-  else if(lessonCache[id])lessonCtx.lesson=lessonCache[id];
+  const cached=lessonCache[id];
+  const hasLesson=(id==='A1-0')||!!cached;
+  lessonCtx={
+    id,level,idx,unit,
+    lesson:(id==='A1-0')?DEMO:(cached||null),
+    step:'learn',
+    loading:!hasLesson,
+    err:null,
+    quizDone:false
+  };
   go('lesson');
-  if(!lessonCtx.lesson)genLesson();
+  if(!hasLesson)genLesson();
 }
 async function genLesson(){
-  const C=lessonCtx;C.loading=true;C.err=null;render();
+  const C=lessonCtx;
+  if(!C){return}
+  C.loading=true;C.err=null;render();
   try{
     const raw=await callAI(LESSON_SYS,[{role:'user',content:`CEFR level: ${C.level}\nUnit: "${C.unit[0]}" (${C.unit[1]})\nFocus: ${C.unit[2]}`}],5000);
     const j=parseJSON(raw);
@@ -586,24 +595,27 @@ async function genLesson(){
     lessonCache[C.id]=j;store.set('zy_lessons',lessonCache);C.lesson=j;
     schedulePushToCloud();
   }catch(e){C.err=errText(e)}
-  C.loading=false;if(view==='lesson'&&lessonCtx===C)render();
+  C.loading=false;
+  if(view==='lesson'&&lessonCtx===C)render();
 }
 function renderLesson(){
   const C=lessonCtx;if(!C){go('path');return}
   let h=`<button class="link" id="back">← بازگشت به مسیر</button><div class="lh"><span class="lvl">${C.level}</span><h1 class="en" dir="ltr">${esc(C.unit[0])}</h1><p class="sub">${esc(C.unit[1])}</p></div>`;
-  if(C.loading){h+=`<div class="card"><b>در حال ساخت درس اختصاصی…</b><div class="skel"></div><div class="skel" style="width:80%"></div><div class="skel" style="width:60%"></div></div>`}
-  else if(C.err){h+=`<div class="card"><p>${esc(C.err)}</p><div class="row" style="margin-top:12px"><button class="btn brand" id="retry">تلاش دوباره</button></div></div>`}
-  else{
+  if(C.loading||!C.lesson&&!C.err){
+    h+=`<div class="card"><b>در حال ساخت درس اختصاصی…</b><div class="skel"></div><div class="skel" style="width:80%"></div><div class="skel" style="width:60%"></div></div>`;
+  }else if(C.err){
+    h+=`<div class="card"><p>${esc(C.err)}</p><div class="row" style="margin-top:12px"><button class="btn brand" id="retry">تلاش دوباره</button></div></div>`;
+  }else{
     h+=`<div class="steps">${[['learn','۱. آموزش'],['quiz','۲. آزمون'],['speak','۳. صحبت کردن']].map(([k,t])=>`<button class="stp" data-s="${k}" aria-current="${C.step===k}">${t}</button>`).join('')}</div>`;
     h+=C.step==='learn'?learnHTML(C.lesson):C.step==='quiz'?`<div class="card"><h2>آزمون کوتاه</h2><div id="quiz">${quizHTML(C.lesson.quiz)}</div></div>`:speakHTML(C.lesson);
   }
   $('#main').innerHTML=h;
-  $('#back').onclick=()=>go('path');
+  const back=$('#back');if(back)back.onclick=()=>go('path');
   const rt=$('#retry');if(rt)rt.onclick=genLesson;
   $$('.stp').forEach(b=>b.onclick=()=>{C.step=b.dataset.s;renderLesson();window.scrollTo(0,0)});
   const nx=$('#nextQuiz');if(nx)nx.onclick=()=>{C.step='quiz';renderLesson();window.scrollTo(0,0)};
   const pd=$('#playDlg');if(pd)pd.onclick=()=>{let i=0;const L=C.lesson.dialogue;const next=()=>{if(i>=L.length)return;const l=L[i++];speak(l.en,next,l.speaker==='A'?1:1.25)};next()};
-  const rg=$('#regen');if(rg)rg.onclick=()=>{delete lessonCache[C.id];store.set('zy_lessons',lessonCache);C.lesson=null;genLesson()};
+  const rg=$('#regen');if(rg)rg.onclick=()=>{delete lessonCache[C.id];store.set('zy_lessons',lessonCache);C.lesson=null;C.err=null;C.loading=true;genLesson()};
   const qz=$('#quiz');if(qz)bindQuiz(qz,C.lesson.quiz,(s,n)=>{
     const pct=Math.round(100*s/n);const d=prog.done[C.id]=prog.done[C.id]||{};d.quiz=Math.max(d.quiz||0,pct);award(s*3);
     $('.qres',qz).innerHTML=`نتیجه: ${fa(s)} از ${fa(n)} — ${pct>=70?'عالی! آماده‌ی صحبت کردن هستی.':'یک بار دیگر آموزش را مرور کن.'} <div class="row" style="margin-top:10px"><button class="btn brand" id="toSpeak">برو به صحبت کردن</button></div>`;
@@ -841,7 +853,7 @@ function renderSettings(){
     <h3>☁️ همگام‌سازی خودکار (Cloudflare)</h3>
     <p class="sub" style="font-size:.88rem">یک «کد همگام‌سازی» دلخواه انتخاب کن. هر دستگاهی که همین کد رو وارد کنه، پیشرفتت رو می‌بینه.</p>
     <div class="field"><label for="sc">کد همگام‌سازی</label><input type="password" id="sc" dir="ltr" placeholder="مثلاً: ali-zabanyar-1400-secret" value="${esc(settings.syncCode||'')}"><span class="sub" style="font-size:.82rem">حداقل ۸ کاراکتر. هر چی طولانی‌تر و تصادفی‌تر، امن‌تر.</span></div>
-    <label class="check-row" style="display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="sa" ${settings.syncAuto?'checked':''}> ذخیره‌ی خودکار در ابر (بعد از هر تغییر)</label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="sa" ${settings.syncAuto?'checked':''} style="width:16px;height:16px"> ذخیره‌ی خودکار در ابر (بعد از هر تغییر)</label>
     <div class="row">
       <button class="btn brand" id="scActivate">${syncActive?'به‌روزرسانی':'فعال‌سازی'}</button>
       <button class="btn ghost" id="scPull">دریافت از ابر</button>
@@ -879,11 +891,10 @@ function renderSettings(){
   $('#sv').onclick=()=>{save();toast('ذخیره شد.')};
   $('#ts').onclick=async()=>{save();try{await callAI('Reply with the single word: ok',[{role:'user',content:'ping'}],20);toast('اتصال موفق بود. ✅')}catch(e){toast(errText(e),6000)}};
 
-  // Sync
   const sca=$('#scActivate');
   if(sca)sca.onclick=async()=>{
     save();
-    if(!settings.proxy){toast('اول آدرس پروکسی (Cloudflare Worker) را وارد کن.');return}
+    if(!settings.proxy){toast('اول آدرس پروکسی را وارد کن.');return}
     if(!settings.syncCode||settings.syncCode.length<8){toast('کد همگام‌سازی باید حداقل ۸ کاراکتر باشد.');return}
     syncEnabled=false;
     if(await initSync()){
@@ -892,7 +903,7 @@ function renderSettings(){
       toast('همگام‌سازی فعال شد. ✅');
       renderSettings();
     }else{
-      toast('خطا در فعال‌سازی همگام‌سازی.');
+      toast('خطا در فعال‌سازی.');
     }
   };
   const scp=$('#scPull');
@@ -902,7 +913,6 @@ function renderSettings(){
   const sa=$('#sa');
   if(sa)sa.onchange=()=>{settings.syncAuto=sa.checked;store.set('zy_settings',settings)};
 
-  // Export/Import
   $('#exBtn').onclick=()=>{
     try{const b64=exportData();$('#exText').value=b64;$('#exBox').style.display='block';$('#imBox').style.display='none'}
     catch(e){toast('خطا: '+e.message)}
@@ -929,7 +939,6 @@ updateStats();go('path');
 if(settings.proxy&&settings.syncCode){
   (async()=>{
     if(await initSync()){
-      // کشیدن از ابر در پس‌زمینه (بدون toast)
       await pullFromCloud(true);
     }
   })();
