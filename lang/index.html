@@ -28,7 +28,7 @@ html{-webkit-text-size-adjust:100%}
 body{font-family:'Vazirmatn',system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);line-height:1.8;min-height:100vh}
 .en,[dir=ltr]{font-family:'Lexend','Vazirmatn',system-ui,sans-serif;line-height:1.6}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .wrap{max-width:920px;margin:0 auto;padding:0 16px}
 
@@ -46,6 +46,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 main{padding:22px 0 60px}
 h1{font-size:1.6rem;font-weight:800;line-height:1.4}
 h2{font-size:1.15rem;font-weight:700;margin-bottom:10px}
+h3{font-size:1rem;font-weight:700;margin-bottom:8px;color:var(--brand)}
 .sub{color:var(--muted)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px}
 .stack>*+*{margin-top:16px}
@@ -123,7 +124,8 @@ h2{font-size:1.15rem;font-weight:700;margin-bottom:10px}
 .chip[aria-pressed=true]{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
 .field{display:grid;gap:6px}
 .field label{font-weight:600;font-size:.92rem}
-input[type=text],input[type=password],select{width:100%;padding:10px 14px;border-radius:var(--r-sm);border:1.5px solid var(--line);background:var(--card);color:var(--ink);font:inherit}
+input[type=text],input[type=password],input[type=email],select,textarea{width:100%;padding:10px 14px;border-radius:var(--r-sm);border:1.5px solid var(--line);background:var(--card);color:var(--ink);font:inherit}
+textarea{min-height:80px;resize:vertical;font-family:monospace;font-size:.85rem;line-height:1.5}
 .thead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
 .chat{display:flex;flex-direction:column;gap:10px;padding-bottom:18px}
 .b{max-width:88%;padding:10px 16px;border-radius:20px;position:relative}
@@ -164,6 +166,12 @@ input[type=text],input[type=password],select{width:100%;padding:10px 14px;border
 .nb{display:grid;gap:10px}
 .nbi{padding:12px 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md)}
 
+.sync-status{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--r-sm);background:var(--bg);border:1px solid var(--line);font-size:.9rem}
+.sync-dot{width:10px;height:10px;border-radius:50%;flex:none}
+.sync-dot.on{background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
+.sync-dot.off{background:var(--muted)}
+.sync-dot.pending{background:var(--accent);animation:pulse 1.2s infinite}
+
 .skel{height:14px;border-radius:7px;background:linear-gradient(90deg,var(--line),var(--bg),var(--line));background-size:200% 100%;animation:sh 1.3s infinite;margin:10px 0}
 .toast{position:fixed;inset-inline:16px;bottom:96px;max-width:440px;margin:auto;padding:12px 18px;border-radius:var(--r-md);background:var(--ink);color:var(--bg);z-index:60;font-size:.92rem;box-shadow:0 10px 30px rgba(0,0,0,.25)}
 @keyframes pulse{50%{opacity:.7}}
@@ -189,7 +197,11 @@ input[type=text],input[type=password],select{width:100%;padding:10px 14px;border
 <header class="top"><div class="wrap">
   <div class="bar">
     <div class="logo"><i>Aa</i><span>زبان‌یار</span></div>
-    <div class="stats"><div class="stat" title="امتیاز">امتیاز <b id="xp">۰</b></div><div class="stat" title="روزهای پیاپی">روز پیاپی <b id="streak">۰</b></div></div>
+    <div class="stats">
+      <div class="stat" title="امتیاز">امتیاز <b id="xp">۰</b></div>
+      <div class="stat" title="روزهای پیاپی">روز پیاپی <b id="streak">۰</b></div>
+      <div class="stat" id="syncBadge" title="وضعیت همگام‌سازی" style="display:none"><span class="sync-dot off" id="syncDot"></span><b id="syncLabel">آفلاین</b></div>
+    </div>
   </div>
   <nav class="tabs" aria-label="بخش‌ها">
     <button class="tab" data-v="path"><svg class="ic"><use href="#i-book"/></svg>مسیر یادگیری</button>
@@ -223,7 +235,10 @@ function lev(a,b){const m=a.length,n=b.length,d=Array.from({length:m+1},(_,i)=>[
 const sim=(a,b)=>1-lev(a,b)/Math.max(a.length,b.length,1);
 
 /* ============ state ============ */
-let settings=Object.assign({key:'',model:'gpt-4o-mini',rate:'slow',voice:'',hands:false,autoplay:true,showFa:true,proxy:''},store.get('zy_settings',{}));
+let settings=Object.assign({
+  key:'',model:'gpt-4o-mini',rate:'slow',voice:'',hands:false,autoplay:true,showFa:true,
+  proxy:'',syncCode:'',syncAuto:true
+},store.get('zy_settings',{}));
 let prog=Object.assign({xp:0,streak:0,last:'',done:{}},store.get('zy_prog',{}));
 let lessonCache=store.get('zy_lessons',{});
 let mistakes=store.get('zy_mistakes',[]);
@@ -231,13 +246,112 @@ let view='path', pathLevel='A1', lessonCtx=null;
 let talk={started:false,level:'A1',topic:'',focus:'',unitId:null,history:[],turns:[],busy:false,count:0,report:null,reporting:false};
 let listening=false, rec=null;
 
-function saveProg(){store.set('zy_prog',prog);updateStats()}
+function saveProg(){store.set('zy_prog',prog);updateStats();schedulePushToCloud()}
 function updateStats(){$('#xp').textContent=fa(prog.xp);$('#streak').textContent=fa(prog.streak)}
 function award(n){
   prog.xp+=n;
   const today=new Date().toDateString(), y=new Date(Date.now()-864e5).toDateString();
   if(prog.last!==today){prog.streak=(prog.last===y)?prog.streak+1:1;prog.last=today}
   saveProg();
+}
+
+/* ============ CLOUDFLARE SYNC (KV) ============ */
+let syncKey=null, syncTimer=null, syncEnabled=false;
+
+function updateSyncUI(){
+  const badge=$('#syncBadge');if(!badge)return;
+  if(!settings.proxy||!settings.syncCode){badge.style.display='none';return}
+  badge.style.display='flex';
+  const dot=$('#syncDot'),label=$('#syncLabel');
+  if(!dot||!label)return;
+  dot.className='sync-dot '+(syncEnabled?'on':'off');
+  label.textContent=syncEnabled?'متصل':'آفلاین';
+}
+
+async function computeSyncKey(code){
+  const data=new TextEncoder().encode('zabanyar-v1:'+code);
+  const hash=await crypto.subtle.digest('SHA-256',data);
+  const arr=Array.from(new Uint8Array(hash));
+  return arr.map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
+}
+
+async function initSync(){
+  if(!settings.proxy||!settings.syncCode)return false;
+  try{
+    syncKey=await computeSyncKey(settings.syncCode);
+    syncEnabled=true;
+    updateSyncUI();
+    return true;
+  }catch(e){
+    console.error('Sync init error:',e);
+    return false;
+  }
+}
+
+async function pushToCloud(){
+  if(!syncEnabled||!syncKey)return;
+  try{
+    const base=settings.proxy.replace(/\/+$/,'');
+    const payload={prog,lessonCache,mistakes,updatedAt:Date.now()};
+    const r=await fetch(base+'/sync/'+syncKey,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const dot=$('#syncDot');if(dot)dot.className='sync-dot on';
+  }catch(e){
+    console.error('Push error:',e);
+    toast('خطا در ذخیره در ابر: '+e.message,5000);
+  }
+}
+
+async function pullFromCloud(silent){
+  if(!syncEnabled||!syncKey)return false;
+  try{
+    const base=settings.proxy.replace(/\/+$/,'');
+    const r=await fetch(base+'/sync/'+syncKey);
+    if(r.status===404){
+      await pushToCloud();
+      if(!silent)toast('پیشرفت محلی به ابر فرستاده شد. ✅');
+      return true;
+    }
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    if(d.prog){prog=d.prog;store.set('zy_prog',prog);updateStats()}
+    if(d.lessonCache){lessonCache=d.lessonCache;store.set('zy_lessons',lessonCache)}
+    if(d.mistakes){mistakes=d.mistakes;store.set('zy_mistakes',mistakes)}
+    if(!silent)toast('پیشرفت از ابر بارگذاری شد. ✅');
+    render();
+    return true;
+  }catch(e){
+    console.error('Pull error:',e);
+    if(!silent)toast('خطا در بارگذاری: '+e.message,5000);
+    return false;
+  }
+}
+
+function schedulePushToCloud(){
+  if(!syncEnabled||!settings.syncAuto)return;
+  clearTimeout(syncTimer);
+  const dot=$('#syncDot');if(dot)dot.className='sync-dot pending';
+  syncTimer=setTimeout(pushToCloud,1500);
+}
+
+/* ============ EXPORT / IMPORT ============ */
+function exportData(){
+  const data={v:1,exportedAt:new Date().toISOString(),prog,lessonCache,mistakes};
+  const json=JSON.stringify(data);
+  return btoa(unescape(encodeURIComponent(json)));
+}
+
+function importData(b64){
+  const json=decodeURIComponent(escape(atob(b64.trim())));
+  const data=JSON.parse(json);
+  if(data.prog){prog=data.prog;store.set('zy_prog',prog);updateStats()}
+  if(data.lessonCache){lessonCache=data.lessonCache;store.set('zy_lessons',lessonCache)}
+  if(data.mistakes){mistakes=data.mistakes;store.set('zy_mistakes',mistakes)}
+  return true;
 }
 
 /* ============ curriculum ============ */
@@ -319,7 +433,6 @@ const LEVELS=[
 ];
 const FREE_TOPICS=['Introduce yourself','Ordering at a café','My daily routine','Travel plans','My job','Movies and music','Technology in my life','A job interview','Health and lifestyle','Money and shopping'];
 
-/* built-in demo lesson (works without an API key) */
 const DEMO={title:'Greetings & Introductions',
 intro_fa:'در این درس یاد می‌گیری سلام کنی، خودت را معرفی کنی و بگویی اهل کجایی. همین چند جمله پایه‌ی هر مکالمه‌ای است.',
 vocab:[
@@ -334,7 +447,7 @@ vocab:[
  {en:'Please',say:'پْلیز',fa:'لطفاً',ex:'Sit down, please.',ex_fa:'لطفاً بنشینید.'},
  {en:'Sorry',say:'سُری',fa:'ببخشید',ex:'Sorry, I am late.',ex_fa:'ببخشید، دیر کردم.'}],
 grammar:{title:'I am… / My name is…',
- explain_fa:'برای معرفی خودمان دو الگوی ساده داریم:\nI am + اسم → «من … هستم»\nMy name is + اسم → «اسم من … است»\nبرای گفتن اهل کجا هستی: I am from + کشور یا شهر.\nدر گفتار معمولاً کوتاه می‌گوییم: I\'m = I am.\nنکته: در فارسی فعل آخر جمله می‌آید، اما در انگلیسی «من + فعل + بقیه» است.',
+ explain_fa:'برای معرفی خودمان دو الگوی ساده داریم:\nI am + اسم → «من … هستم»\nMy name is + اسم → «اسم من … است»\nبرای گفتن اهل کجا هستی: I am from + کشور یا شهر.\nدر گفتار معمولاً کوتاه می‌گوییم: I\'m = I am.',
  rules:['I am Ali. = I\'m Ali.','My name is Sara.','I am from Iran. = I\'m from Iran.','Nice to meet you. → Nice to meet you, too.'],
  examples:[{en:'Hi, I\'m Reza.',fa:'سلام، من رضا هستم.'},{en:'My name is Mina. I\'m from Tehran.',fa:'اسم من مینا است. اهل تهران هستم.'}]},
 dialogue:[
@@ -351,28 +464,21 @@ quiz:[
  {q:'Choose the correct sentence:',options:['I from Iran.','Am from Iran.','I is from Iran.','I am from Iran.'],answer:3,why_fa:'ساختار درست: I + am + from + مکان.'}],
 speaking_goal:'خودت را معرفی کن: اسم، کشور و حالت را بگو. سپس از معلم سؤال کن.'};
 
-/* ============ 1xai API (via optional CORS proxy) ============ */
+/* ============ 1xai API ============ */
 async function callAI(system,messages,max=1500){
   if(!settings.key)throw new Error('NOKEY');
   const baseUrl=(settings.proxy&&settings.proxy.trim())?settings.proxy.trim().replace(/\/+$/,''):'https://1xai.ir';
   const r=await fetch(baseUrl+'/v1/chat/completions',{
     method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'Authorization':'Bearer '+settings.key
-    },
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+settings.key},
     body:JSON.stringify({
       model:settings.model,
       max_tokens:max,
-      messages:[
-        {role:'system',content:system},
-        ...messages
-      ]
+      messages:[{role:'system',content:system},...messages]
     })
   });
   if(!r.ok){
-    let m='';
-    try{const d=await r.json();m=d.error?.message||d.error||''}catch(e){}
+    let m='';try{const d=await r.json();m=d.error?.message||d.error||''}catch(e){}
     throw new Error(r.status+(m?' — '+m:''));
   }
   const d=await r.json();
@@ -381,7 +487,7 @@ async function callAI(system,messages,max=1500){
 function parseJSON(t){t=t.replace(/```json|```/g,'');const a=t.indexOf('{'),b=t.lastIndexOf('}');if(a<0||b<0)throw new Error('bad json');return JSON.parse(t.slice(a,b+1))}
 function errText(e){
   if(e.message==='NOKEY')return 'اول کلید API را در «تنظیمات» وارد کنید.';
-  if(e.message==='Failed to fetch'||/Failed to fetch/i.test(e.message))return 'اتصال به سرور برقرار نشد. اگر از ایران استفاده می‌کنید، آدرس پروکسی (Cloudflare Worker) را در تنظیمات وارد کنید.';
+  if(/Failed to fetch/i.test(e.message))return 'اتصال به سرور برقرار نشد. اگر از ایران استفاده می‌کنید، آدرس پروکسی (Cloudflare Worker) را در تنظیمات وارد کنید.';
   return 'خطا در ارتباط با هوش مصنوعی: '+e.message;
 }
 
@@ -400,12 +506,12 @@ function speak(text,onend,pitch=1){
   u.onend=end;u.onerror=end;speechSynthesis.speak(u);
 }
 function listen({interim,done}){
-  if(!SR){toast('این مرورگر تشخیص گفتار ندارد. از Chrome، Edge یا Safari استفاده کنید یا تایپ کنید.');return null}
+  if(!SR){toast('این مرورگر تشخیص گفتار ندارد. از Chrome، Edge یا Safari استفاده کنید.');return null}
   if('speechSynthesis' in window)speechSynthesis.cancel();
   const r=new SR();r.lang='en-US';r.interimResults=true;r.continuous=false;r.maxAlternatives=1;
   let text='',conf=null;
   r.onresult=e=>{let t='',c=null;for(let i=0;i<e.results.length;i++){t+=e.results[i][0].transcript+' ';c=e.results[i][0].confidence}text=t.trim();conf=c;interim&&interim(text)};
-  r.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed')toast('دسترسی به میکروفون داده نشد. اجازه را در مرورگر فعال کنید (نیاز به HTTPS).');else if(e.error==='no-speech')toast('صدایی شنیده نشد. دوباره امتحان کنید.')};
+  r.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed')toast('دسترسی به میکروفون داده نشد. (نیاز به HTTPS)');else if(e.error==='no-speech')toast('صدایی شنیده نشد.')};
   r.onend=()=>done&&done(text,conf);
   try{r.start()}catch(e){return null}
   return r;
@@ -444,7 +550,7 @@ function unitId(l,i){return l+'-'+i}
 function renderPath(){
   const L=LEVELS.find(x=>x.id===pathLevel);
   let h='';
-  if(!settings.key)h+=`<div class="banner"><div><b>برای درس‌های کامل و مکالمه صوتی، کلید API لازم است.</b><div class="sub">درس اول (سلام و معرفی) بدون کلید هم باز می‌شود.</div></div><button class="btn brand" id="gset">وارد کردن کلید</button></div>`;
+  if(!settings.key)h+=`<div class="banner"><div><b>برای درس‌های کامل و مکالمه صوتی، کلید API لازم است.</b><div class="sub">درس اول بدون کلید هم باز می‌شود.</div></div><button class="btn brand" id="gset">وارد کردن کلید</button></div>`;
   h+=`<h1>مسیر یادگیری از صفر تا حرفه‌ای</h1><p class="sub">هر درس سه مرحله دارد: آموزش، آزمون کوتاه، و مکالمه صوتی با معلم هوش مصنوعی.</p>`;
   h+=`<div class="levels" role="group" aria-label="سطح">`+LEVELS.map(l=>`<button class="lv" data-lv="${l.id}" aria-pressed="${l.id===pathLevel}"><b>${l.id}</b><small>${l.name}</small></button>`).join('')+`</div>`;
   h+=`<div class="units">`+L.units.map((u,i)=>{
@@ -461,7 +567,7 @@ function renderPath(){
 const LESSON_SYS=`You are an expert EFL curriculum designer and teacher for Persian (Farsi) speakers. Create ONE complete lesson as strict JSON (no markdown, no commentary).
 Schema:
 {"title":string,"intro_fa":string,"vocab":[{"en":string,"say":string,"fa":string,"ex":string,"ex_fa":string}],"grammar":{"title":string,"explain_fa":string,"rules":[string],"examples":[{"en":string,"fa":string}]},"dialogue":[{"speaker":"A"|"B","en":string,"fa":string}],"phrases":[{"en":string,"fa":string}],"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}],"speaking_goal":string}
-Rules: exactly 10 vocab items ("say" = Persian-letter pronunciation for A1 and A2, otherwise empty string); grammar explained clearly in Persian with English examples, contrasting with Persian structure where it helps; dialogue of 6 to 8 lines; 5 useful phrases; exactly 6 quiz questions about this lesson (answer = 0-based index of the correct option, vary its position); English difficulty must strictly match the CEFR level; every explanation and translation in Persian; speaking_goal in Persian; valid JSON only.`;
+Rules: exactly 10 vocab items ("say" = Persian-letter pronunciation for A1 and A2, otherwise empty string); grammar explained clearly in Persian with English examples; dialogue of 6 to 8 lines; 5 useful phrases; exactly 6 quiz questions (answer = 0-based index, vary its position); English difficulty must strictly match the CEFR level; every explanation and translation in Persian; valid JSON only.`;
 
 function openLesson(level,idx){
   const id=unitId(level,idx), unit=LEVELS.find(l=>l.id===level).units[idx];
@@ -478,6 +584,7 @@ async function genLesson(){
     const j=parseJSON(raw);
     if(!j.vocab||!j.quiz)throw new Error('incomplete lesson');
     lessonCache[C.id]=j;store.set('zy_lessons',lessonCache);C.lesson=j;
+    schedulePushToCloud();
   }catch(e){C.err=errText(e)}
   C.loading=false;if(view==='lesson'&&lessonCtx===C)render();
 }
@@ -499,7 +606,7 @@ function renderLesson(){
   const rg=$('#regen');if(rg)rg.onclick=()=>{delete lessonCache[C.id];store.set('zy_lessons',lessonCache);C.lesson=null;genLesson()};
   const qz=$('#quiz');if(qz)bindQuiz(qz,C.lesson.quiz,(s,n)=>{
     const pct=Math.round(100*s/n);const d=prog.done[C.id]=prog.done[C.id]||{};d.quiz=Math.max(d.quiz||0,pct);award(s*3);
-    $('.qres',qz).innerHTML=`نتیجه: ${fa(s)} از ${fa(n)} — ${pct>=70?'عالی! آماده‌ی صحبت کردن هستی.':'یک بار دیگر آموزش را مرور کن و بعد صحبت کن.'} <div class="row" style="margin-top:10px"><button class="btn brand" id="toSpeak">برو به صحبت کردن</button></div>`;
+    $('.qres',qz).innerHTML=`نتیجه: ${fa(s)} از ${fa(n)} — ${pct>=70?'عالی! آماده‌ی صحبت کردن هستی.':'یک بار دیگر آموزش را مرور کن.'} <div class="row" style="margin-top:10px"><button class="btn brand" id="toSpeak">برو به صحبت کردن</button></div>`;
     $('#toSpeak').onclick=()=>{C.step='speak';renderLesson();window.scrollTo(0,0)};
   });
   const st=$('#startTalk');if(st)st.onclick=()=>startTalk({level:C.level,topic:C.unit[0],focus:C.unit[2],unitId:C.id});
@@ -523,7 +630,6 @@ function speakHTML(L){
   <div class="row"><button class="btn brand" id="startTalk">${ic('mic')} شروع مکالمه با معلم</button></div></div>`;
 }
 
-/* quiz (shared) */
 function quizHTML(q){return q.map((x,i)=>`<div class="q" data-i="${i}"><div class="qt en" dir="ltr">${i+1}. ${esc(x.q)}</div><div class="opts">${x.options.map((o,j)=>`<button class="opt en" data-j="${j}" dir="ltr">${esc(o)}</button>`).join('')}</div><div class="why"></div></div>`).join('')+'<div class="qres"></div>'}
 function bindQuiz(root,quiz,done){
   let answered=0,score=0;
@@ -541,23 +647,22 @@ function bindQuiz(root,quiz,done){
 
 /* ============ TALK ============ */
 function talkSystem(){
-  const style={A1:'Use only very simple words and the present simple. One or two short sentences. No idioms. Speak as if to a beginner.',
+  const style={A1:'Use only very simple words and the present simple. One or two short sentences.',
     A2:'Use simple, clear sentences and everyday vocabulary. Two or three sentences.',
-    B1:'Natural but clear English. Two or three sentences. Introduce a useful new word now and then.',
+    B1:'Natural but clear English. Two or three sentences.',
     B2:'Natural English with some idioms and phrasal verbs. Two to four sentences.',
-    C1:'Sophisticated, natural English with nuance, hedging and idioms. Two to four sentences.',
-    C2:'Fully native-level English in a professional register when it fits. Challenge the learner with nuance and abstraction.'}[talk.level];
+    C1:'Sophisticated, natural English with nuance, hedging and idioms.',
+    C2:'Fully native-level English in a professional register.'}[talk.level];
   return `You are "Sam", a warm, patient English speaking tutor for a Persian (Farsi) speaker at CEFR level ${talk.level}.
-Conversation topic: ${talk.topic}.${talk.focus?' Target language for this session: '+talk.focus+'.':''}
-Your spoken reply ("reply"): ${style} React to what the learner said, then end with exactly ONE question that keeps the conversation going on the topic. Stay encouraging.
-Analyse the learner's LAST message like a teacher. Notes:
-- If a line "[speech_confidence: x]" follows the message, it was typed by speech recognition. Ignore capitalisation and punctuation. You cannot hear audio, but if a word looks like a likely mispronunciation or misrecognition, or confidence is below 0.7, add a mistake with type "pronunciation" and explain in Persian how to say it (with a Persian-letter approximation).
-- If the learner writes Persian, put the natural English version in "corrected", set is_correct=false, and encourage them in "reply" to say it in English.
-- Report at most 2 mistakes for A1-A2, at most 4 otherwise, most important first. Do not nitpick.
-- Every explanation, tip and translation is in Persian.
-- If the message is exactly "[START]", greet the learner, introduce the topic and ask the first question; set "corrected":"", "mistakes":[], "scores":null, "better_version":"", "new_words":[], "tip_fa":"", "is_correct":true.
-Return ONLY valid JSON, no markdown:
-{"reply":string,"reply_fa":string,"corrected":string,"is_correct":boolean,"mistakes":[{"type":"grammar"|"vocabulary"|"word order"|"spelling"|"pronunciation"|"naturalness","original":string,"fix":string,"explain_fa":string}],"better_version":string,"scores":{"grammar":0-10,"vocabulary":0-10,"fluency":0-10}|null,"new_words":[{"en":string,"fa":string}],"tip_fa":string}`;
+Conversation topic: ${talk.topic}.${talk.focus?' Target language: '+talk.focus+'.':''}
+Your spoken reply ("reply"): ${style} React to what the learner said, then end with exactly ONE question. Stay encouraging.
+Analyse the learner's LAST message like a teacher. Every explanation in Persian.
+- If "[speech_confidence: x]" follows, it's from speech recognition.
+- If learner writes Persian, put natural English in "corrected" and encourage them.
+- Max 2 mistakes for A1-A2, max 4 otherwise.
+- If message is exactly "[START]", greet and ask first question.
+Return ONLY valid JSON:
+{"reply":string,"reply_fa":string,"corrected":string,"is_correct":boolean,"mistakes":[{"type":string,"original":string,"fix":string,"explain_fa":string}],"better_version":string,"scores":{"grammar":0-10,"vocabulary":0-10,"fluency":0-10}|null,"new_words":[{"en":string,"fa":string}],"tip_fa":string}`;
 }
 function startTalk(o){
   talk={started:true,level:o.level,topic:o.topic,focus:o.focus||'',unitId:o.unitId||null,history:[],turns:[],busy:false,count:0,report:null,reporting:false};
@@ -586,12 +691,13 @@ function saveMistakes(j,ut){
     mistakes.unshift({original:m.original,fix:m.fix,explain:m.explain_fa||'',type:m.type||'',level:talk.level,topic:talk.topic,date:new Date().toLocaleDateString('fa-IR')});
   });
   mistakes=mistakes.slice(0,300);store.set('zy_mistakes',mistakes);
+  schedulePushToCloud();
 }
 function renderTalk(){
   const el=$('#main');
   if(!talk.started){
     let topic=FREE_TOPICS[0],level='A1';
-    el.innerHTML=`<div class="tstart"><h1>مکالمه‌ی آزاد با معلم</h1><p class="sub">موضوع و سطح را انتخاب کن. معلم شروع می‌کند، تو با صدا یا تایپ جواب بده، و بعد از هر جمله تحلیل کامل می‌گیری.</p>
+    el.innerHTML=`<div class="tstart"><h1>مکالمه‌ی آزاد با معلم</h1><p class="sub">موضوع و سطح را انتخاب کن.</p>
     <div class="card stack"><div class="field"><label>سطح تو</label><select id="fl">${LEVELS.map(l=>`<option value="${l.id}">${l.id} — ${l.name}</option>`).join('')}</select></div>
     <div class="field"><label>موضوع</label><div class="chips" id="chips">${FREE_TOPICS.map((t,i)=>`<button class="chip" data-t="${esc(t)}" aria-pressed="${i===0}">${esc(t)}</button>`).join('')}</div><input type="text" id="ft" dir="ltr" placeholder="یا موضوع دلخواهت را بنویس…"></div>
     <div class="row"><button class="btn brand" id="go">${ic('mic')} شروع مکالمه</button></div>
@@ -605,11 +711,11 @@ function renderTalk(){
     <div class="toggles" style="margin-bottom:12px">
       <label><input type="checkbox" id="tg-auto" ${settings.autoplay?'checked':''}> پخش صدای معلم</label>
       <label><input type="checkbox" id="tg-fa" ${settings.showFa?'checked':''}> ترجمه فارسی</label>
-      <label><input type="checkbox" id="tg-hands" ${settings.hands?'checked':''}> دست‌آزاد (میکروفون خودکار)</label>
+      <label><input type="checkbox" id="tg-hands" ${settings.hands?'checked':''}> دست‌آزاد</label>
       <label>سرعت <select id="tg-rate" style="width:auto;padding:2px 8px"><option value="slow">آهسته</option><option value="normal">عادی</option><option value="fast">سریع</option></select></label></div>
     <div class="chat" id="chat" aria-live="polite"></div>
     <div id="report"></div>
-    <div class="composer"><div class="hint" id="hint">دکمه‌ی میکروفون را بزن و انگلیسی صحبت کن، یا در کادر تایپ کن.</div>
+    <div class="composer"><div class="hint">دکمه‌ی میکروفون را بزن و انگلیسی صحبت کن، یا تایپ کن.</div>
       <div class="cbox"><button class="mic ${listening?'rec':''}" id="mic" aria-label="میکروفون">${ic('mic')}</button><input type="text" id="msg" dir="ltr" placeholder="Say or type in English…" autocomplete="off"><button class="send" id="sendB" aria-label="ارسال">${ic('send')}</button></div></div>`;
   $('#tg-rate').value=settings.rate;
   $('#tg-auto').onchange=e=>{settings.autoplay=e.target.checked;store.set('zy_settings',settings)};
@@ -626,7 +732,7 @@ function renderTalk(){
 }
 function bubbleHTML(t){
   if(t.role==='ai')return `<div class="b ai"><div class="bt" dir="ltr">${esc(t.text)}</div>${settings.showFa&&t.fa?`<div class="fa">${esc(t.fa)}</div>`:''}<button class="mini" data-say="${esc(t.text)}" aria-label="پخش">${ic('vol')}</button></div>`;
-  return `<div class="b me"><div class="bt" dir="ltr">${esc(t.text)}</div></div>${t.err?'<div class="an">ارسال نشد. دوباره امتحان کنید.</div>':analysisHTML(t)}`;
+  return `<div class="b me"><div class="bt" dir="ltr">${esc(t.text)}</div></div>${t.err?'<div class="an">ارسال نشد.</div>':analysisHTML(t)}`;
 }
 function analysisHTML(t){
   if(t.pending)return `<div class="an"><span class="dots"><i></i><i></i><i></i></span> در حال تحلیل جمله‌ی تو…</div>`;
@@ -662,13 +768,13 @@ function toggleMic(){
   if(rec){listening=true;b&&b.classList.add('rec')}
 }
 async function endTalk(){
-  if(talk.count<1){toast('اول چند جمله صحبت کن، بعد گزارش بگیر.');return}
+  if(talk.count<1){toast('اول چند جمله صحبت کن.');return}
   if(talk.reporting)return;
   if('speechSynthesis' in window)speechSynthesis.cancel();rec&&rec.stop();
-  talk.reporting=true;$('#report').innerHTML=`<div class="card"><b>در حال تهیه‌ی گزارش…</b><div class="skel"></div><div class="skel" style="width:70%"></div></div>`;
-  const tr=talk.turns.map(t=>t.role==='ai'?'Tutor: '+t.text:'Learner: '+t.text+(t.an&&t.an.corrected&&norm(t.an.corrected)!==norm(t.text)?'  [corrected: '+t.an.corrected+']':'')).join('\n');
+  talk.reporting=true;$('#report').innerHTML=`<div class="card"><b>در حال تهیه‌ی گزارش…</b><div class="skel"></div></div>`;
+  const tr=talk.turns.map(t=>t.role==='ai'?'Tutor: '+t.text:'Learner: '+t.text).join('\n');
   try{
-    const raw=await callAI(`You are an English teacher writing a short session report for a Persian-speaking learner (target level ${talk.level}). Return ONLY valid JSON: {"summary_fa":string,"level_estimate":string,"strengths_fa":[string],"weak_points_fa":[string],"next_steps_fa":[string],"vocab_to_review":[{"en":string,"fa":string}]}. Be specific, kind and honest; all text Persian except English items.`,[{role:'user',content:tr}],1200);
+    const raw=await callAI(`You are an English teacher writing a short session report for a Persian-speaking learner (level ${talk.level}). Return ONLY valid JSON: {"summary_fa":string,"level_estimate":string,"strengths_fa":[string],"weak_points_fa":[string],"next_steps_fa":[string],"vocab_to_review":[{"en":string,"fa":string}]}.`, [{role:'user',content:tr}],1200);
     talk.report=parseJSON(raw);award(20);
     if(talk.unitId){const d=prog.done[talk.unitId]=prog.done[talk.unitId]||{};d.talk=true;saveProg()}
     talk.reporting=false;drawReport();
@@ -687,17 +793,17 @@ function drawReport(){
 
 /* ============ NOTEBOOK ============ */
 function renderNotes(){
-  let h=`<div class="row between"><div><h1>دفترچه اشتباهات</h1><p class="sub">همه‌ی اشتباه‌های مکالمه‌هایت اینجا جمع می‌شود تا مرور کنی.</p></div>
-  <div class="row"><button class="btn brand" id="drill" ${mistakes.length?'':'disabled'}>تمرین از اشتباهات من</button><button class="btn ghost" id="clr" ${mistakes.length?'':'disabled'}>پاک کردن</button></div></div>
+  let h=`<div class="row between"><div><h1>دفترچه اشتباهات</h1><p class="sub">همه‌ی اشتباه‌های مکالمه‌هایت.</p></div>
+  <div class="row"><button class="btn brand" id="drill" ${mistakes.length?'':'disabled'}>تمرین از اشتباهات</button><button class="btn ghost" id="clr" ${mistakes.length?'':'disabled'}>پاک کردن</button></div></div>
   <div id="drillBox" style="margin-top:16px"></div><div class="nb" style="margin-top:16px">`;
-  h+=mistakes.length?mistakes.map(m=>`<div class="nbi"><div class="row between"><span dir="ltr"><s style="color:var(--bad)">${esc(m.original)}</s> → <b style="color:var(--ok)">${esc(m.fix)}</b></span><button class="mini" data-say="${esc(m.fix)}" aria-label="پخش">${ic('vol')}</button></div><div>${esc(m.explain)}</div><div class="sub" style="font-size:.8rem">${esc(m.type)} · ${esc(m.level)} · ${esc(m.date)}</div></div>`).join(''):`<div class="card">هنوز اشتباهی ثبت نشده. در بخش «مکالمه با معلم» صحبت کن تا اینجا پر شود.</div>`;
+  h+=mistakes.length?mistakes.map(m=>`<div class="nbi"><div class="row between"><span dir="ltr"><s style="color:var(--bad)">${esc(m.original)}</s> → <b style="color:var(--ok)">${esc(m.fix)}</b></span><button class="mini" data-say="${esc(m.fix)}" aria-label="پخش">${ic('vol')}</button></div><div>${esc(m.explain)}</div><div class="sub" style="font-size:.8rem">${esc(m.type)} · ${esc(m.level)} · ${esc(m.date)}</div></div>`).join(''):`<div class="card">هنوز اشتباهی ثبت نشده.</div>`;
   $('#main').innerHTML=h+'</div>';
-  const c=$('#clr');if(c)c.onclick=()=>{if(confirm('همه‌ی اشتباهات پاک شود؟')){mistakes=[];store.set('zy_mistakes',mistakes);renderNotes()}};
+  const c=$('#clr');if(c)c.onclick=()=>{if(confirm('همه‌ی اشتباهات پاک شود؟')){mistakes=[];store.set('zy_mistakes',mistakes);schedulePushToCloud();renderNotes()}};
   const d=$('#drill');if(d)d.onclick=async()=>{
     const box=$('#drillBox');box.innerHTML=`<div class="card"><b>در حال ساخت تمرین…</b><div class="skel"></div></div>`;
     try{
       const src=mistakes.slice(0,15).map(m=>`wrong: ${m.original} | right: ${m.fix}`).join('\n');
-      const raw=await callAI(`Create 6 multiple-choice exercises that make a Persian-speaking English learner practise exactly these mistakes (new sentences, not copies). Return ONLY JSON: {"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}]} where answer is the 0-based index and why_fa is in Persian.`,[{role:'user',content:src}],2500);
+      const raw=await callAI(`Create 6 multiple-choice exercises that practise exactly these mistakes. Return ONLY JSON: {"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}]}.`, [{role:'user',content:src}],2500);
       const j=parseJSON(raw);
       box.innerHTML=`<div class="card"><h2>تمرین شخصی‌سازی‌شده</h2><div id="dq">${quizHTML(j.quiz)}</div></div>`;
       bindQuiz($('#dq'),j.quiz,(s,n)=>{award(s*2);$('.qres',$('#dq')).textContent=`نتیجه: ${fa(s)} از ${fa(n)}`});
@@ -708,33 +814,126 @@ function renderNotes(){
 /* ============ SETTINGS ============ */
 function renderSettings(){
   loadVoices();
-  $('#main').innerHTML=`<h1>تنظیمات</h1><div class="card stack" style="margin-top:14px">
-  <div class="field"><label for="k">کلید API از 1xai.ir</label><input type="password" id="k" dir="ltr" placeholder="1xai-..." value="${esc(settings.key)}" autocomplete="off"><span class="sub" style="font-size:.85rem">کلید فقط در مرورگر خودت ذخیره می‌شود و مستقیم به 1xai.ir فرستاده می‌شود. آن را هرگز داخل کد یا گیت‌هاب نگذار.</span></div>
-  <div class="field"><label for="p">آدرس پروکسی (اختیاری — برای رفع CORS)</label><input type="text" id="p" dir="ltr" placeholder="https://cors-1xai.USERNAME.workers.dev" value="${esc(settings.proxy||'')}" autocomplete="off"><span class="sub" style="font-size:.85rem">اگر خطای «Failed to fetch» گرفتی، آدرس Cloudflare Worker خودت را اینجا وارد کن. اگر خالی بگذاری، مستقیم به 1xai.ir وصل می‌شود.</span></div>
-  <div class="field"><label for="m">مدل</label><select id="m">
-    <option value="gpt-4o-mini">gpt-4o-mini (سریع و ارزان — پیشنهادی)</option>
-    <option value="gpt-4.1-mini">gpt-4.1-mini (قوی‌تر)</option>
-    <option value="gpt-3.5-turbo">gpt-3.5-turbo (اقتصادی)</option>
-    <option value="deepseek-chat">deepseek-chat (کیفیت بالا)</option>
-    <option value="deepseek-reasoner">deepseek-reasoner (استدلال عمیق)</option>
-    <option value="claude-3-5-haiku">claude-3-5-haiku (سریع)</option>
-    <option value="claude-sonnet-4-6">claude-sonnet-4-6 (قوی‌ترین)</option>
-    <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite (ارزان)</option>
-    <option value="gemini-2.5-flash">gemini-2.5-flash (متعادل)</option>
-  </select></div>
-  <div class="field"><label for="r">سرعت صحبت معلم</label><select id="r"><option value="slow">آهسته (مناسب مبتدی)</option><option value="normal">عادی</option><option value="fast">سریع</option></select></div>
-  <div class="field"><label for="v">صدای معلم</label><select id="v"><option value="">پیش‌فرض مرورگر</option>${voices.map(v=>`<option value="${esc(v.name)}">${esc(v.name)} (${esc(v.lang)})</option>`).join('')}</select></div>
-  <div class="row"><button class="btn brand" id="sv">ذخیره</button><button class="btn ghost" id="ts">آزمایش اتصال</button><button class="btn ghost" id="rs">پاک کردن پیشرفت</button></div></div>
-  <p class="sub" style="margin-top:14px">تشخیص گفتار در Chrome، Edge و Safari کار می‌کند و به HTTPS نیاز دارد (مثل GitHub Pages).</p>`;
+  const syncActive=syncEnabled;
+  $('#main').innerHTML=`<h1>تنظیمات</h1>
+
+  <div class="card stack" style="margin-top:14px">
+    <h3>هوش مصنوعی</h3>
+    <div class="field"><label for="k">کلید API از 1xai.ir</label><input type="password" id="k" dir="ltr" placeholder="1xai-..." value="${esc(settings.key)}" autocomplete="off"><span class="sub" style="font-size:.85rem">کلید فقط در همین مرورگر ذخیره می‌شود.</span></div>
+    <div class="field"><label for="p">آدرس پروکسی (Cloudflare Worker)</label><input type="text" id="p" dir="ltr" placeholder="https://cors-1xai.zarin-farm1.workers.dev" value="${esc(settings.proxy||'')}"><span class="sub" style="font-size:.82rem">آدرس Worker خودت را اینجا وارد کن.</span></div>
+    <div class="field"><label for="m">مدل</label><select id="m">
+      <option value="gpt-4o-mini">gpt-4o-mini (پیشنهادی)</option>
+      <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+      <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+      <option value="deepseek-chat">deepseek-chat</option>
+      <option value="deepseek-reasoner">deepseek-reasoner</option>
+      <option value="claude-3-5-haiku">claude-3-5-haiku</option>
+      <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
+      <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite</option>
+      <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+    </select></div>
+    <div class="field"><label for="r">سرعت صحبت معلم</label><select id="r"><option value="slow">آهسته</option><option value="normal">عادی</option><option value="fast">سریع</option></select></div>
+    <div class="field"><label for="v">صدای معلم</label><select id="v"><option value="">پیش‌فرض مرورگر</option>${voices.map(v=>`<option value="${esc(v.name)}">${esc(v.name)} (${esc(v.lang)})</option>`).join('')}</select></div>
+    <div class="row"><button class="btn brand" id="sv">ذخیره</button><button class="btn ghost" id="ts">آزمایش اتصال</button></div>
+  </div>
+
+  <div class="card stack" style="margin-top:16px">
+    <h3>☁️ همگام‌سازی خودکار (Cloudflare)</h3>
+    <p class="sub" style="font-size:.88rem">یک «کد همگام‌سازی» دلخواه انتخاب کن. هر دستگاهی که همین کد رو وارد کنه، پیشرفتت رو می‌بینه.</p>
+    <div class="field"><label for="sc">کد همگام‌سازی</label><input type="password" id="sc" dir="ltr" placeholder="مثلاً: ali-zabanyar-1400-secret" value="${esc(settings.syncCode||'')}"><span class="sub" style="font-size:.82rem">حداقل ۸ کاراکتر. هر چی طولانی‌تر و تصادفی‌تر، امن‌تر.</span></div>
+    <label class="check-row" style="display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="sa" ${settings.syncAuto?'checked':''}> ذخیره‌ی خودکار در ابر (بعد از هر تغییر)</label>
+    <div class="row">
+      <button class="btn brand" id="scActivate">${syncActive?'به‌روزرسانی':'فعال‌سازی'}</button>
+      <button class="btn ghost" id="scPull">دریافت از ابر</button>
+      <button class="btn ghost" id="scPush">ارسال به ابر</button>
+    </div>
+    <div class="sync-status" style="margin-top:8px"><span class="sync-dot ${syncActive?'on':'off'}"></span>${syncActive?'همگام‌سازی فعال است':'غیرفعال'}</div>
+  </div>
+
+  <div class="card stack" style="margin-top:16px">
+    <h3>📤 صادرات / واردات پیشرفت</h3>
+    <p class="sub" style="font-size:.88rem">پیشرفت را به‌صورت یک کد متنی بگیر و در دستگاه دیگر وارد کن. (بدون نیاز به اینترنت)</p>
+    <div class="row"><button class="btn brand" id="exBtn">صادرات پیشرفت</button><button class="btn ghost" id="imBtn">واردات پیشرفت</button></div>
+    <div id="exBox" style="display:none"><div class="field"><label>کد صادرات (کپی کن)</label><textarea id="exText" readonly></textarea></div><button class="btn ghost" id="exCopy">کپی در کلیپ‌بورد</button></div>
+    <div id="imBox" style="display:none"><div class="field"><label>کد واردات را پیست کن</label><textarea id="imText" placeholder="کد را اینجا پیست کن..."></textarea></div><button class="btn brand" id="imGo">وارد کردن</button></div>
+  </div>
+
+  <div class="card stack" style="margin-top:16px">
+    <h3>🗑 پاک کردن داده‌ها</h3>
+    <div class="row"><button class="btn ghost" id="rs">پاک کردن پیشرفت محلی</button></div>
+  </div>
+
+  <p class="sub" style="margin-top:14px">تشخیص گفتار در Chrome، Edge و Safari کار می‌کند و به HTTPS نیاز دارد.</p>`;
+
   $('#m').value=settings.model;$('#r').value=settings.rate;$('#v').value=settings.voice;
-  const save=()=>{settings.key=$('#k').value.trim();settings.model=$('#m').value;settings.rate=$('#r').value;settings.voice=$('#v').value;settings.proxy=$('#p').value.trim();store.set('zy_settings',settings)};
+  const save=()=>{
+    settings.key=$('#k').value.trim();
+    settings.model=$('#m').value;
+    settings.rate=$('#r').value;
+    settings.voice=$('#v').value;
+    settings.proxy=$('#p').value.trim();
+    settings.syncCode=$('#sc').value.trim();
+    settings.syncAuto=$('#sa').checked;
+    store.set('zy_settings',settings);
+  };
   $('#sv').onclick=()=>{save();toast('ذخیره شد.')};
   $('#ts').onclick=async()=>{save();try{await callAI('Reply with the single word: ok',[{role:'user',content:'ping'}],20);toast('اتصال موفق بود. ✅')}catch(e){toast(errText(e),6000)}};
-  $('#rs').onclick=()=>{if(confirm('امتیاز، پیشرفت و درس‌های ذخیره‌شده پاک شود؟')){prog={xp:0,streak:0,last:'',done:{}};lessonCache={};store.set('zy_lessons',{});saveProg();toast('پاک شد.')}};
+
+  // Sync
+  const sca=$('#scActivate');
+  if(sca)sca.onclick=async()=>{
+    save();
+    if(!settings.proxy){toast('اول آدرس پروکسی (Cloudflare Worker) را وارد کن.');return}
+    if(!settings.syncCode||settings.syncCode.length<8){toast('کد همگام‌سازی باید حداقل ۸ کاراکتر باشد.');return}
+    syncEnabled=false;
+    if(await initSync()){
+      toast('در حال بارگذاری از ابر...');
+      await pullFromCloud(true);
+      toast('همگام‌سازی فعال شد. ✅');
+      renderSettings();
+    }else{
+      toast('خطا در فعال‌سازی همگام‌سازی.');
+    }
+  };
+  const scp=$('#scPull');
+  if(scp)scp.onclick=async()=>{save();if(!syncEnabled&&!await initSync()){toast('ابتدا همگام‌سازی را فعال کن.');return}await pullFromCloud();renderSettings()};
+  const scpush=$('#scPush');
+  if(scpush)scpush.onclick=async()=>{save();if(!syncEnabled&&!await initSync()){toast('ابتدا همگام‌سازی را فعال کن.');return}await pushToCloud();toast('به ابر فرستاده شد. ✅')};
+  const sa=$('#sa');
+  if(sa)sa.onchange=()=>{settings.syncAuto=sa.checked;store.set('zy_settings',settings)};
+
+  // Export/Import
+  $('#exBtn').onclick=()=>{
+    try{const b64=exportData();$('#exText').value=b64;$('#exBox').style.display='block';$('#imBox').style.display='none'}
+    catch(e){toast('خطا: '+e.message)}
+  };
+  $('#imBtn').onclick=()=>{$('#imBox').style.display='block';$('#exBox').style.display='none';$('#imText').value=''};
+  const ec=$('#exCopy');if(ec)ec.onclick=async()=>{const t=$('#exText');t.select();try{await navigator.clipboard.writeText(t.value);toast('کپی شد. ✅')}catch(e){document.execCommand('copy');toast('کپی شد. ✅')}};
+  const ig=$('#imGo');if(ig)ig.onclick=()=>{
+    try{
+      const b64=$('#imText').value.trim();
+      if(!b64){toast('کد خالی است.');return}
+      if(!confirm('پیشرفت فعلی جایگزین شود؟'))return;
+      importData(b64);schedulePushToCloud();
+      toast('واردات موفق بود. ✅');updateStats();go('path');
+    }catch(e){toast('کد نامعتبر: '+e.message,5000)}
+  };
+
+  $('#rs').onclick=()=>{if(confirm('پیشرفت محلی پاک شود؟ (داده‌ی ابر دست‌نخورده می‌ماند)')){prog={xp:0,streak:0,last:'',done:{}};lessonCache={};store.set('zy_lessons',{});saveProg();toast('پاک شد.')}};
+
+  updateSyncUI();
 }
 
 /* ============ init ============ */
 updateStats();go('path');
+if(settings.proxy&&settings.syncCode){
+  (async()=>{
+    if(await initSync()){
+      // کشیدن از ابر در پس‌زمینه (بدون toast)
+      await pullFromCloud(true);
+    }
+  })();
+}
 </script>
 </body>
 </html>
