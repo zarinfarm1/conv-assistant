@@ -32,7 +32,6 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .wrap{max-width:920px;margin:0 auto;padding:0 16px}
 
-/* header */
 .top{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 .bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0 6px}
 .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.2rem}
@@ -64,10 +63,8 @@ h2{font-size:1.15rem;font-weight:700;margin-bottom:10px}
 .pill.warn{background:var(--accent-soft);color:#a86d00}
 @media (prefers-color-scheme:dark){.pill.warn{color:var(--accent)}}
 
-/* banner */
 .banner{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:14px 18px;border-radius:var(--r-md);background:var(--accent-soft);border:1px solid var(--accent);margin-bottom:18px}
 
-/* path */
 .levels{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin:14px 0 18px}
 .lv{min-width:104px;padding:10px 14px;border-radius:var(--r-md);background:var(--card);border:1.5px solid var(--line);text-align:center}
 .lv b{display:block;font:600 1.15rem 'Lexend',sans-serif}
@@ -83,7 +80,6 @@ h2{font-size:1.15rem;font-weight:700;margin-bottom:10px}
 .unit .f{font-size:.85rem;color:var(--muted)}
 .unit .st{margin-inline-start:auto;font-size:.75rem;color:var(--muted);text-align:end}
 
-/* lesson */
 .lh{margin:10px 0 18px}
 .lvl{display:inline-block;padding:0 12px;border-radius:8px;background:var(--accent);color:#3b2a00;font:600 .9rem 'Lexend',sans-serif;margin-bottom:8px}
 .steps{display:flex;gap:8px;margin-bottom:18px}
@@ -109,7 +105,6 @@ h2{font-size:1.15rem;font-weight:700;margin-bottom:10px}
 .ex-item{padding:8px 0;border-bottom:1px dashed var(--line)}
 .ex-item:last-child{border:0}
 
-/* quiz */
 .q{padding:14px 0;border-bottom:1px solid var(--line)}
 .q:last-of-type{border:0}
 .qt{font-weight:600;margin-bottom:10px}
@@ -122,7 +117,6 @@ h2{font-size:1.15rem;font-weight:700;margin-bottom:10px}
 .why{font-size:.9rem;color:var(--muted);margin-top:8px}
 .qres{margin-top:12px;font-weight:700}
 
-/* talk */
 .tstart{display:grid;gap:16px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{padding:6px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);font-family:'Lexend','Vazirmatn',sans-serif;font-size:.9rem}
@@ -167,7 +161,6 @@ input[type=text],input[type=password],select{width:100%;padding:10px 14px;border
 .report h2{margin-top:14px}
 .report ul{margin-inline-start:20px}
 
-/* notebook */
 .nb{display:grid;gap:10px}
 .nbi{padding:12px 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md)}
 
@@ -230,7 +223,7 @@ function lev(a,b){const m=a.length,n=b.length,d=Array.from({length:m+1},(_,i)=>[
 const sim=(a,b)=>1-lev(a,b)/Math.max(a.length,b.length,1);
 
 /* ============ state ============ */
-let settings=Object.assign({key:'',model:'gpt-4o-mini',rate:'slow',voice:'',hands:false,autoplay:true,showFa:true},store.get('zy_settings',{}));
+let settings=Object.assign({key:'',model:'gpt-4o-mini',rate:'slow',voice:'',hands:false,autoplay:true,showFa:true,proxy:''},store.get('zy_settings',{}));
 let prog=Object.assign({xp:0,streak:0,last:'',done:{}},store.get('zy_prog',{}));
 let lessonCache=store.get('zy_lessons',{});
 let mistakes=store.get('zy_mistakes',[]);
@@ -358,10 +351,11 @@ quiz:[
  {q:'Choose the correct sentence:',options:['I from Iran.','Am from Iran.','I is from Iran.','I am from Iran.'],answer:3,why_fa:'ساختار درست: I + am + from + مکان.'}],
 speaking_goal:'خودت را معرفی کن: اسم، کشور و حالت را بگو. سپس از معلم سؤال کن.'};
 
-/* ============ 1xai API (OpenAI-compatible) ============ */
+/* ============ 1xai API (via optional CORS proxy) ============ */
 async function callAI(system,messages,max=1500){
   if(!settings.key)throw new Error('NOKEY');
-  const r=await fetch('https://1xai.ir/v1/chat/completions',{
+  const baseUrl=(settings.proxy&&settings.proxy.trim())?settings.proxy.trim().replace(/\/+$/,''):'https://1xai.ir';
+  const r=await fetch(baseUrl+'/v1/chat/completions',{
     method:'POST',
     headers:{
       'Content-Type':'application/json',
@@ -385,7 +379,11 @@ async function callAI(system,messages,max=1500){
   return (d.choices?.[0]?.message?.content||'').trim();
 }
 function parseJSON(t){t=t.replace(/```json|```/g,'');const a=t.indexOf('{'),b=t.lastIndexOf('}');if(a<0||b<0)throw new Error('bad json');return JSON.parse(t.slice(a,b+1))}
-function errText(e){return e.message==='NOKEY'?'اول کلید API را در «تنظیمات» وارد کنید.':'خطا در ارتباط با هوش مصنوعی: '+e.message}
+function errText(e){
+  if(e.message==='NOKEY')return 'اول کلید API را در «تنظیمات» وارد کنید.';
+  if(e.message==='Failed to fetch'||/Failed to fetch/i.test(e.message))return 'اتصال به سرور برقرار نشد. اگر از ایران استفاده می‌کنید، آدرس پروکسی (Cloudflare Worker) را در تنظیمات وارد کنید.';
+  return 'خطا در ارتباط با هوش مصنوعی: '+e.message;
+}
 
 /* ============ speech ============ */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -712,11 +710,13 @@ function renderSettings(){
   loadVoices();
   $('#main').innerHTML=`<h1>تنظیمات</h1><div class="card stack" style="margin-top:14px">
   <div class="field"><label for="k">کلید API از 1xai.ir</label><input type="password" id="k" dir="ltr" placeholder="1xai-..." value="${esc(settings.key)}" autocomplete="off"><span class="sub" style="font-size:.85rem">کلید فقط در مرورگر خودت ذخیره می‌شود و مستقیم به 1xai.ir فرستاده می‌شود. آن را هرگز داخل کد یا گیت‌هاب نگذار.</span></div>
+  <div class="field"><label for="p">آدرس پروکسی (اختیاری — برای رفع CORS)</label><input type="text" id="p" dir="ltr" placeholder="https://cors-1xai.USERNAME.workers.dev" value="${esc(settings.proxy||'')}" autocomplete="off"><span class="sub" style="font-size:.85rem">اگر خطای «Failed to fetch» گرفتی، آدرس Cloudflare Worker خودت را اینجا وارد کن. اگر خالی بگذاری، مستقیم به 1xai.ir وصل می‌شود.</span></div>
   <div class="field"><label for="m">مدل</label><select id="m">
     <option value="gpt-4o-mini">gpt-4o-mini (سریع و ارزان — پیشنهادی)</option>
     <option value="gpt-4.1-mini">gpt-4.1-mini (قوی‌تر)</option>
-    <option value="deepseek-chat">deepseek-chat (کیفیت بالا، قیمت مناسب)</option>
-    <option value="deepseek-reasoner">deepseek-reasoner (استدلال عمیق‌تر)</option>
+    <option value="gpt-3.5-turbo">gpt-3.5-turbo (اقتصادی)</option>
+    <option value="deepseek-chat">deepseek-chat (کیفیت بالا)</option>
+    <option value="deepseek-reasoner">deepseek-reasoner (استدلال عمیق)</option>
     <option value="claude-3-5-haiku">claude-3-5-haiku (سریع)</option>
     <option value="claude-sonnet-4-6">claude-sonnet-4-6 (قوی‌ترین)</option>
     <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite (ارزان)</option>
@@ -727,9 +727,9 @@ function renderSettings(){
   <div class="row"><button class="btn brand" id="sv">ذخیره</button><button class="btn ghost" id="ts">آزمایش اتصال</button><button class="btn ghost" id="rs">پاک کردن پیشرفت</button></div></div>
   <p class="sub" style="margin-top:14px">تشخیص گفتار در Chrome، Edge و Safari کار می‌کند و به HTTPS نیاز دارد (مثل GitHub Pages).</p>`;
   $('#m').value=settings.model;$('#r').value=settings.rate;$('#v').value=settings.voice;
-  const save=()=>{settings.key=$('#k').value.trim();settings.model=$('#m').value;settings.rate=$('#r').value;settings.voice=$('#v').value;store.set('zy_settings',settings)};
+  const save=()=>{settings.key=$('#k').value.trim();settings.model=$('#m').value;settings.rate=$('#r').value;settings.voice=$('#v').value;settings.proxy=$('#p').value.trim();store.set('zy_settings',settings)};
   $('#sv').onclick=()=>{save();toast('ذخیره شد.')};
-  $('#ts').onclick=async()=>{save();try{await callAI('Reply with the single word: ok',[{role:'user',content:'ping'}],20);toast('اتصال موفق بود.')}catch(e){toast(errText(e),6000)}};
+  $('#ts').onclick=async()=>{save();try{await callAI('Reply with the single word: ok',[{role:'user',content:'ping'}],20);toast('اتصال موفق بود. ✅')}catch(e){toast(errText(e),6000)}};
   $('#rs').onclick=()=>{if(confirm('امتیاز، پیشرفت و درس‌های ذخیره‌شده پاک شود؟')){prog={xp:0,streak:0,last:'',done:{}};lessonCache={};store.set('zy_lessons',{});saveProg();toast('پاک شد.')}};
 }
 
