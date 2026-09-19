@@ -1,264 +1,3 @@
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>زبان‌یار — آموزش انگلیسی با معلم صوتی هوش مصنوعی</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&family=Vazirmatn:wght@400;500;700;800&display=swap" rel="stylesheet">
-<style>
-:root{
-  --bg:#e9f1f1; --card:#ffffff; --ink:#14213d; --muted:#5b6b80; --line:#cddada;
-  --brand:#0e9a9a; --brand-soft:#d5efef; --brand-ink:#ffffff;
-  --accent:#f2b134; --accent-soft:#fdf0d0;
-  --ok:#23906a; --ok-soft:#d8f1e6; --bad:#d64550; --bad-soft:#fbe0e2;
-  --job:#6c4ad6; --job-soft:#eae4fb;
-  --prog:#c2410c; --prog-soft:#ffedd5;
-  --r-lg:22px; --r-md:14px; --r-sm:9px;
-}
-@media (prefers-color-scheme:dark){
-  :root{
-    --bg:#0c1524; --card:#142038; --ink:#eaf0f7; --muted:#93a3ba; --line:#243554;
-    --brand:#2bc0bf; --brand-soft:#123a45; --brand-ink:#06222a;
-    --accent:#f5be55; --accent-soft:#3a2f14;
-    --ok:#4cc494; --ok-soft:#12352b; --bad:#f2808a; --bad-soft:#3a1a22;
-    --job:#a48cf0; --job-soft:#2a2352;
-    --prog:#fb923c; --prog-soft:#3a2414;
-  }
-}
-*{box-sizing:border-box;margin:0}
-html{-webkit-text-size-adjust:100%}
-body{font-family:'Vazirmatn',system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);line-height:1.8;min-height:100vh}
-.en,[dir=ltr]{font-family:'Lexend','Vazirmatn',system-ui,sans-serif;line-height:1.6}
-button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.wrap{max-width:920px;margin:0 auto;padding:0 16px}
-.top{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0 6px}
-.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.2rem}
-.logo i{display:grid;place-items:center;width:38px;height:38px;border-radius:12px 12px 12px 4px;background:linear-gradient(135deg,var(--brand),#1b4f9c);color:#fff;font:600 1rem 'Lexend',sans-serif;font-style:normal}
-.stats{display:flex;gap:8px;flex-wrap:wrap}
-.stat{display:flex;align-items:center;gap:6px;padding:3px 12px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:.85rem;font-weight:500}
-.stat b{color:var(--brand)}
-.tabs{display:flex;gap:4px;overflow-x:auto;padding:4px 0 10px;scrollbar-width:none}
-.tab{display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;color:var(--muted);font-weight:500;white-space:nowrap}
-.tab[aria-current=true]{background:var(--ink);color:var(--bg)}
-main{padding:22px 0 60px}
-h1{font-size:1.6rem;font-weight:800;line-height:1.4}
-h2{font-size:1.15rem;font-weight:700;margin-bottom:10px}
-h3{font-size:1rem;font-weight:700;margin-bottom:8px;color:var(--brand)}
-.sub{color:var(--muted)}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px}
-.stack>*+*{margin-top:16px}
-.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.between{justify-content:space-between}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px;border-radius:999px;background:var(--ink);color:var(--bg);font-weight:700}
-.btn.brand{background:var(--brand);color:var(--brand-ink)}
-.btn.job{background:var(--job);color:#fff}
-.btn.prog{background:var(--prog);color:#fff}
-.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.link{color:var(--brand);font-weight:600;padding:4px 0}
-.mini{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--brand-soft);color:var(--brand);flex:none}
-.mini.rec{background:var(--bad);color:#fff;animation:pulse 1.2s infinite}
-.pill{display:inline-block;padding:1px 12px;border-radius:999px;font-size:.82rem;font-weight:700}
-.pill.ok{background:var(--ok-soft);color:var(--ok)}
-.pill.warn{background:var(--accent-soft);color:#a86d00}
-.pill.job{background:var(--job-soft);color:var(--job)}
-.pill.prog{background:var(--prog-soft);color:var(--prog)}
-.banner{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:14px 18px;border-radius:var(--r-md);background:var(--accent-soft);border:1px solid var(--accent);margin-bottom:18px}
-
-/* Program (8 weeks) */
-.week-nav{display:flex;gap:6px;overflow-x:auto;padding:4px 0 12px;scrollbar-width:none}
-.week-tab{min-width:80px;padding:8px 12px;border-radius:12px;background:var(--card);border:1.5px solid var(--line);text-align:center;flex:none;transition:all .15s}
-.week-tab b{display:block;font-size:1.1rem;font-family:'Lexend',sans-serif}
-.week-tab small{font-size:.72rem;color:var(--muted)}
-.week-tab[aria-pressed=true]{background:var(--prog);border-color:var(--prog);color:#fff}
-.week-tab[aria-pressed=true] small{color:rgba(255,255,255,.85)}
-.week-tab.done{background:var(--ok-soft);border-color:var(--ok)}
-.week-tab.done[aria-pressed=true]{background:var(--prog);border-color:var(--prog);color:#fff}
-
-.week-head{padding:16px 18px;border-radius:var(--r-md);background:linear-gradient(135deg,var(--prog),#a83a00);color:#fff;margin-bottom:16px}
-.week-head h2{color:#fff;margin:0 0 4px;font-size:1.2rem}
-.week-head p{margin:0;font-size:.9rem;opacity:.9}
-.week-head .prog-bar{margin-top:12px;height:6px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden}
-.week-head .prog-bar i{display:block;height:100%;background:#fff;transition:width .3s}
-
-.week-section{margin-top:16px}
-.week-section h3{color:var(--prog);display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.task-list{display:flex;flex-direction:column;gap:8px}
-.task{display:flex;gap:12px;align-items:center;padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);text-align:start;cursor:pointer;transition:all .15s}
-.task:hover{border-color:var(--prog);transform:translateX(-2px)}
-.task.done{background:var(--ok-soft);border-color:var(--ok)}
-.task .tick{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;flex:none;font-size:.85rem;color:transparent}
-.task.done .tick{background:var(--ok);border-color:var(--ok);color:#fff}
-.task .body{flex:1;min-width:0}
-.task .tt{font-weight:600;font-size:.95rem}
-.task .td{font-size:.82rem;color:var(--muted);margin-top:2px}
-.task .badge{font-size:.7rem;padding:2px 8px;border-radius:8px;background:var(--prog-soft);color:var(--prog);font-weight:600;flex:none}
-.task .badge.lv{background:var(--brand-soft);color:var(--brand)}
-.task .badge.jb{background:var(--job-soft);color:var(--job)}
-
-.schedule{padding:14px 16px;background:var(--prog-soft);border-radius:var(--r-md);margin-top:8px}
-.schedule ul{margin:6px 0 0 18px;padding:0}
-.schedule li{margin-bottom:4px;font-size:.9rem}
-
-.levels{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin:14px 0 18px}
-.lv{min-width:104px;padding:10px 14px;border-radius:var(--r-md);background:var(--card);border:1.5px solid var(--line);text-align:center}
-.lv b{display:block;font:600 1.15rem 'Lexend',sans-serif}
-.lv small{color:var(--muted)}
-.lv[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
-.units{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-.unit{display:flex;gap:14px;align-items:center;text-align:start;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);transition:border-color .15s}
-.unit:hover{border-color:var(--brand)}
-.unit .n{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--brand-soft);color:var(--brand);font:600 1rem 'Lexend',sans-serif;flex:none}
-.unit.done .n{background:var(--ok);color:#fff}
-.unit .t{font:500 1rem 'Lexend',sans-serif;line-height:1.4}
-.unit .f{font-size:.85rem;color:var(--muted)}
-.unit .st{margin-inline-start:auto;font-size:.75rem;color:var(--muted);text-align:end}
-
-.lh{margin:10px 0 18px}
-.lvl{display:inline-block;padding:0 12px;border-radius:8px;background:var(--accent);color:#3b2a00;font:600 .9rem 'Lexend',sans-serif;margin-bottom:8px}
-.steps{display:flex;gap:8px;margin-bottom:18px}
-.stp{flex:1;padding:10px;border-radius:var(--r-md);background:var(--card);border:1.5px solid var(--line);font-weight:600;text-align:center;color:var(--muted)}
-.stp[aria-current=true]{border-color:var(--brand);color:var(--brand);background:var(--brand-soft)}
-.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
-.vc{padding:14px 16px;border-radius:var(--r-md);background:var(--bg);border:1px solid var(--line)}
-.vc .w{font:600 1.2rem 'Lexend',sans-serif}
-.vc .say{color:var(--brand);font-size:.9rem}
-.vc .ex{margin-top:6px;font-size:.92rem}
-.vc .exfa{color:var(--muted);font-size:.85rem}
-.pr{font-size:.85rem;min-height:1.4em}
-.pr.ok{color:var(--ok)} .pr.no{color:var(--bad)}
-.rules li{margin-inline-start:20px;margin-bottom:6px}
-.rules li span{font-family:'Lexend',sans-serif}
-.pre{white-space:pre-line}
-.dl{display:flex;flex-direction:column;gap:8px}
-.dline{display:flex;gap:10px;align-items:flex-start;max-width:88%}
-.dline.b{align-self:flex-end;flex-direction:row-reverse}
-.dline .bub{padding:8px 14px;border-radius:16px;background:var(--brand-soft)}
-.dline.b .bub{background:var(--accent-soft)}
-.dline .fa{font-size:.85rem;color:var(--muted)}
-.ex-item{padding:8px 0;border-bottom:1px dashed var(--line)}
-.ex-item:last-child{border:0}
-.q{padding:14px 0;border-bottom:1px solid var(--line)}
-.q:last-of-type{border:0}
-.qt{font-weight:600;margin-bottom:10px}
-.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
-.opt{padding:10px 14px;border:1.5px solid var(--line);border-radius:var(--r-sm);text-align:start;background:var(--card)}
-.opt:hover{border-color:var(--brand)}
-.q.done .opt{cursor:default}
-.opt.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
-.opt.bad{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
-.why{font-size:.9rem;color:var(--muted);margin-top:8px}
-.qres{margin-top:12px;font-weight:700}
-.tstart{display:grid;gap:16px}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{padding:6px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);font-family:'Lexend','Vazirmatn',sans-serif;font-size:.9rem}
-.chip[aria-pressed=true]{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
-.field{display:grid;gap:6px}
-.field label{font-weight:600;font-size:.92rem}
-input[type=text],input[type=password],input[type=email],select,textarea{width:100%;padding:10px 14px;border-radius:var(--r-sm);border:1.5px solid var(--line);background:var(--card);color:var(--ink);font:inherit}
-textarea{min-height:80px;resize:vertical;font-family:monospace;font-size:.85rem;line-height:1.5}
-.thead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-.chat{display:flex;flex-direction:column;gap:10px;padding-bottom:18px}
-.b{max-width:88%;padding:10px 16px;border-radius:20px;position:relative}
-.b.ai{align-self:flex-end;background:var(--card);border:1px solid var(--line);border-end-end-radius:6px}
-.b.me{align-self:flex-start;background:var(--brand);color:var(--brand-ink);border-end-start-radius:6px}
-.b.job-ai{align-self:flex-start;background:var(--job-soft);border:1px solid var(--job);border-end-start-radius:6px;color:var(--ink)}
-.b.job-me{align-self:flex-end;background:var(--job);color:#fff;border-end-end-radius:6px}
-.b .bt{font-size:1.05rem}
-.b .fa{font-size:.85rem;color:var(--muted);margin-top:2px}
-.b.job-ai .fa{color:#7a6ba8}
-.b .mini{margin-top:6px}
-.an{align-self:flex-start;width:min(100%,600px);padding:12px 16px;border-radius:var(--r-md);background:var(--card);border:1px solid var(--line);border-inline-start:4px solid var(--accent);font-size:.92rem}
-.an-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
-.sc{display:inline-flex;gap:6px;align-items:center;padding:0 10px;border-radius:8px;background:var(--bg);font-size:.8rem}
-.sc b{font-family:'Lexend',sans-serif}
-.fix{display:flex;gap:8px;align-items:center;color:var(--ok);font-weight:500;margin:6px 0}
-.mk{margin:8px 0;padding:8px 12px;border-radius:var(--r-sm);background:var(--bad-soft)}
-.mk s{color:var(--bad)} .mk b{color:var(--ok)}
-.mk .ty{font-size:.75rem;color:var(--muted)}
-.better{margin:8px 0;padding:8px 12px;border-radius:var(--r-sm);background:var(--brand-soft)}
-.better small{color:var(--muted);display:block}
-.tip{margin-top:8px;color:var(--muted)}
-.nw{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.nw span{padding:0 10px;border-radius:8px;background:var(--accent-soft);font-size:.85rem}
-.dots{display:inline-flex;gap:4px;vertical-align:middle}
-.dots i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite}
-.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
-.composer{position:sticky;bottom:0;padding:14px 0 calc(14px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 24%)}
-.cbox{display:flex;gap:10px;align-items:center;padding:8px;border-radius:999px;background:var(--card);border:1.5px solid var(--line);box-shadow:0 6px 24px rgba(20,33,61,.12)}
-.cbox input{border:0;background:transparent;padding:8px 12px}
-.mic{display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:var(--brand);color:var(--brand-ink);flex:none;transition:transform .15s}
-.mic.job-mic{background:var(--job)}
-.mic .ic{width:26px;height:26px}
-.mic.rec{background:var(--bad);color:#fff;animation:ring 1.4s infinite}
-.send{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--ink);color:var(--bg);flex:none}
-.hint{text-align:center;color:var(--muted);font-size:.82rem;margin-bottom:8px}
-.toggles{display:flex;gap:14px;flex-wrap:wrap;font-size:.88rem}
-.toggles label{display:flex;gap:6px;align-items:center;cursor:pointer}
-.report h2{margin-top:14px}
-.report ul{margin-inline-start:20px}
-.nb{display:grid;gap:10px}
-.nbi{padding:12px 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md)}
-.sync-status{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--r-sm);background:var(--bg);border:1px solid var(--line);font-size:.9rem}
-.sync-dot{width:10px;height:10px;border-radius:50%;flex:none}
-.sync-dot.on{background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
-.sync-dot.off{background:var(--muted)}
-.sync-dot.pending{background:var(--accent);animation:pulse 1.2s infinite}
-.skel{height:14px;border-radius:7px;background:linear-gradient(90deg,var(--line),var(--bg),var(--line));background-size:200% 100%;animation:sh 1.3s infinite;margin:10px 0}
-.toast{position:fixed;inset-inline:16px;bottom:96px;max-width:440px;margin:auto;padding:12px 18px;border-radius:var(--r-md);background:var(--ink);color:var(--bg);z-index:60;font-size:.92rem;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-@keyframes pulse{50%{opacity:.7}}
-@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
-@keyframes sh{to{background-position:-200% 0}}
-@keyframes ring{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--bad) 55%,transparent)}100%{box-shadow:0 0 0 22px transparent}}
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-</style>
-</head>
-<body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
-<symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3"/></symbol>
-<symbol id="i-vol" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></symbol>
-<symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></symbol>
-<symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
-<symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"/><path d="M6.5 17a2.5 2.5 0 0 0 0 5H20v-5"/></symbol>
-<symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
-<symbol id="i-note" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></symbol>
-<symbol id="i-set" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
-<symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
-<symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
-<symbol id="i-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
-<symbol id="i-tool" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
-<symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></symbol>
-<symbol id="i-play" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></symbol>
-<symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
-<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
-</defs></svg>
-
-<header class="top"><div class="wrap">
-  <div class="bar">
-    <div class="logo"><i>Aa</i><span>زبان‌یار</span></div>
-    <div class="stats">
-      <div class="stat" title="امتیاز">امتیاز <b id="xp">۰</b></div>
-      <div class="stat" title="روزهای پیاپی">روز پیاپی <b id="streak">۰</b></div>
-      <div class="stat" id="syncBadge" title="همگام‌سازی" style="display:none"><span class="sync-dot off" id="syncDot"></span><b id="syncLabel">آفلاین</b></div>
-    </div>
-  </div>
-  <nav class="tabs" aria-label="بخش‌ها">
-    <button class="tab" data-v="program"><svg class="ic"><use href="#i-cal"/></svg>برنامه من</button>
-    <button class="tab" data-v="path"><svg class="ic"><use href="#i-book"/></svg>درس‌ها</button>
-    <button class="tab" data-v="job"><svg class="ic"><use href="#i-briefcase"/></svg>حالت شغلی</button>
-    <button class="tab" data-v="talk"><svg class="ic"><use href="#i-chat"/></svg>مکالمه آزاد</button>
-    <button class="tab" data-v="notes"><svg class="ic"><use href="#i-note"/></svg>دفترچه</button>
-    <button class="tab" data-v="settings"><svg class="ic"><use href="#i-set"/></svg>تنظیمات</button>
-  </nav>
-</div></header>
-
-<main class="wrap" id="main"></main>
-
 <script>
 'use strict';
 /* ============ helpers ============ */
@@ -285,7 +24,15 @@ let settings=Object.assign({
   key:'',model:'gpt-4o-mini',rate:'slow',voice:'',hands:false,autoplay:true,showFa:true,
   proxy:'',syncCode:'',syncAuto:true,jobAnalyze:true,jobShowFa:true
 },store.get('zy_settings',{}));
-let prog=Object.assign({xp:0,streak:0,last:'',done:{},program:{}},store.get('zy_prog',{}));
+
+// FIX 3: مطمئن شو prog.program همیشه وجود دارد
+const savedProg=store.get('zy_prog',{});
+let prog=Object.assign({xp:0,streak:0,last:'',done:{},program:{}},savedProg);
+if(!prog.program||typeof prog.program!=='object') prog.program={};
+if(!prog.done||typeof prog.done!=='object') prog.done={};
+// ذخیره‌ی نسخه‌ی مهاجرت‌شده
+store.set('zy_prog',prog);
+
 let lessonCache=store.get('zy_lessons',{});
 let mistakes=store.get('zy_mistakes',[]);
 let view='program', pathLevel='A1', lessonCtx=null;
@@ -294,7 +41,12 @@ let talk={started:false,level:'A1',topic:'',focus:'',unitId:null,history:[],turn
 let job={view:'cats',catId:null,scenario:null,history:[],turns:[],busy:false,count:0,done:false};
 let listening=false, rec=null;
 
-function saveProg(){store.set('zy_prog',prog);updateStats();schedulePushToCloud()}
+function saveProg(){
+  if(!prog.program) prog.program={};
+  store.set('zy_prog',prog);
+  updateStats();
+  schedulePushToCloud();
+}
 function updateStats(){$('#xp').textContent=fa(prog.xp);$('#streak').textContent=fa(prog.streak)}
 function award(n){
   prog.xp+=n;
@@ -342,7 +94,7 @@ async function pullFromCloud(silent){
     if(r.status===404){await pushToCloud();if(!silent)toast('پیشرفت محلی به ابر فرستاده شد ✅');return true}
     if(!r.ok)throw new Error('HTTP '+r.status);
     const d=await r.json();
-    if(d.prog){prog=d.prog;store.set('zy_prog',prog);updateStats()}
+    if(d.prog){prog=d.prog;if(!prog.program)prog.program={};store.set('zy_prog',prog);updateStats()}
     if(d.lessonCache){lessonCache=d.lessonCache;store.set('zy_lessons',lessonCache)}
     if(d.mistakes){mistakes=d.mistakes;store.set('zy_mistakes',mistakes)}
     if(!silent)toast('پیشرفت از ابر بارگذاری شد ✅');
@@ -362,7 +114,7 @@ function exportData(){
 function importData(b64){
   const json=decodeURIComponent(escape(atob(b64.trim())));
   const data=JSON.parse(json);
-  if(data.prog){prog=data.prog;store.set('zy_prog',prog);updateStats()}
+  if(data.prog){prog=data.prog;if(!prog.program)prog.program={};store.set('zy_prog',prog);updateStats()}
   if(data.lessonCache){lessonCache=data.lessonCache;store.set('zy_lessons',lessonCache)}
   if(data.mistakes){mistakes=data.mistakes;store.set('zy_mistakes',mistakes)}
   return true;
@@ -407,23 +159,23 @@ const LEVELS=[
   ['Technology & Social Media','فناوری','opinions, trends'],
   ['Predictions & Plans','پیش‌بینی','future forms'],
   ['Relative Clauses','موصولی','who/which/that'],
-  ['Job Interview Basics','مصاحبه شغلی','strengths, experience'],
+  ['Job Interview Basics','مصاحبه شغلی','strengths'],
   ['Environment & Society','جامعه','problems/solutions']]},
  {id:'B2',name:'بالای متوسط',units:[
   ['Passive Voice','مجهول','passive'],
   ['Reported Speech','نقل قول','said that'],
   ['If I were…','شرطی نوع دوم','conditionals'],
   ['Debating & Persuading','بحث','arguing'],
-  ['Business Meetings','جلسات کاری','agenda, clarifying'],
+  ['Business Meetings','جلسات کاری','agenda'],
   ['Media & News','رسانه','summarising'],
   ['Phrasal Verbs','افعال عبارتی','phrasal verbs'],
   ['Wishes & Regrets','آرزو','I wish'],
   ['Cause & Effect','علت و معلول','linking'],
   ['Describing Trends','روند','increase, decline'],
-  ['Complaints & Diplomacy','شکایت','softening language'],
+  ['Complaints & Diplomacy','شکایت','softening'],
   ['Culture & Travel','فرهنگ','narrative tenses']]},
  {id:'C1',name:'پیشرفته',units:[
-  ['Hedging & Nuance','ظرافت','it seems, arguably'],
+  ['Hedging & Nuance','ظرافت','it seems'],
   ['Formal Emails','ایمیل رسمی','register, tone'],
   ['Negotiation','مذاکره','proposals'],
   ['Idioms & Collocations','اصطلاحات','natural chunks'],
@@ -570,7 +322,7 @@ const PROGRAM=[
   ],
   schedule:['۱۵ دقیقه: یه درس','۱۰ دقیقه: ۲ سناریوی IT','۵ دقیقه: مرور اشتباهات']
  },
- {week:4,title:'حال کامل و نظر دادن',goal:'Present Perfect برای "انجام دادم" و Opinions & Agreement برای جلسه',
+ {week:4,title:'حال کامل و نظر دادن',goal:'Present Perfect برای "انجام دادم" و Opinions & Agreement',
   lessons:[
     {level:'B1',idx:1,note:'Present Perfect vs Past Simple'},
     {level:'B1',idx:4,note:'I think, I agree, In my opinion'}
@@ -581,7 +333,7 @@ const PROGRAM=[
   ],
   schedule:['۱۵ دقیقه: یه درس','۱۵ دقیقه: ۳ سناریو','۵ دقیقه: مکالمه آزاد']
  },
- {week:5,title:'شرطی و تعریف داستان',goal:'If…will برای پیشنهاد و Telling a Story برای توضیح مشکل',
+ {week:5,title:'شرطی و تعریف داستان',goal:'If…will برای پیشنهاد و Telling a Story',
   lessons:[
     {level:'B1',idx:3,note:'First Conditional'},
     {level:'B1',idx:6,note:'Past Continuous برای تعریف'}
@@ -592,7 +344,7 @@ const PROGRAM=[
   ],
   schedule:['۱۰ دقیقه: یه درس','۲۰ دقیقه: ۳ سناریو + مکالمه','—']
  },
- {week:6,title:'مکالمه تلفنی',goal:'آماده‌شدن برای تماس‌های تلفنی با ایلدار و همکاران',
+ {week:6,title:'مکالمه تلفنی',goal:'آماده‌شدن برای تماس‌های تلفنی',
   lessons:[
     {level:'A2',idx:8,note:'Could/Would برای درخواست تلفنی'}
   ],
@@ -603,7 +355,7 @@ const PROGRAM=[
   ],
   schedule:['۱۰ دقیقه: مرور درس','۲۰ دقیقه: ۳ سناریوی تلفنی','تیک «دست‌آزاد» رو روشن کن']
  },
- {week:7,title:'حضوری و پیگیری',goal:'آماده‌شدن برای ملاقات حضوری ایلدار و پیگیری وظایف',
+ {week:7,title:'حضوری و پیگیری',goal:'آماده‌شدن برای ملاقات حضوری و پیگیری وظایف',
   lessons:[
     {level:'B1',idx:10,note:'مصاحبه و مکالمه کاری'},
     {level:'B2',idx:4,note:'Business Meetings'}
@@ -702,13 +454,23 @@ function go(v){
   render();window.scrollTo(0,0);
 }
 $$('.tab').forEach(t=>t.onclick=()=>go(t.dataset.v));
-function render(){({program:renderProgram,path:renderPath,lesson:renderLesson,job:renderJob,talk:renderTalk,notes:renderNotes,settings:renderSettings})[view]()}
+function render(){
+  try{
+    const fn={program:renderProgram,path:renderPath,lesson:renderLesson,job:renderJob,talk:renderTalk,notes:renderNotes,settings:renderSettings}[view];
+    if(fn)fn();
+    else renderProgram();
+  }catch(e){
+    console.error('Render error:',e);
+    $('#main').innerHTML=`<div class="card"><b>خطا در نمایش</b><p>${esc(e.message)}</p><button class="btn brand" onclick="location.reload()">رفرش</button></div>`;
+  }
+}
 
 /* ============ PROGRAM (8 WEEKS) ============ */
-function programKey(w){return 'week-'+w}
-function isTaskDone(type,id){return !!(prog.program[type+'-'+id])}
+function taskKey(type,id){return type+':'+id}
+function isTaskDone(type,id){return !!(prog.program && prog.program[taskKey(type,id)])}
 function toggleTask(type,id){
-  const k=type+'-'+id;
+  if(!prog.program) prog.program={};
+  const k=taskKey(type,id);
   if(prog.program[k]){delete prog.program[k]}
   else{prog.program[k]=Date.now();award(3)}
   saveProg();
@@ -719,7 +481,7 @@ function weekProgress(w){
   if(!p)return 0;
   const total=p.lessons.length+p.scenarios.length;
   let done=0;
-  p.lessons.forEach(l=>{if(isTaskDone('les',l.level+'-'+l.idx))done++});
+  p.lessons.forEach(l=>{if(isTaskDone('les',l.level+':'+l.idx))done++});
   p.scenarios.forEach(s=>{if(isTaskDone('sc',s.id))done++});
   return total?Math.round(done*100/total):0;
 }
@@ -729,9 +491,8 @@ function renderProgram(){
   const p=PROGRAM.find(x=>x.week===curWeek);
   if(!p){curWeek=1;return renderProgram()}
   let h=`<h1>برنامه‌ی ۸ هفته‌ای من</h1>
-  <p class="sub">برنامه‌ی گام‌به‌گام ترکیبی از درس‌های پایه + سناریوهای شغلی. هر هفته رو کامل کن تا بری هفته‌ی بعد.</p>`;
+  <p class="sub">برنامه‌ی گام‌به‌گام ترکیبی از درس‌های پایه + سناریوهای شغلی.</p>`;
 
-  // Week nav
   h+=`<div class="week-nav">`;
   PROGRAM.forEach(w=>{
     const done=isWeekDone(w.week)?'done':'';
@@ -741,7 +502,6 @@ function renderProgram(){
   });
   h+=`</div>`;
 
-  // Week head
   const progPct=weekProgress(p.week);
   h+=`<div class="week-head">
     <h2>هفته ${fa(p.week)} — ${esc(p.title)}</h2>
@@ -750,14 +510,13 @@ function renderProgram(){
     <div style="font-size:.8rem;margin-top:4px;opacity:.9">${fa(progPct)}٪ تکمیل شده</div>
   </div>`;
 
-  // Lessons
   h+=`<div class="week-section"><h3>📚 درس‌های این هفته</h3><div class="task-list">`;
   p.lessons.forEach(l=>{
     const lv=LEVELS.find(x=>x.id===l.level);
     const u=lv.units[l.idx];
-    const done=isTaskDone('les',l.level+'-'+l.idx);
-    h+=`<div class="task ${done?'done':''}" data-lesson="${l.level}:${l.idx}">
-      <div class="tick">${done?ic('check'):''}</div>
+    const done=isTaskDone('les',l.level+':'+l.idx);
+    h+=`<div class="task ${done?'done':''}" data-lesson="${l.level}:${l.idx}" role="button" tabindex="0">
+      <div class="tick">${done?'✓':''}</div>
       <div class="body">
         <div class="tt" dir="ltr">${esc(u[0])}</div>
         <div class="td">${esc(u[1])} — ${esc(l.note)}</div>
@@ -767,14 +526,13 @@ function renderProgram(){
   });
   h+=`</div></div>`;
 
-  // Scenarios
   h+=`<div class="week-section"><h3>💼 سناریوهای شغلی مرتبط</h3><div class="task-list">`;
   p.scenarios.forEach(sc=>{
     const s=JOB_SCENARIOS.find(x=>x.id===sc.id);
     if(!s)return;
     const done=isTaskDone('sc',s.id);
-    h+=`<div class="task ${done?'done':''}" data-job="${s.id}">
-      <div class="tick">${done?ic('check'):''}</div>
+    h+=`<div class="task ${done?'done':''}" data-job="${s.id}" role="button" tabindex="0">
+      <div class="tick">${done?'✓':''}</div>
       <div class="body">
         <div class="tt">${esc(s.title)}</div>
         <div class="td">${esc(s.desc)} — ${esc(sc.note)}</div>
@@ -784,12 +542,10 @@ function renderProgram(){
   });
   h+=`</div></div>`;
 
-  // Daily schedule
   h+=`<div class="week-section"><h3>⏱️ برنامه روزانه پیشنهادی</h3>
     <div class="schedule"><ul>${p.schedule.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
   </div>`;
 
-  // Navigation buttons
   const prevW=curWeek>1, nextW=curWeek<8;
   h+=`<div class="row between" style="margin-top:20px">
     <button class="btn ghost" id="prevW" ${prevW?'':'disabled'}>← هفته قبل</button>
@@ -797,38 +553,47 @@ function renderProgram(){
   </div>`;
 
   $('#main').innerHTML=h;
+
   $$('.week-tab').forEach(b=>b.onclick=()=>{curWeek=+b.dataset.w;renderProgram()});
-  $('#prevW').onclick=()=>{if(curWeek>1){curWeek--;renderProgram()}};
-  $('#nextW').onclick=()=>{if(curWeek<8){curWeek++;renderProgram()}};
-
-  // Lesson click → open lesson OR toggle done
-  $$('.task[data-lesson]').forEach(el=>{
-    el.onclick=(e)=>{
-      // اگر روی تیک زده شد → toggle
-      if(e.target.closest('.tick')){
-        const [lv,idx]=el.dataset.lesson.split(':');
-        toggleTask('les',lv+':'+idx);
-        return;
-      }
-      const [lv,idx]=el.dataset.lesson.split(':');
-      // ذخیره‌ی اینکه از برنامه اومدیم
-      prog.program.lastFrom='program';
-      saveProg();
-      openLesson(lv,+idx);
-    };
-  });
-
-  // Scenario click → open scenario
-  $$('.task[data-job]').forEach(el=>{
-    el.onclick=(e)=>{
-      if(e.target.closest('.tick')){
-        toggleTask('sc',el.dataset.job);
-        return;
-      }
-      startJobScenario(el.dataset.job);
-    };
-  });
+  const pw=$('#prevW'); if(pw) pw.onclick=()=>{if(curWeek>1){curWeek--;renderProgram()}};
+  const nw=$('#nextW'); if(nw) nw.onclick=()=>{if(curWeek<8){curWeek++;renderProgram()}};
 }
+
+/* ============ FIX 2: Event delegation on document for program tasks ============ */
+document.addEventListener('click',e=>{
+  // task درس‌ها در برنامه
+  const lessonTask=e.target.closest('.task[data-lesson]');
+  if(lessonTask){
+    if(e.target.closest('.tick')){
+      e.preventDefault();e.stopPropagation();
+      const [lv,idx]=lessonTask.dataset.lesson.split(':');
+      toggleTask('les',lv+':'+idx);
+      return;
+    }
+    e.preventDefault();e.stopPropagation();
+    const [lv,idx]=lessonTask.dataset.lesson.split(':');
+    if(!prog.program) prog.program={};
+    prog.program.lastFrom='program';
+    saveProg();
+    openLesson(lv,+idx);
+    return;
+  }
+  // task سناریوها در برنامه
+  const jobTask=e.target.closest('.task[data-job]');
+  if(jobTask){
+    if(e.target.closest('.tick')){
+      e.preventDefault();e.stopPropagation();
+      toggleTask('sc',jobTask.dataset.job);
+      return;
+    }
+    e.preventDefault();e.stopPropagation();
+    if(!prog.program) prog.program={};
+    prog.program.lastFrom='program';
+    saveProg();
+    startJobScenario(jobTask.dataset.job);
+    return;
+  }
+},false);
 
 /* ============ PATH ============ */
 function unitId(l,i){return l+'-'+i}
@@ -841,7 +606,7 @@ function renderPath(){
   h+=`<div class="units">`+L.units.map((u,i)=>{
     const d=prog.done[unitId(L.id,i)]||{};
     const st=d.talk?'کامل':(d.quiz!=null?'آزمون '+fa(d.quiz)+'٪':'');
-    return `<button class="unit ${d.talk?'done':''}" data-u="${i}"><span class="n">${d.talk?ic('check'):fa(i+1)}</span><span><div class="t" dir="ltr">${esc(u[0])}</div><div class="f">${esc(u[1])}</div></span><span class="st">${st}</span></button>`}).join('')+`</div>`;
+    return `<button class="unit ${d.talk?'done':''}" data-u="${i}"><span class="n">${d.talk?'✓':fa(i+1)}</span><span><div class="t" dir="ltr">${esc(u[0])}</div><div class="f">${esc(u[1])}</div></span><span class="st">${st}</span></button>`}).join('')+`</div>`;
   $('#main').innerHTML=h;
   $$('.lv').forEach(b=>b.onclick=()=>{pathLevel=b.dataset.lv;renderPath()});
   $$('.unit').forEach(b=>b.onclick=()=>openLesson(pathLevel,+b.dataset.u));
@@ -885,7 +650,16 @@ function renderLesson(){
     h+=C.step==='learn'?learnHTML(C.lesson):C.step==='quiz'?`<div class="card"><h2>آزمون کوتاه</h2><div id="quiz">${quizHTML(C.lesson.quiz)}</div></div>`:speakHTML(C.lesson);
   }
   $('#main').innerHTML=h;
-  const back=$('#back');if(back)back.onclick=()=>{if(prog.program.lastFrom==='program'){prog.program.lastFrom='';saveProg();go('program')}else go('path')};
+  const back=$('#back');
+  if(back) back.onclick=()=>{
+    if(prog.program && prog.program.lastFrom==='program'){
+      prog.program.lastFrom='';
+      saveProg();
+      go('program');
+    }else{
+      go('path');
+    }
+  };
   const rt=$('#retry');if(rt)rt.onclick=genLesson;
   $$('.stp').forEach(b=>b.onclick=()=>{C.step=b.dataset.s;renderLesson();window.scrollTo(0,0)});
   const nx=$('#nextQuiz');if(nx)nx.onclick=()=>{C.step='quiz';renderLesson();window.scrollTo(0,0)};
@@ -893,8 +667,11 @@ function renderLesson(){
   const rg=$('#regen');if(rg)rg.onclick=()=>{delete lessonCache[C.id];store.set('zy_lessons',lessonCache);C.lesson=null;C.err=null;C.loading=true;genLesson()};
   const qz=$('#quiz');if(qz)bindQuiz(qz,C.lesson.quiz,(s,n)=>{
     const pct=Math.round(100*s/n);const d=prog.done[C.id]=prog.done[C.id]||{};d.quiz=Math.max(d.quiz||0,pct);award(s*3);
-    // اگر از برنامه اومدیم، تیک درس رو بزن
-    if(prog.program.lastFrom==='program'){prog.program['les-'+C.level+':'+C.idx]=Date.now();saveProg()}
+    if(prog.program && prog.program.lastFrom==='program'){
+      if(!prog.program) prog.program={};
+      prog.program[taskKey('les',C.level+':'+C.idx)]=Date.now();
+      saveProg();
+    }
     $('.qres',qz).innerHTML=`نتیجه: ${fa(s)} از ${fa(n)} — ${pct>=70?'عالی!':'مرور کن.'} <div class="row" style="margin-top:10px"><button class="btn brand" id="toSpeak">برو به صحبت</button></div>`;
     $('#toSpeak').onclick=()=>{C.step='speak';renderLesson();window.scrollTo(0,0)};
   });
@@ -937,8 +714,8 @@ function jobSystemPrompt(){
   if(!sc)return '';
   const roleDesc={
     'User':'a non-technical office worker',
-    'Manager':'Ildar, a Russian IT manager (English is his second language; brief and direct, uses "Hello dear X", "Good day", "Please do X", "Can you do X?")',
-    'Colleague':'a friendly colleague at the company'
+    'Manager':'Ildar, a Russian IT manager (English is second language; brief and direct, uses "Hello dear X", "Good day", "Please do X", "Can you do X?")',
+    'Colleague':'a friendly colleague'
   }[sc.role];
   return `You are role-playing as ${roleDesc} in a workplace conversation with Armin, an Iranian IT support specialist.
 
@@ -947,15 +724,8 @@ CONTEXT: ${sc.opening}
 YOUR ROLE: ${sc.role}
 
 Rules:
-- Stay in character. Realistic lines.
-- SHORT (1-2 sentences).
-- React naturally, ask follow-ups.
+- Stay in character. SHORT lines (1-2 sentences).
 - Analyse Armin's LAST message.
-
-Analysis:
-- Grammar, vocabulary, brevity (Ildar prefers SHORT), register, naturalness.
-- Suggest more natural version.
-
 Return ONLY valid JSON:
 {"reply":"your line","reply_fa":"Persian translation","analysis":{"score":0-10,"is_correct":bool,"corrected":"natural version","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"توضیح"}],"tip_fa":"نکته","brevity_note":"too long|too short|good"},"scenario_complete":false}`;
 }
@@ -963,7 +733,7 @@ Return ONLY valid JSON:
 function renderJob(){
   const el=$('#main');
   if(job.view==='cats'){
-    let h=`<h1>حالت شغلی</h1><p class="sub">سناریوهای واقعی کار. ایلدار یا کاربر رو AI بازی می‌کنه.</p>
+    let h=`<h1>حالت شغلی</h1><p class="sub">سناریوهای واقعی کار.</p>
     <div class="job-cat">`;
     JOB_CATS.forEach(c=>{
       const cnt=JOB_SCENARIOS.filter(s=>s.cat===c.id).length;
@@ -975,7 +745,6 @@ function renderJob(){
       </button>`;
     });
     h+=`</div>`;
-    // دکمه‌ی «برو به برنامه من»
     h+=`<div class="card" style="margin-top:20px;text-align:center">
       <b>دنبال تمرین ساختاریافته‌ای؟</b>
       <p class="sub" style="margin:8px 0">برنامه‌ی ۸ هفته‌ای، دقیقاً می‌گه کی چی تمرین کنی.</p>
@@ -983,7 +752,7 @@ function renderJob(){
     </div>`;
     el.innerHTML=h;
     $$('.job-card').forEach(b=>b.onclick=()=>{job.view='list';job.catId=b.dataset.cat;renderJob()});
-    $('#toProg').onclick=()=>go('program');
+    const tp=$('#toProg');if(tp)tp.onclick=()=>go('program');
     return;
   }
   if(job.view==='list'){
@@ -995,7 +764,7 @@ function renderJob(){
     list.forEach(s=>{
       const done=prog.done['job-'+s.id];
       h+=`<button class="scenario" data-sc="${s.id}">
-        <span class="sc-ic">${done?ic('check'):ic('play')}</span>
+        <span class="sc-ic">${done?'✓':'▶'}</span>
         <span><div class="sc-t">${esc(s.title)}</div><div class="sc-d">${esc(s.desc)}</div></span>
         <span class="sc-a">${done?'✓':'›'}</span>
       </button>`;
@@ -1016,7 +785,7 @@ function startJobScenario(id){
   job.history=[];
   job.turns=[{role:'ai',text:sc.opening,fa:''}];
   job.busy=false;job.count=0;job.done=false;job.view='play';
-  renderJobPlay();
+  go('job');
   if(settings.autoplay)speak(sc.opening);
 }
 function renderJobPlay(){
@@ -1071,7 +840,7 @@ function jobAnalysisHTML(t){
   if(a.score!=null)h+=`<span class="sc">امتیاز <b>${a.score}</b>/10</span>`;
   if(a.brevity_note)h+=`<span class="sc">طول: <b>${a.brevity_note==='too long'?'زیاد':a.brevity_note==='too short'?'کم':'خوب'}</b></span>`;
   h+=`</div>`;
-  if(a.corrected&&a.corrected.trim()&&norm(a.corrected)!==norm(t.text))h+=`<div class="fix"><span>${ic('check')}</span><span dir="ltr">${esc(a.corrected)}</span><button class="mini" data-say="${esc(a.corrected)}">${ic('vol')}</button></div>`;
+  if(a.corrected&&a.corrected.trim()&&norm(a.corrected)!==norm(t.text))h+=`<div class="fix"><span>✓</span><span dir="ltr">${esc(a.corrected)}</span><button class="mini" data-say="${esc(a.corrected)}">${ic('vol')}</button></div>`;
   h+=ms.map(m=>`<div class="mk"><div dir="ltr"><s>${esc(m.original)}</s> → <b>${esc(m.fix)}</b> <span class="ty">${esc(m.type||'')}</span></div><div>${esc(m.explain_fa||'')}</div></div>`).join('');
   if(a.tip_fa)h+=`<div class="tip">💡 ${esc(a.tip_fa)}</div>`;
   return h+`</div>`;
@@ -1101,8 +870,10 @@ async function sendJob(text,conf,voice){
       job.done=true;
       const d=prog.done['job-'+job.scenario.id]=prog.done['job-'+job.scenario.id]||{};
       d.done=true;d.count=job.count;award(job.count*2);
-      // اگر از برنامه اومدیم، تیک سناریو رو بزن
-      if(prog.program.lastFrom==='program'){prog.program['sc-'+job.scenario.id]=Date.now()}
+      if(prog.program && prog.program.lastFrom==='program'){
+        if(!prog.program) prog.program={};
+        prog.program[taskKey('sc',job.scenario.id)]=Date.now();
+      }
       saveProg();
     }else{award(2)}
     drawJobChat();
@@ -1208,7 +979,7 @@ function analysisHTML(t){
   let h=`<div class="an"><div class="an-top">${a.is_correct&&!ms.length?'<span class="pill ok">درست بود</span>':'<span class="pill warn">قابل بهتر شدن</span>'}`;
   if(a.scores)h+=[['grammar','گرامر'],['vocabulary','لغت'],['fluency','روانی']].map(([k,n])=>`<span class="sc">${n} <b>${a.scores[k]??'–'}</b></span>`).join('');
   h+=`</div>`;
-  if(a.corrected&&a.corrected.trim()&&norm(a.corrected)!==norm(t.text))h+=`<div class="fix"><span>${ic('check')}</span><span dir="ltr">${esc(a.corrected)}</span></div>`;
+  if(a.corrected&&a.corrected.trim()&&norm(a.corrected)!==norm(t.text))h+=`<div class="fix"><span>✓</span><span dir="ltr">${esc(a.corrected)}</span></div>`;
   h+=ms.map(m=>`<div class="mk"><div dir="ltr"><s>${esc(m.original)}</s> → <b>${esc(m.fix)}</b></div><div>${esc(m.explain_fa||'')}</div></div>`).join('');
   if((a.new_words||[]).length)h+=`<div class="nw">`+a.new_words.map(w=>`<span dir="ltr">${esc(w.en)} · ${esc(w.fa)}</span>`).join('')+`</div>`;
   if(a.tip_fa)h+=`<div class="tip">${esc(a.tip_fa)}</div>`;
@@ -1258,7 +1029,7 @@ function drawReport(){
 
 /* ============ NOTEBOOK ============ */
 function renderNotes(){
-  let h=`<div class="row between"><div><h1>دفترچه اشتباهات</h1><p class="sub">همه‌ی اشتباهات از مکالمه آزاد و حالت شغلی.</p></div>
+  let h=`<div class="row between"><div><h1>دفترچه اشتباهات</h1><p class="sub">همه‌ی اشتباهات.</p></div>
   <div class="row"><button class="btn brand" id="drill" ${mistakes.length?'':'disabled'}>تمرین</button><button class="btn ghost" id="clr" ${mistakes.length?'':'disabled'}>پاک کردن</button></div></div>
   <div id="drillBox" style="margin-top:16px"></div><div class="nb" style="margin-top:16px">`;
   h+=mistakes.length?mistakes.map(m=>`<div class="nbi"><div class="row between"><span dir="ltr"><s style="color:var(--bad)">${esc(m.original)}</s> → <b style="color:var(--ok)">${esc(m.fix)}</b></span><button class="mini" data-say="${esc(m.fix)}">${ic('vol')}</button></div><div>${esc(m.explain)}</div><div class="sub" style="font-size:.8rem">${esc(m.type)} · ${esc(m.level)} ${m.topic?'· '+esc(m.topic):''} · ${esc(m.date)}</div></div>`).join(''):`<div class="card">هنوز اشتباهی ثبت نشده.</div>`;
@@ -1360,10 +1131,9 @@ function renderSettings(){
 }
 
 /* ============ init ============ */
-updateStats();go('program');
+updateStats();
+go('program');
 if(settings.proxy&&settings.syncCode){
   (async()=>{if(await initSync())await pullFromCloud(true)})();
 }
 </script>
-</body>
-</html>
