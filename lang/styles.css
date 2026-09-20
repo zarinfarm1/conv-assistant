@@ -60,6 +60,7 @@ h3{font-size:1rem;font-weight:700;margin-bottom:8px;color:var(--brand)}
 .pill.easy{background:#d8f1e6;color:#23906a}
 .pill.medium{background:#fdf0d0;color:#a86d00}
 .pill.hard{background:#fbe0e2;color:#d64550}
+.pill.real{background:#e6e6ff;color:#3b2fa8}
 .banner{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:14px 18px;border-radius:var(--r-md);background:var(--accent-soft);border:1px solid var(--accent);margin-bottom:18px}
 .week-nav{display:flex;gap:6px;overflow-x:auto;padding:4px 0 12px;scrollbar-width:none}
 .week-tab{min-width:80px;padding:8px 12px;border-radius:12px;background:var(--card);border:1.5px solid var(--line);text-align:center;flex:none;transition:all .15s;cursor:pointer}
