@@ -8,7 +8,7 @@ window.addEventListener('error',function(ev){
     var line = ev.lineno || '';
     var overlay = document.createElement('div');
     overlay.className = 'err-overlay';
-    overlay.innerHTML = '<div><h2>خطای برنامه</h2><p style="margin:10px 0">لطفاً این متن را برای پشتیبانی بفرست:</p><pre>'+msg+'\n'+src+':'+line+'</pre><button onclick="localStorage.clear();location.reload()" style="margin-top:20px;padding:10px 24px;background:#fff;color:#d64550;border:none;border-radius:8px;font-weight:700;cursor:pointer">پاک کردن داده و رفرش</button></div>';
+    overlay.innerHTML = '<div><h2>خطای برنامه</h2><p style="margin:10px 0">لطفاً این متن را برای پشتیبانی بفرست:</p><pre>'+msg+'\n'+src+':'+line+'</pre><button onclick="try{localStorage.removeItem(\'zy_prog\')}catch(e){};location.reload()" style="margin-top:20px;padding:10px 24px;background:#fff;color:#d64550;border:none;border-radius:8px;font-weight:700;cursor:pointer">ریست پیشرفت و رفرش</button></div>';
     document.body.appendChild(overlay);
   }catch(e){}
 },true);
@@ -61,7 +61,7 @@ var view='program', pathLevel='A1', lessonCtx=null;
 var curWeek=1;
 var talk={started:false,level:'A1',topic:'',focus:'',unitId:null,history:[],turns:[],busy:false,count:0,report:null,reporting:false};
 var job={view:'cats',catId:null,scenario:null,history:[],turns:[],busy:false,count:0,done:false,showHint:false};
-var free={mode:null,situation:null,turns:[],busy:false,count:0,done:false,usedIds:[],showHint:false};
+var free={mode:null,situation:null,turns:[],busy:false,count:0,done:false,showHint:false};
 var gram={level:null,topic:null,lesson:null,step:'learn',loading:false,err:null};
 var listening=false, rec=null;
 
@@ -119,12 +119,9 @@ function initSync(){
 function pushToCloud(){
   if(!syncEnabled || !syncKey) return Promise.resolve();
   var base = settings.proxy.replace(/\/+$/,'');
-  var payload = {prog:prog, lessonCache:lessonCache, mistakes:mistakes, importedScenarios:importedScenarios, customLessons:customLessons, grammarCache:grammarCache, updatedAt:Date.now()};
+  var payload = {prog:prog, lessonCache:lessonCache, grammarCache:grammarCache, mistakes:mistakes, importedScenarios:importedScenarios, customLessons:customLessons, updatedAt:Date.now()};
   return fetch(base+'/sync/'+syncKey, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
-    .then(function(r){
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      var dot=$('#syncDot'); if(dot) dot.className='sync-dot on';
-    })
+    .then(function(r){if(!r.ok) throw new Error('HTTP '+r.status); var dot=$('#syncDot'); if(dot) dot.className='sync-dot on';})
     .catch(function(e){console.error('Push error:',e);toast('خطا در ذخیره: '+e.message,5000)});
 }
 function pullFromCloud(silent){
@@ -297,7 +294,7 @@ var FREE_SITUATIONS=[
  {id:'f25',cat:'گزارش',fa:'ایلدار می‌خواد گزارش هفته رو بفرستی',hint:'Sure + when',sample:"Sure. I'll send it by end of day.",level:'easy'}
 ];
 
-// ============ PROGRAM (6 scenarios/week) ============
+// ============ PROGRAM ============
 var PROGRAM=[
  {week:1,title:'پایه‌سازی — فعل to be',goal:'یادگیری فعل to be و Present Simple',
   lessons:[{level:'A1',idx:1,note:'پایه‌ی همه‌چیز'},{level:'A1',idx:4,note:'برای گزارش روزانه'}],
@@ -341,34 +338,7 @@ var PROGRAM=[
   schedule:['۱۰ دقیقه: درس','۲۰ دقیقه: ۶ سناریو مرور','۱۰ دقیقه: گرامر']}
 ];
 
-// ============ LESSON DEMO ============
-var DEMO={title:'Greetings & Introductions',
-intro_fa:'در این درس یاد می‌گیری سلام کنی، خودت را معرفی کنی و بگویی اهل کجایی.',
-vocab:[
- {en:'Hello',say:'هِلو',fa:'سلام',ex:'Hello! I am Ali.',ex_fa:'سلام! من علی هستم.'},
- {en:'Name',say:'نِیم',fa:'اسم',ex:'My name is Sara.',ex_fa:'اسم من سارا است.'},
- {en:'From',say:'فِرام',fa:'از / اهل',ex:'I am from Iran.',ex_fa:'من اهل ایران هستم.'},
- {en:'Nice to meet you',say:'نایس تو میت یو',fa:'از آشنایی خوشحالم',ex:'Nice to meet you, Sam.',ex_fa:'خوشحالم.'},
- {en:'How are you?',say:'های آر یو',fa:'حالت چطور است؟',ex:'Hi Ali, how are you?',ex_fa:'سلام علی.'},
- {en:'Fine',say:'فاین',fa:'خوب',ex:'I am fine, thank you.',ex_fa:'خوبم، ممنون.'},
- {en:'Thank you',say:'تَنک یو',fa:'ممنون',ex:'Thank you very much.',ex_fa:'خیلی ممنون.'},
- {en:'Please',say:'پلیز',fa:'لطفاً',ex:'Sit down, please.',ex_fa:'لطفاً بنشینید.'},
- {en:'Sorry',say:'سُری',fa:'ببخشید',ex:'Sorry, I am late.',ex_fa:'ببخشید.'},
- {en:'Goodbye',say:'گودبای',fa:'خداحافظ',ex:'Goodbye, see you tomorrow.',ex_fa:'خداحافظ.'}],
-grammar:{title:'I am… / My name is…',
- explain_fa:'I am + اسم → «من … هستم»\nMy name is + اسم → «اسم من … است»',
- rules:['I am Ali. = I\'m Ali.','My name is Sara.','I am from Iran.'],
- examples:[{en:'Hi, I\'m Reza.',fa:'سلام، من رضا هستم.'}]},
-dialogue:[
- {speaker:'A',en:'Hello! My name is Sam.',fa:'سلام! اسم من سم است.'},
- {speaker:'B',en:'Hi, Sam. I\'m Sara. Nice to meet you.',fa:'سلام سم.'}],
-phrases:[{en:'What is your name?',fa:'اسم شما چیست؟'}],
-quiz:[
- {q:'___ name is Sara.',options:['I','My','Me','Am'],answer:1,why_fa:'My name درست است.'},
- {q:'I ___ from Iran.',options:['is','are','am','be'],answer:2,why_fa:'با I فعل am می‌آید.'}],
-speaking_goal:'خودت را معرفی کن.'};
-
-// ============ LEVELS (for lesson path) ============
+// ============ LEVELS ============
 var LEVELS=[
  {id:'A1',name:'مقدماتی',units:[
   ['Greetings & Introductions','سلام و معرفی','Hello, I am…'],
@@ -445,6 +415,32 @@ var LEVELS=[
   ['Style & Register','سبک','adapting'],
   ['Mastery','تسلط','abstract topics']]}
 ];
+
+var DEMO={title:'Greetings & Introductions',
+intro_fa:'در این درس یاد می‌گیری سلام کنی، خودت را معرفی کنی و بگویی اهل کجایی.',
+vocab:[
+ {en:'Hello',say:'هِلو',fa:'سلام',ex:'Hello! I am Ali.',ex_fa:'سلام! من علی هستم.'},
+ {en:'Name',say:'نِیم',fa:'اسم',ex:'My name is Sara.',ex_fa:'اسم من سارا است.'},
+ {en:'From',say:'فِرام',fa:'از / اهل',ex:'I am from Iran.',ex_fa:'من اهل ایران هستم.'},
+ {en:'Nice to meet you',say:'نایس تو میت یو',fa:'از آشنایی خوشحالم',ex:'Nice to meet you, Sam.',ex_fa:'خوشحالم.'},
+ {en:'How are you?',say:'های آر یو',fa:'حالت چطور است؟',ex:'Hi Ali, how are you?',ex_fa:'سلام علی.'},
+ {en:'Fine',say:'فاین',fa:'خوب',ex:'I am fine, thank you.',ex_fa:'خوبم، ممنون.'},
+ {en:'Thank you',say:'تَنک یو',fa:'ممنون',ex:'Thank you very much.',ex_fa:'خیلی ممنون.'},
+ {en:'Please',say:'پلیز',fa:'لطفاً',ex:'Sit down, please.',ex_fa:'لطفاً بنشینید.'},
+ {en:'Sorry',say:'سُری',fa:'ببخشید',ex:'Sorry, I am late.',ex_fa:'ببخشید.'},
+ {en:'Goodbye',say:'گودبای',fa:'خداحافظ',ex:'Goodbye, see you tomorrow.',ex_fa:'خداحافظ.'}],
+grammar:{title:'I am… / My name is…',
+ explain_fa:'I am + اسم → «من … هستم»\nMy name is + اسم → «اسم من … است»',
+ rules:['I am Ali. = I\'m Ali.','My name is Sara.','I am from Iran.'],
+ examples:[{en:'Hi, I\'m Reza.',fa:'سلام، من رضا هستم.'}]},
+dialogue:[
+ {speaker:'A',en:'Hello! My name is Sam.',fa:'سلام! اسم من سم است.'},
+ {speaker:'B',en:'Hi, Sam. I\'m Sara. Nice to meet you.',fa:'سلام سم.'}],
+phrases:[{en:'What is your name?',fa:'اسم شما چیست؟'}],
+quiz:[
+ {q:'___ name is Sara.',options:['I','My','Me','Am'],answer:1,why_fa:'My name درست است.'},
+ {q:'I ___ from Iran.',options:['is','are','am','be'],answer:2,why_fa:'با I فعل am می‌آید.'}],
+speaking_goal:'خودت را معرفی کن.'};
 
 // ============ API ============
 function callAI(system,messages,max){
@@ -550,7 +546,7 @@ function render(){
   }
 }
 
-// ============ PROGRAM ============
+// ============ PROGRAM RENDER ============
 function taskKey(type,id){return type+':'+id}
 function isTaskDone(type,id){
   if(!prog.program || typeof prog.program !== 'object') return false;
@@ -581,7 +577,7 @@ function renderProgram(){
   var p = null;
   for(var i=0;i<PROGRAM.length;i++) if(PROGRAM[i].week===curWeek){p=PROGRAM[i];break}
   if(!p){curWeek=1;return renderProgram()}
-  var h = '<h1>برنامه‌ی ۸ هفته‌ای من</h1><p class="sub">ترکیب درس + سناریو + گرامر.</p>';
+  var h = '<h1>برنامه‌ی ۸ هفته‌ای من</h1><p class="sub">ترکیب درس + گرامر + سناریو.</p>';
   h += '<div class="week-nav">';
   PROGRAM.forEach(function(w){
     var done = isWeekDone(w.week) ? 'done' : '';
@@ -590,16 +586,11 @@ function renderProgram(){
   h += '</div>';
   var pct = weekProgress(p.week);
   h += '<div class="week-head"><h2>هفته '+fa(p.week)+' — '+esc(p.title)+'</h2><p>🎯 '+esc(p.goal)+'</p><div class="prog-bar"><i style="width:'+pct+'%"></i></div><div style="font-size:.8rem;margin-top:4px;opacity:.9">'+fa(pct)+'٪ تکمیل</div></div>';
-
-  // Lessons
   h += '<div class="week-section"><h3>📚 درس‌ها</h3><div class="task-list" id="lessonList"></div></div>';
-  // Grammar
   if(p.grammar && p.grammar.length){
     h += '<div class="week-section"><h3 style="color:var(--gram)">📐 گرامر این هفته</h3><div class="task-list" id="grammarList"></div></div>';
   }
-  // Scenarios
   h += '<div class="week-section"><h3>💼 سناریوهای شغلی</h3><div class="task-list" id="jobList"></div></div>';
-  // Schedule
   h += '<div class="week-section"><h3>⏱️ برنامه روزانه</h3><div class="schedule"><ul>';
   p.schedule.forEach(function(x){h+='<li>'+esc(x)+'</li>'});
   h += '</ul></div></div>';
@@ -609,7 +600,6 @@ function renderProgram(){
   var pw = $('#prevW'); if(pw) pw.onclick = function(){if(curWeek>1){curWeek--;renderProgram()}};
   var nw = $('#nextW'); if(nw) nw.onclick = function(){if(curWeek<8){curWeek++;renderProgram()}};
 
-  // Lessons
   var lessonList = $('#lessonList');
   if(lessonList){
     p.lessons.forEach(function(l){
@@ -632,7 +622,6 @@ function renderProgram(){
       lessonList.appendChild(btn);
     });
   }
-  // Grammar
   var grammarList = $('#grammarList');
   if(grammarList && p.grammar){
     p.grammar.forEach(function(gid){
@@ -650,14 +639,11 @@ function renderProgram(){
           saveProg(); renderProgram();
           return;
         }
-        gram.level = gt.level.level;
-        gram.topic = gt.topic;
         openGrammarTopic(gt.topic.id);
       });
       grammarList.appendChild(btn);
     });
   }
-  // Scenarios
   var jobList = $('#jobList');
   if(jobList){
     p.scenarios.forEach(function(sc){
@@ -682,11 +668,9 @@ function renderProgram(){
   }
 }
 
-// ============ GRAMMAR VIEW ============
+// ============ GRAMMAR RENDER ============
 function renderGrammar(){
-  var h = '<h1>📐 گرامر حرفه‌ای</h1><p class="sub">۴ سطح، ۳۴ موضوع، حدود ۹۰ ساعت آموزش. بعد از تکمیل، گرامرت دیگه مشکلی نخواهد داشت.</p>';
-
-  // Overall progress
+  var h = '<h1>📐 گرامر حرفه‌ای</h1><p class="sub">۴ سطح، ۳۴ موضوع، حدود ۹۰ ساعت آموزش.</p>';
   var totalTopics=0, doneTopics=0;
   GRAMMAR_CURRICULUM.forEach(function(lvl){
     totalTopics += lvl.topics.length;
@@ -695,13 +679,11 @@ function renderGrammar(){
   var totalPct = totalTopics ? Math.round(doneTopics*100/totalTopics) : 0;
   h += '<div class="card" style="background:var(--gram-soft);border-color:var(--gram)">';
   h += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">';
-  h += '<div><b>📊 پیشرفت کلی گرامر</b><div class="sub" style="font-size:.85rem;margin-top:4px">'+fa(doneTopics)+' از '+fa(totalTopics)+' موضوع تکمیل شده</div></div>';
+  h += '<div><b>📊 پیشرفت کلی گرامر</b><div class="sub" style="font-size:.85rem;margin-top:4px">'+fa(doneTopics)+' از '+fa(totalTopics)+' موضوع</div></div>';
   h += '<div style="font-size:1.6rem;font-weight:800;color:var(--gram)">'+fa(totalPct)+'٪</div>';
   h += '</div>';
   h += '<div class="prog-bar" style="margin-top:12px;height:8px;background:rgba(0,0,0,.1);border-radius:4px;overflow:hidden"><i style="display:block;height:100%;background:var(--gram);width:'+totalPct+'%"></i></div>';
   h += '</div>';
-
-  // Level cards
   h += '<div class="gram-levels">';
   GRAMMAR_CURRICULUM.forEach(function(lvl){
     var pct = grammarLevelProgress(lvl.level);
@@ -715,18 +697,15 @@ function renderGrammar(){
   });
   h += '</div>';
 
-  // Topic list for selected level (default: first not-complete, else A1)
   var showLevel = null;
   for(var i=0;i<GRAMMAR_CURRICULUM.length;i++){
     if(grammarLevelProgress(GRAMMAR_CURRICULUM[i].level)<100){showLevel = GRAMMAR_CURRICULUM[i];break}
   }
   if(!showLevel) showLevel = GRAMMAR_CURRICULUM[0];
-  // اگه کاربر روی سطح کلیک کرد، همون رو نشون بده
   if(window._gramSelectedLevel){
     for(var i=0;i<GRAMMAR_CURRICULUM.length;i++) if(GRAMMAR_CURRICULUM[i].level===window._gramSelectedLevel) showLevel=GRAMMAR_CURRICULUM[i];
   }
-
-  h += '<h2 style="margin-top:24px">موضوعات سطح '+esc(showLevel.level)+'</h2>';
+  h += '<h2 style="margin-top:24px">موضوعات سطح '+esc(showLevel.level)+' — '+esc(showLevel.name)+'</h2>';
   h += '<div class="topic-list">';
   showLevel.topics.forEach(function(t,idx){
     var done = prog.grammar && prog.grammar[t.id];
@@ -737,22 +716,12 @@ function renderGrammar(){
     h += '</button>';
   });
   h += '</div>';
-
   $('#main').innerHTML = h;
-  $$('[data-gramlvl]').forEach(function(b){
-    b.onclick = function(){window._gramSelectedLevel = b.getAttribute('data-gramlvl'); renderGrammar()};
-  });
-  $$('[data-gramtopic]').forEach(function(b){
-    b.onclick = function(){
-      var gid = b.getAttribute('data-gramtopic');
-      var gt = findGrammarTopic(gid);
-      if(gt){gram.level = gt.level.level; gram.topic = gt.topic;}
-      openGrammarTopic(gid);
-    };
-  });
+  $$('[data-gramlvl]').forEach(function(b){b.onclick = function(){window._gramSelectedLevel = b.getAttribute('data-gramlvl'); renderGrammar()}});
+  $$('[data-gramtopic]').forEach(function(b){b.onclick = function(){openGrammarTopic(b.getAttribute('data-gramtopic'))}});
 }
 
-var GRAMMAR_SYS='You are the world\'s best English grammar teacher for Persian speakers. Create an EXTREMELY detailed lesson.\nReturn ONLY valid JSON:\n{\n  "title": string,\n  "titleFa": string,\n  "intro_fa": string (2-3 paragraphs in Persian, WHY important, WHY hard for Persian speakers),\n  "duration_read_min": number (e.g. 45),\n  "duration_practice_min": number (e.g. 90),\n  "rules": [{"num":number,"title":string,"explain_fa":string (LONG detailed Persian, 4-6 sentences),"structure":string (formula in English),"examples":[{"en":string,"fa":string}],"persian_warning":string}],\n  "common_mistakes": [{"wrong":string,"right":string,"why_fa":string}],\n  "when_to_use": [{"situation_fa":string,"example_en":string}],\n  "quiz": [{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}],\n  "fill_blanks": [{"sentence":string (with ___),"answer":string,"hint_fa":string}],\n  "correction": [{"wrong":string,"right":string,"why_fa":string}],\n  "speaking_practice": [{"en":string,"fa":string}],\n  "cheat_sheet_fa": string,\n  "extra_tips_fa": [string]\n}\nRules: 8-12 rules. 25 quiz. 15 fill-blanks. 10 correction. 5 speaking. Everything explained from zero. Focus on Persian-speaker difficulties. VERY detailed explanations in Persian. Return ONLY JSON.';
+var GRAMMAR_SYS='You are the world\'s best English grammar teacher for Persian speakers. Create an EXTREMELY detailed lesson.\nReturn ONLY valid JSON:\n{"title":string,"titleFa":string,"intro_fa":string,"duration_read_min":number,"duration_practice_min":number,"rules":[{"num":number,"title":string,"explain_fa":string,"structure":string,"examples":[{"en":string,"fa":string}],"persian_warning":string}],"common_mistakes":[{"wrong":string,"right":string,"why_fa":string}],"when_to_use":[{"situation_fa":string,"example_en":string}],"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}],"fill_blanks":[{"sentence":string,"answer":string,"hint_fa":string}],"correction":[{"wrong":string,"right":string,"why_fa":string}],"speaking_practice":[{"en":string,"fa":string}],"cheat_sheet_fa":string,"extra_tips_fa":[string]}\nRules: 8-12 rules. 25 quiz. 15 fill-blanks. 10 correction. 5 speaking. Everything in Persian where needed. Return ONLY JSON.';
 
 function openGrammarTopic(id){
   var gt = findGrammarTopic(id);
@@ -772,9 +741,8 @@ function openGrammarTopic(id){
   }
 }
 function genGrammarTopic(id, gt){
-  var sys = GRAMMAR_SYS;
   var msg = 'Topic: '+gt.topic.title+' ('+gt.topic.titleFa+')\nLevel: '+gt.level.level+'\nWhy hard: '+gt.topic.why+'\n\nCreate the FULL lesson now.';
-  callAI(sys, [{role:'user',content:msg}], 8000)
+  callAI(GRAMMAR_SYS, [{role:'user',content:msg}], 8000)
     .then(function(raw){
       var j = parseJSON(raw);
       grammarCache[id] = j;
@@ -794,13 +762,12 @@ function genGrammarTopic(id, gt){
       }
     });
 }
-
 function renderGrammarTopic(){
   var t = gram.topic;
   if(!t){go('grammar');return}
-  var h = '<button type="button" class="link" id="gback">← بازگشت به گرامر</button>';
+  var h = '<button type="button" class="link" id="gback">← بازگشت</button>';
   if(gram.loading || (!gram.lesson && !gram.err)){
-    h += '<div class="card" style="margin-top:10px"><b>در حال ساخت درس گرامر…</b><p class="sub">ممکنه ۲۰-۴۰ ثانیه طول بکشه چون محتوای کامل و مفصل تولید می‌شه.</p><div class="skel"></div><div class="skel" style="width:80%"></div><div class="skel" style="width:60%"></div><div class="skel" style="width:70%"></div></div>';
+    h += '<div class="card" style="margin-top:10px"><b>در حال ساخت درس گرامر…</b><p class="sub">ممکنه ۲۰-۴۰ ثانیه طول بکشه.</p><div class="skel"></div><div class="skel" style="width:80%"></div><div class="skel" style="width:60%"></div><div class="skel" style="width:70%"></div></div>';
     $('#main').innerHTML = h;
     var b = $('#gback'); if(b) b.onclick = function(){go('grammar')};
     return;
@@ -813,16 +780,12 @@ function renderGrammarTopic(){
     return;
   }
   var L = gram.lesson;
-
-  h += '<div class="g-hero"><h1 dir="ltr">'+esc(L.title||t.title)+'</h1><p>'+esc(L.titleFa||t.titleFa)+' — سطح '+gram.level+'</p><div class="g-meta"><span>📖 مطالعه: '+fa(L.duration_read_min||40)+' دقیقه</span><span>✏️ تمرین: '+fa(L.duration_practice_min||90)+' دقیقه</span><span>📚 '+fa((L.rules||[]).length)+' قاعده</span><span>❓ '+fa((L.quiz||[]).length)+' تست</span></div></div>';
-
-  // Steps
+  h += '<div class="g-hero"><h1 dir="ltr">'+esc(L.title||t.title)+'</h1><p>'+esc(L.titleFa||t.titleFa)+' — سطح '+gram.level+'</p><div class="g-meta"><span>📖 مطالعه: '+fa(L.duration_read_min||40)+' دق</span><span>✏️ تمرین: '+fa(L.duration_practice_min||90)+' دق</span><span>📚 '+fa((L.rules||[]).length)+' قاعده</span><span>❓ '+fa((L.quiz||[]).length)+' تست</span></div></div>';
   h += '<div class="g-step">';
   [['learn','📖 آموزش'],['mistakes','⚠️ اشتباهات'],['quiz','❓ تست'],['fill','✏️ جای خالی'],['correction','🔧 اصلاح'],['speaking','🎤 گفتار'],['cheat','📋 خلاصه']].forEach(function(x){
     h += '<button type="button" data-gstep="'+x[0]+'" aria-current="'+(gram.step===x[0])+'">'+x[1]+'</button>';
   });
   h += '</div>';
-
   if(gram.step==='learn'){
     h += '<div class="card"><h2>مقدمه</h2><p class="pre" style="line-height:1.9">'+esc(L.intro_fa||'')+'</p></div>';
     h += '<h2 style="margin-top:20px">📐 قواعد</h2>';
@@ -838,17 +801,17 @@ function renderGrammarTopic(){
         });
         h += '</div>';
       }
-      if(r.persian_warning) h += '<div class="gr-warn"><b>⚠️ برای فارسی‌زبان‌ها:</b> '+esc(r.persian_warning)+'</div>';
+      if(r.persian_warning) h += '<div class="gr-warn"><b>⚠️ فارسی‌زبان:</b> '+esc(r.persian_warning)+'</div>';
       h += '</div>';
     });
     if(L.when_to_use && L.when_to_use.length){
       h += '<div class="card" style="margin-top:16px"><h2>🎯 کِی استفاده کنیم؟</h2>';
       L.when_to_use.forEach(function(w){
-        h += '<div style="padding:10px 0;border-bottom:1px dashed var(--line)"><div>'+esc(w.situation_fa)+'</div><div dir="ltr" style="font-family:Lexend,sans-serif;color:var(--gram);margin-top:4px">'+esc(w.example_en)+'</div></div>';
+        h += '<div style="padding:10px 0;border-bottom:1px dashed var(--line)"><div>'+esc(w.situation_fa)+'</div><div dir="ltr" style="font-family:Lexend;color:var(--gram);margin-top:4px">'+esc(w.example_en)+'</div></div>';
       });
       h += '</div>';
     }
-    h += '<div class="row between" style="margin-top:18px"><button type="button" class="btn gram" data-gnext="mistakes">مرحله بعد: اشتباهات رایج →</button></div>';
+    h += '<div class="row between" style="margin-top:18px"><button type="button" class="btn gram" data-gnext="mistakes">مرحله بعد: اشتباهات →</button></div>';
   }
   else if(gram.step==='mistakes'){
     h += '<div class="card"><h2>⚠️ اشتباهات رایج</h2>';
@@ -859,24 +822,21 @@ function renderGrammarTopic(){
     h += '<div class="row between" style="margin-top:18px"><button type="button" class="btn ghost" data-gnext="learn">← قبلی</button><button type="button" class="btn gram" data-gnext="quiz">مرحله بعد: تست →</button></div>';
   }
   else if(gram.step==='quiz'){
-    h += '<div class="card"><h2>❓ تست چهارگزینه‌ای ('+fa((L.quiz||[]).length)+' سؤال)</h2>';
-    h += '<div id="gquiz">'+quizHTML(L.quiz||[])+'</div></div>';
+    h += '<div class="card"><h2>❓ تست ('+fa((L.quiz||[]).length)+')</h2><div id="gquiz">'+quizHTML(L.quiz||[])+'</div></div>';
     h += '<div class="row between" style="margin-top:18px"><button type="button" class="btn ghost" data-gnext="mistakes">← قبلی</button><button type="button" class="btn gram" data-gnext="fill">مرحله بعد: جای خالی →</button></div>';
   }
   else if(gram.step==='fill'){
-    h += '<div class="card"><h2>✏️ جای خالی ('+fa((L.fill_blanks||[]).length)+' سؤال)</h2><p class="sub">جای خالی رو پر کن. بعد Enter بزن یا روی «بررسی» بزن.</p>';
-    h += '<div id="gfill"></div></div>';
+    h += '<div class="card"><h2>✏️ جای خالی ('+fa((L.fill_blanks||[]).length)+')</h2><div id="gfill"></div></div>';
     h += '<div class="row between" style="margin-top:18px"><button type="button" class="btn ghost" data-gnext="quiz">← قبلی</button><button type="button" class="btn gram" data-gnext="correction">مرحله بعد: اصلاح →</button></div>';
   }
   else if(gram.step==='correction'){
-    h += '<div class="card"><h2>🔧 اصلاح جمله ('+fa((L.correction||[]).length)+' سؤال)</h2><p class="sub">جمله رو درست بنویس.</p>';
-    h += '<div id="gcorr"></div></div>';
+    h += '<div class="card"><h2>🔧 اصلاح جمله ('+fa((L.correction||[]).length)+')</h2><div id="gcorr"></div></div>';
     h += '<div class="row between" style="margin-top:18px"><button type="button" class="btn ghost" data-gnext="fill">← قبلی</button><button type="button" class="btn gram" data-gnext="speaking">مرحله بعد: گفتار →</button></div>';
   }
   else if(gram.step==='speaking'){
-    h += '<div class="card"><h2>🎤 تمرین گفتاری</h2><p class="sub">این جملات رو با صدای بلند بگو. رو 🔊 بزن تا بشنوی.</p>';
+    h += '<div class="card"><h2>🎤 تمرین گفتاری</h2>';
     (L.speaking_practice||[]).forEach(function(s){
-      h += '<div style="padding:12px 0;border-bottom:1px dashed var(--line)"><div style="display:flex;gap:10px;align-items:center"><button type="button" class="mini" data-say="'+esc(s.en)+'">'+ic('vol')+'</button><div style="flex:1"><div dir="ltr" style="font-family:Lexend,sans-serif;font-size:1rem">'+esc(s.en)+'</div><div class="sub" style="font-size:.82rem">'+esc(s.fa)+'</div></div></div></div>';
+      h += '<div style="padding:12px 0;border-bottom:1px dashed var(--line)"><div style="display:flex;gap:10px;align-items:center"><button type="button" class="mini" data-say="'+esc(s.en)+'">'+ic('vol')+'</button><div style="flex:1"><div dir="ltr" style="font-family:Lexend;font-size:1rem">'+esc(s.en)+'</div><div class="sub" style="font-size:.82rem">'+esc(s.fa)+'</div></div></div></div>';
     });
     h += '</div>';
     h += '<div class="row between" style="margin-top:18px"><button type="button" class="btn ghost" data-gnext="correction">← قبلی</button><button type="button" class="btn gram" data-gnext="cheat">پایان: خلاصه →</button></div>';
@@ -894,25 +854,20 @@ function renderGrammarTopic(){
       prog.grammar[t.id] = Date.now();
       award(15);
       saveProg();
-      h += '<div class="card" style="margin-top:14px;text-align:center;background:var(--ok-soft);border-color:var(--ok)"><b>🎉 تبریک! این موضوع تموم شد.</b><p class="sub" style="margin-top:6px">+۱۵ امتیاز</p></div>';
+      h += '<div class="card" style="margin-top:14px;text-align:center;background:var(--ok-soft);border-color:var(--ok)"><b>🎉 تبریک! تموم شد.</b><p class="sub" style="margin-top:6px">+۱۵ امتیاز</p></div>';
     }
-    h += '<div class="row between" style="margin-top:18px"><button type="button" class="btn ghost" data-gnext="speaking">← قبلی</button><button type="button" class="btn gram" id="gback3">بازگشت به لیست گرامر</button></div>';
+    h += '<div class="row between" style="margin-top:18px"><button type="button" class="btn ghost" data-gnext="speaking">← قبلی</button><button type="button" class="btn gram" id="gback3">بازگشت به گرامر</button></div>';
   }
   $('#main').innerHTML = h;
 
   var gb = $('#gback'); if(gb) gb.onclick = function(){go('grammar')};
   var gb3 = $('#gback3'); if(gb3) gb3.onclick = function(){go('grammar')};
-  $$('[data-gstep]').forEach(function(b){
-    b.onclick = function(){gram.step = b.getAttribute('data-gstep'); render(); window.scrollTo(0,0)};
-  });
-  $$('[data-gnext]').forEach(function(b){
-    b.onclick = function(){gram.step = b.getAttribute('data-gnext'); render(); window.scrollTo(0,0)};
-  });
+  $$('[data-gstep]').forEach(function(b){b.onclick = function(){gram.step = b.getAttribute('data-gstep'); render(); window.scrollTo(0,0)}});
+  $$('[data-gnext]').forEach(function(b){b.onclick = function(){gram.step = b.getAttribute('data-gnext'); render(); window.scrollTo(0,0)}});
 
-  // Bind quiz
   if(gram.step==='quiz'){
     var qz = $('#gquiz');
-    if(qz) bindQuiz(qz, L.quiz||[], function(s,n){award(s*2); $('.qres',qz).innerHTML='نتیجه: '+fa(s)+' از '+fa(n)+' — '+(Math.round(100*s/n)>=70?'عالی! آماده‌ی مرحله بعدی هستی.':'یک بار دیگر مرور کن.')};
+    if(qz) bindQuiz(qz, L.quiz||[], function(s,n){award(s*2); $('.qres',qz).innerHTML='نتیجه: '+fa(s)+' از '+fa(n)});
   }
   if(gram.step==='fill'){
     var fc = $('#gfill');
@@ -920,28 +875,18 @@ function renderGrammarTopic(){
       L.fill_blanks.forEach(function(f,idx){
         var div = document.createElement('div');
         div.style.cssText = 'padding:12px 0;border-bottom:1px dashed var(--line)';
-        div.innerHTML = '<div style="direction:ltr;text-align:left;font-family:Lexend,sans-serif;margin-bottom:8px;font-size:.95rem">'+(idx+1)+'. '+esc(f.sentence)+'</div>'+
-          '<div style="display:flex;gap:8px"><input type="text" dir="ltr" style="flex:1" placeholder="جواب..." data-fidx="'+idx+'"><button type="button" class="btn small gram" data-check="'+idx+'">بررسی</button></div>'+
-          '<div class="sub" style="font-size:.82rem;margin-top:6px">💡 '+esc(f.hint_fa||'')+'</div>'+
-          '<div class="fg-res" style="margin-top:6px;font-weight:600;min-height:1.2em"></div>';
+        div.innerHTML = '<div style="direction:ltr;text-align:left;font-family:Lexend;margin-bottom:8px;font-size:.95rem">'+(idx+1)+'. '+esc(f.sentence)+'</div><div style="display:flex;gap:8px"><input type="text" dir="ltr" style="flex:1" placeholder="جواب..." data-fidx="'+idx+'"><button type="button" class="btn small gram" data-check="'+idx+'">بررسی</button></div><div class="sub" style="font-size:.82rem;margin-top:6px">💡 '+esc(f.hint_fa||'')+'</div><div class="fg-res" style="margin-top:6px;font-weight:600;min-height:1.2em"></div>';
         fc.appendChild(div);
       });
       $$('[data-check]', fc).forEach(function(b){
         b.onclick = function(){
           var idx = +b.getAttribute('data-check');
           var input = fc.querySelector('input[data-fidx="'+idx+'"]');
-          var res = input.closest('div').parentNode.querySelector('.fg-res');
+          var res = input.parentNode.parentNode.querySelector('.fg-res');
           var correct = norm(L.fill_blanks[idx].answer);
           var given = norm(input.value);
-          if(given === correct){
-            res.style.color = 'var(--ok)';
-            res.textContent = '✓ درست!';
-            input.classList.add('ok');
-            award(2);
-          } else {
-            res.style.color = 'var(--bad)';
-            res.innerHTML = '✗ درست: <b dir="ltr">'+esc(L.fill_blanks[idx].answer)+'</b>';
-          }
+          if(given === correct){res.style.color='var(--ok)';res.textContent='✓ درست!';award(2)}
+          else{res.style.color='var(--bad)';res.innerHTML='✗ درست: <b dir="ltr">'+esc(L.fill_blanks[idx].answer)+'</b>'}
         };
       });
     }
@@ -952,27 +897,18 @@ function renderGrammarTopic(){
       L.correction.forEach(function(f,idx){
         var div = document.createElement('div');
         div.style.cssText = 'padding:12px 0;border-bottom:1px dashed var(--line)';
-        div.innerHTML = '<div style="direction:ltr;text-align:left;font-family:Lexend,sans-serif;margin-bottom:8px;color:var(--bad)">✗ '+esc(f.wrong)+'</div>'+
-          '<div style="display:flex;gap:8px"><input type="text" dir="ltr" style="flex:1" placeholder="جمله درست..." data-cidx="'+idx+'"><button type="button" class="btn small gram" data-corr="'+idx+'">بررسی</button></div>'+
-          '<div class="cg-res" style="margin-top:6px;font-weight:600;min-height:1.2em"></div>'+
-          '<div class="sub" style="font-size:.82rem;margin-top:4px">💡 '+esc(f.why_fa||'')+'</div>';
+        div.innerHTML = '<div style="direction:ltr;text-align:left;font-family:Lexend;margin-bottom:8px;color:var(--bad)">✗ '+esc(f.wrong)+'</div><div style="display:flex;gap:8px"><input type="text" dir="ltr" style="flex:1" placeholder="جمله درست..." data-cidx="'+idx+'"><button type="button" class="btn small gram" data-corr="'+idx+'">بررسی</button></div><div class="cg-res" style="margin-top:6px;font-weight:600;min-height:1.2em"></div><div class="sub" style="font-size:.82rem;margin-top:4px">💡 '+esc(f.why_fa||'')+'</div>';
         cc.appendChild(div);
       });
       $$('[data-corr]', cc).forEach(function(b){
         b.onclick = function(){
           var idx = +b.getAttribute('data-corr');
           var input = cc.querySelector('input[data-cidx="'+idx+'"]');
-          var res = input.closest('div').parentNode.querySelector('.cg-res');
+          var res = input.parentNode.parentNode.querySelector('.cg-res');
           var correct = norm(L.correction[idx].right);
           var given = norm(input.value);
-          if(given === correct || sim(given, correct) >= 0.8){
-            res.style.color = 'var(--ok)';
-            res.innerHTML = '✓ درست! <span dir="ltr" style="color:var(--muted);font-size:.85rem">'+esc(L.correction[idx].right)+'</span>';
-            award(2);
-          } else {
-            res.style.color = 'var(--bad)';
-            res.innerHTML = '✗ درست: <b dir="ltr">'+esc(L.correction[idx].right)+'</b>';
-          }
+          if(given === correct || sim(given, correct) >= 0.8){res.style.color='var(--ok)';res.innerHTML='✓ درست! <span dir="ltr" style="color:var(--muted);font-size:.85rem">'+esc(L.correction[idx].right)+'</span>';award(2)}
+          else{res.style.color='var(--bad)';res.innerHTML='✗ درست: <b dir="ltr">'+esc(L.correction[idx].right)+'</b>'}
         };
       });
     }
@@ -983,32 +919,27 @@ function renderGrammarTopic(){
 function renderFree(){
   var h = '';
   if(!free.mode){
-    h += '<h1>🎲 تمرین آزاد</h1><p class="sub">ایلدار یا کاربر سؤال می‌پرسه، تو جواب می‌دی. ۲۵ موقعیت مختلف.</p>';
+    h += '<h1>🎲 تمرین آزاد</h1><p class="sub">ایلدار یا کاربر سؤال می‌پرسه، تو جواب می‌دی.</p>';
     h += '<div class="mode-grid">';
-    h += '<button type="button" class="mode-card" data-freemode="ildar"><div class="mi">'+ic('briefcase')+'</div><div class="mt">گفتگو با ایلدار</div><div class="md">ایلدار سؤال می‌پرسه، تو جواب می‌دی</div></button>';
-    h += '<button type="button" class="mode-card" data-freemode="user"><div class="mi">'+ic('users')+'</div><div class="mt">گفتگو با کاربر</div><div class="md">کاربر مشکل داره، تو حل می‌کنی</div></button>';
-    h += '<button type="button" class="mode-card" data-freemode="persian"><div class="mi">🇮🇷</div><div class="mt">سناریوی فارسی</div><div class="md">سناریو به فارسی، تو به انگلیسی جواب بده</div></button>';
+    h += '<button type="button" class="mode-card" data-freemode="ildar"><div class="mi">'+ic('briefcase')+'</div><div class="mt">گفتگو با ایلدار</div><div class="md">ایلدار سؤال می‌پرسه</div></button>';
+    h += '<button type="button" class="mode-card" data-freemode="user"><div class="mi">'+ic('users')+'</div><div class="mt">گفتگو با کاربر</div><div class="md">کاربر مشکل داره</div></button>';
+    h += '<button type="button" class="mode-card" data-freemode="persian"><div class="mi">🇮🇷</div><div class="mt">سناریوی فارسی</div><div class="md">سناریو فارسی، جواب انگلیسی</div></button>';
     h += '</div>';
     $('#main').innerHTML = h;
     $$('[data-freemode]').forEach(function(b){b.onclick=function(){startFree(b.getAttribute('data-freemode'))}});
     return;
   }
-  // Active practice
   var sit = free.situation;
-  if(!sit){toast('سناریو پیدا نشد');free.mode=null;render();return}
+  if(!sit){toast('سناریو نیست');free.mode=null;render();return}
   h += '<button type="button" class="link" id="fexit">← بازگشت</button>';
-  h += '<div class="situation-card"><div class="sc-cat">📌 دسته: '+esc(sit.cat)+' · سطح: '+esc(sit.level)+'</div><div class="sc-fa">'+esc(sit.fa)+'</div>'+(free.showHint?'<div class="sc-hint">💡 راهنما: '+esc(sit.hint)+'</div>':'')+'</div>';
-  h += '<div class="row" style="margin-bottom:12px"><button type="button" class="btn ghost small" id="fhint">'+(free.showHint?'پنهان کردن راهنما':'💡 نمایش راهنما')+'</button><button type="button" class="btn ghost small" id="fsample">📝 نمایش نمونه</button><button type="button" class="btn ghost small" id="fnext">🎲 موقعیت جدید</button></div>';
+  h += '<div class="situation-card"><div class="sc-cat">📌 '+esc(sit.cat)+' · سطح: '+esc(sit.level)+'</div><div class="sc-fa">'+esc(sit.fa)+'</div>'+(free.showHint?'<div class="sc-hint">💡 '+esc(sit.hint)+'</div>':'')+'</div>';
+  h += '<div class="row" style="margin-bottom:12px"><button type="button" class="btn ghost small" id="fhint">'+(free.showHint?'پنهان':'💡 راهنما')+'</button><button type="button" class="btn ghost small" id="fsample">📝 نمونه</button><button type="button" class="btn ghost small" id="fnext">🎲 جدید</button></div>';
   h += '<div class="chat" id="fchat">'+free.turns.map(freeBubble).join('')+'</div>';
-  h += '<div class="composer"><div class="hint">به انگلیسی جواب بده.</div><div class="cbox"><button type="button" class="mic free-mic '+(listening?'rec':'')+'" id="fmic">'+ic('mic')+'</button><input type="text" id="fmsg" dir="ltr" placeholder="Type your reply in English…" autocomplete="off"><button type="button" class="send" id="fsend">'+ic('send')+'</button></div></div>';
+  h += '<div class="composer"><div class="hint">به انگلیسی جواب بده.</div><div class="cbox"><button type="button" class="mic free-mic '+(listening?'rec':'')+'" id="fmic">'+ic('mic')+'</button><input type="text" id="fmsg" dir="ltr" placeholder="Type reply…" autocomplete="off"><button type="button" class="send" id="fsend">'+ic('send')+'</button></div></div>';
   $('#main').innerHTML = h;
   $('#fexit').onclick = function(){free.mode=null;free.turns=[];free.situation=null;render()};
   $('#fhint').onclick = function(){free.showHint=!free.showHint;render()};
-  $('#fsample').onclick = function(){
-    if(!sit.sample){toast('نمونه‌ای نیست');return}
-    free.turns.push({role:'sample',text:sit.sample});
-    drawFree();
-  };
+  $('#fsample').onclick = function(){if(!sit.sample){toast('نمونه نیست');return}free.turns.push({role:'sample',text:sit.sample});drawFree()};
   $('#fnext').onclick = function(){startFree(free.mode)};
   $('#fmic').onclick = toggleFreeMic;
   $('#fsend').onclick = function(){sendFree($('#fmsg').value,null,false)};
@@ -1016,40 +947,30 @@ function renderFree(){
   drawFree();
 }
 function startFree(mode){
-  // انتخاب موقعیت تصادفی از بین ۲۵ تا
   var sit = FREE_SITUATIONS[Math.floor(Math.random()*FREE_SITUATIONS.length)];
-  free.mode = mode;
-  free.situation = sit;
-  free.turns = [];
-  free.busy = false;
-  free.count = 0;
-  free.showHint = false;
-  // برای حالت ildar فقط موقعیت‌های ایلدار، برای user فقط کاربر
   if(mode==='ildar'){
-    var ildarCats = ['موجودی','گزارش','پیگیری','تأخیر','تأیید','پیدا کردن','جلسه','اولویت','پیشنهاد','نظر','فنی','منابع','زمان‌بندی','انبار','مرخصی','گزارش','همکاری'];
+    var ildarCats = ['موجودی','گزارش','پیگیری','تأخیر','تأیید','پیدا کردن','جلسه','اولویت','پیشنهاد','نظر','فنی','منابع','زمان‌بندی','انبار','مرخصی','همکاری'];
     var pool = FREE_SITUATIONS.filter(function(s){return ildarCats.indexOf(s.cat)>=0});
     sit = pool[Math.floor(Math.random()*pool.length)];
-    free.situation = sit;
   }
   if(mode==='user'){
     var userCats = ['پشتیبانی','شبکه','چاپ','امنیت'];
-    var pool = FREE_SITUATIONS.filter(function(s){return userCats.indexOf(s.cat)>=0});
-    sit = pool[Math.floor(Math.random()*pool.length)];
-    free.situation = sit;
+    var pool2 = FREE_SITUATIONS.filter(function(s){return userCats.indexOf(s.cat)>=0});
+    sit = pool2[Math.floor(Math.random()*pool2.length)];
   }
-  // پیام اول از AI
+  free.mode = mode; free.situation = sit; free.turns = []; free.busy=false; free.count=0; free.showHint=false;
   if(mode==='persian'){
-    // حالت فارسی: کاربر باید به فارسی بخونه و انگلیسی جواب بده
     free.turns.push({role:'situation',text:sit.fa});
   } else {
-    free.turns.push({role:'ai',text:sit.fa + ' → حالا تو جواب بده به انگلیسی.'});
+    free.turns.push({role:'ai',text:sit.fa});
   }
   go('free');
+  if(settings.autoplay && sit.sample) speak(sit.sample);
 }
 function freeBubble(t){
-  if(t.role==='ai') return '<div class="b free-ai"><div class="bt" style="font-size:.95rem">'+esc(t.text)+'</div></div>';
+  if(t.role==='ai') return '<div class="b free-ai"><div class="bt">'+esc(t.text)+'</div></div>';
   if(t.role==='situation') return '<div class="b free-ai"><div style="font-size:.78rem;color:#0e7490;font-weight:700;margin-bottom:4px">📌 سناریو</div><div class="bt">'+esc(t.text)+'</div></div>';
-  if(t.role==='sample') return '<div class="b ai" style="background:var(--accent-soft);border-color:var(--accent)"><div style="font-size:.75rem;color:#8a6d00;font-weight:700;margin-bottom:4px">📝 نمونه‌ی جواب</div><div class="bt" dir="ltr">'+esc(t.text)+'</div><button type="button" class="mini" data-say="'+esc(t.text)+'">'+ic('vol')+'</button></div>';
+  if(t.role==='sample') return '<div class="b ai" style="background:var(--accent-soft);border-color:var(--accent)"><div style="font-size:.75rem;color:#8a6d00;font-weight:700;margin-bottom:4px">📝 نمونه</div><div class="bt" dir="ltr">'+esc(t.text)+'</div><button type="button" class="mini" data-say="'+esc(t.text)+'">'+ic('vol')+'</button></div>';
   return '<div class="b free-me"><div class="bt" dir="ltr">'+esc(t.text)+'</div></div>'+(t.err?'<div class="an">ارسال نشد.</div>':freeAnalysis(t));
 }
 function freeAnalysis(t){
@@ -1059,12 +980,8 @@ function freeAnalysis(t){
   var h = '<div class="an"><div class="an-top">'+(a.is_correct&&!ms.length?'<span class="pill ok">عالی</span>':'<span class="pill warn">بهتر می‌شه</span>');
   if(a.score!=null) h += '<span class="sc">امتیاز <b>'+a.score+'</b>/10</span>';
   h += '</div>';
-  if(a.corrected && a.corrected.trim() && norm(a.corrected)!==norm(t.text)){
-    h += '<div class="fix"><span>✓</span><span dir="ltr">'+esc(a.corrected)+'</span></div>';
-  }
-  ms.forEach(function(m){
-    h += '<div class="mk"><div dir="ltr"><s>'+esc(m.original)+'</s> → <b>'+esc(m.fix)+'</b></div><div>'+esc(m.explain_fa||'')+'</div></div>';
-  });
+  if(a.corrected && norm(a.corrected)!==norm(t.text)) h += '<div class="fix"><span>✓</span><span dir="ltr">'+esc(a.corrected)+'</span></div>';
+  ms.forEach(function(m){h += '<div class="mk"><div dir="ltr"><s>'+esc(m.original)+'</s> → <b>'+esc(m.fix)+'</b></div><div>'+esc(m.explain_fa||'')+'</div></div>'});
   if(a.tip_fa) h += '<div class="tip">💡 '+esc(a.tip_fa)+'</div>';
   return h+'</div>';
 }
@@ -1085,9 +1002,7 @@ function sendFree(text, conf, voice){
   callAI(sys, [{role:'user',content:'Armin replied: "'+text+'"'}], 800)
     .then(function(raw){
       var j; try{j=parseJSON(raw)}catch(e){j={is_correct:true,mistakes:[],score:7}}
-      ut.pending = false;
-      ut.an = j;
-      // ثبت در دفترچه
+      ut.pending = false; ut.an = j;
       (j.mistakes||[]).forEach(function(mk){
         if(!mk.original || !mk.fix) return;
         var exists = mistakes.some(function(x){return x.original===mk.original && x.fix===mk.fix});
@@ -1102,23 +1017,13 @@ function sendFree(text, conf, voice){
       drawFree();
       if(settings.autoplay && j.next) speak(j.next);
     })
-    .catch(function(e){
-      free.busy = false; ut.pending = false; ut.err = true;
-      drawFree(); toast(errText(e), 6000);
-    });
+    .catch(function(e){free.busy = false; ut.pending = false; ut.err = true; drawFree(); toast(errText(e), 6000)});
 }
 function toggleFreeMic(){
   if(view!=='free' || free.busy) return;
   var b = $('#fmic');
   if(listening){rec && rec.stop(); return}
-  rec = listen({
-    interim: function(t){var m=$('#fmsg'); if(m) m.value=t},
-    done: function(t,c){
-      listening = false;
-      var bb = $('#fmic'); if(bb) bb.classList.remove('rec');
-      if(t) sendFree(t, c, true);
-    }
-  });
+  rec = listen({interim:function(t){var m=$('#fmsg');if(m)m.value=t},done:function(t,c){listening=false;var bb=$('#fmic');if(bb)bb.classList.remove('rec');if(t)sendFree(t,c,true)}});
   if(rec){listening = true; b && b.classList.add('rec')}
 }
 
@@ -1130,16 +1035,14 @@ function renderPath(){
   if(!L){pathLevel='A1';L=LEVELS[0]}
   var h = '';
   if(!settings.key) h += '<div class="banner"><div><b>برای درس‌های کامل، کلید API لازم است.</b></div><button type="button" class="btn brand" id="gset">تنظیمات</button></div>';
-
   h += '<div class="card" style="margin-bottom:14px;background:var(--prog-soft);border-color:var(--prog)">';
   h += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">';
-  h += '<div><b>🎯 کجا مشکل داری؟</b><div class="sub" style="font-size:.85rem">درس اختصاصی با تمرین بیشتر</div></div>';
-  h += '<button type="button" class="btn prog small" id="openCustom">'+ic('light')+' درس بساز</button>';
+  h += '<div><b>🎯 کجا مشکل داری؟</b><div class="sub" style="font-size:.85rem">درس اختصاصی</div></div>';
+  h += '<button type="button" class="btn prog small" id="openCustom">'+ic('light')+' بساز</button>';
   h += '</div></div>';
   h += '<div id="customBox"></div>';
-
   if(customLessons.length){
-    h += '<h3 style="margin-top:18px">🎯 درس‌های اختصاصی من ('+fa(customLessons.length)+')</h3>';
+    h += '<h3 style="margin-top:18px">🎯 درس‌های اختصاصی ('+fa(customLessons.length)+')</h3>';
     h += '<div style="display:grid;gap:10px;margin-top:8px;margin-bottom:18px">';
     customLessons.forEach(function(cl){
       h += '<div class="card" style="display:flex;gap:12px;align-items:center;padding:14px">';
@@ -1152,8 +1055,7 @@ function renderPath(){
     });
     h += '</div>';
   }
-
-  h += '<h1>همه‌ی درس‌های آماده</h1><p class="sub">۶ سطح، ۶۰+ درس.</p>';
+  h += '<h1>همه‌ی درس‌ها</h1>';
   h += '<div class="levels">';
   LEVELS.forEach(function(l){
     h += '<button type="button" class="lv" data-lv="'+l.id+'" aria-pressed="'+(l.id===pathLevel)+'"><b>'+l.id+'</b><small>'+l.name+'</small></button>';
@@ -1166,7 +1068,6 @@ function renderPath(){
   });
   h += '</div>';
   $('#main').innerHTML = h;
-
   var oc = $('#openCustom'); if(oc) oc.onclick = function(){
     $('#customBox').innerHTML = renderCustomLessonForm();
     $('#cancelCust').onclick = function(){$('#customBox').innerHTML=''};
@@ -1182,33 +1083,28 @@ function renderPath(){
   $$('.lv').forEach(function(b){b.onclick=function(){pathLevel=b.getAttribute('data-lv');renderPath()}});
   $$('.unit').forEach(function(b){b.onclick=function(){openLesson(pathLevel, +b.getAttribute('data-u'))}});
   $$('[data-cust]').forEach(function(b){b.onclick=function(){openCustomLesson(b.getAttribute('data-cust'))}});
-  $$('[data-del-cust]').forEach(function(b){
-    b.onclick = function(ev){ev.stopPropagation(); deleteCustomLesson(b.getAttribute('data-del-cust'))};
-  });
+  $$('[data-del-cust]').forEach(function(b){b.onclick = function(ev){ev.stopPropagation(); deleteCustomLesson(b.getAttribute('data-del-cust'))}});
   var g = $('#gset'); if(g) g.onclick = function(){go('settings')};
 }
 function renderCustomLessonForm(){
   var h = '<div class="card stack" style="margin-top:14px">';
-  h += '<div style="display:flex;justify-content:space-between;align-items:center"><b>🎯 درس اختصاصی بساز</b><button type="button" class="link" id="cancelCust">✕</button></div>';
-  h += '<div class="field"><label>موضوع / مشکل</label><input type="text" id="custTopic" placeholder="مثلاً: Present Perfect" dir="ltr"></div>';
-  h += '<div class="row"><div class="field" style="flex:1"><label>تعداد تمرین</label><select id="custCount"><option value="8">۸</option><option value="10" selected>۱۰</option><option value="15">۱۵</option><option value="20">۲۰</option></select></div>';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center"><b>🎯 درس اختصاصی</b><button type="button" class="link" id="cancelCust">✕</button></div>';
+  h += '<div class="field"><label>موضوع</label><input type="text" id="custTopic" placeholder="مثلاً: Present Perfect" dir="ltr"></div>';
+  h += '<div class="row"><div class="field" style="flex:1"><label>تعداد</label><select id="custCount"><option>8</option><option selected>10</option><option>15</option><option>20</option></select></div>';
   h += '<div class="field" style="flex:1"><label>سطح</label><select id="custLevel"><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option></select></div></div>';
-  h += '<div class="field"><label>توضیح اضافه (اختیاری)</label><input type="text" id="custNote" placeholder="با مثال‌های کاری" dir="ltr"></div>';
-  h += '<div class="row"><button type="button" class="btn prog" id="buildCust">ساخت درس</button></div>';
-  h += '</div>';
+  h += '<div class="field"><label>توضیح (اختیاری)</label><input type="text" id="custNote" dir="ltr"></div>';
+  h += '<button type="button" class="btn prog" id="buildCust">ساخت</button></div>';
   return h;
 }
 function buildCustomLesson(topic, count, level, extraNote){
   var box = $('#customBox');
   box.innerHTML = '<div class="card"><b>در حال ساخت…</b><div class="skel"></div><div class="skel" style="width:80%"></div></div>';
-  var sys = 'You are an EFL curriculum designer for Persian speakers. Create a FOCUSED custom lesson.\nReturn ONLY valid JSON:\n{"id":string,"title":string,"topic":string,"intro_fa":string,"vocab":[{"en":string,"say":string,"fa":string,"ex":string,"ex_fa":string}],"grammar":{"title":string,"explain_fa":string,"rules":[string],"examples":[{"en":string,"fa":string}]},"dialogue":[{"speaker":"A"|"B","en":string,"fa":string}],"phrases":[{"en":string,"fa":string}],"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}],"speaking_goal":string,"practice_tips_fa":[string]}\nRules: 8-10 vocab. LONG grammar explanation. Exactly '+count+' quiz. All in Persian.';
-  callAI(sys, [{role:'user',content:'Topic: '+topic+'\nLevel: '+level+'\nExercises: '+count+(extraNote?'\nNote: '+extraNote:'')}], 5000)
+  var sys = 'You are an EFL curriculum designer. Create FOCUSED lesson. Return ONLY valid JSON: {"id":string,"title":string,"topic":string,"intro_fa":string,"vocab":[{"en":string,"say":string,"fa":string,"ex":string,"ex_fa":string}],"grammar":{"title":string,"explain_fa":string,"rules":[string],"examples":[{"en":string,"fa":string}]},"dialogue":[{"speaker":"A"|"B","en":string,"fa":string}],"phrases":[{"en":string,"fa":string}],"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}],"speaking_goal":string,"practice_tips_fa":[string]}\nRules: 10 vocab. LONG grammar. Exactly '+count+' quiz. All Persian explanations.';
+  callAI(sys, [{role:'user',content:'Topic: '+topic+'\nLevel: '+level+(extraNote?'\nNote: '+extraNote:'')}], 5000)
     .then(function(raw){
       var j = parseJSON(raw);
       j.id = 'cust-'+Date.now();
-      j.customTopic = topic;
-      j.level = level;
-      j.createdAt = Date.now();
+      j.customTopic = topic; j.level = level; j.createdAt = Date.now();
       customLessons.unshift(j);
       customLessons = customLessons.slice(0, 30);
       store.set('zy_custom_lessons', customLessons);
@@ -1231,7 +1127,7 @@ function openCustomLesson(id){
   if(!cl){toast('پیدا نشد');return}
   lessonCtx = {id:cl.id,level:cl.level||'B1',idx:0,unit:[cl.title||'Custom',cl.topic||'',''],lesson:cl,step:'learn',loading:false,err:null,quizDone:false,isCustom:true};
   go('lesson');
-    }
+}
 
 // ============ LESSON ============
 var LESSON_SYS='You are an EFL curriculum designer for Persian speakers. Create ONE lesson as strict JSON.\nSchema: {"title":string,"intro_fa":string,"vocab":[{"en":string,"say":string,"fa":string,"ex":string,"ex_fa":string}],"grammar":{"title":string,"explain_fa":string,"rules":[string],"examples":[{"en":string,"fa":string}]},"dialogue":[{"speaker":"A"|"B","en":string,"fa":string}],"phrases":[{"en":string,"fa":string}],"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}],"speaking_goal":string}\nRules: 10 vocab, "say" for A1-A2, Persian grammar, 6-8 dialogue, 5 phrases, 6 quiz, valid JSON.';
@@ -1302,9 +1198,7 @@ function learnHTML(L){
   });
   h += '</div></div>';
   var g = L.grammar||{};
-  h += '<div class="card"><h2>گرامر: <span dir="ltr">'+esc(g.title)+'</span></h2><p class="pre">'+esc(g.explain_fa)+'</p><ul class="rules" dir="ltr">';
-  (g.rules||[]).forEach(function(r){h+='<li><span>'+esc(r)+'</span></li>'});
-  h += '</ul></div>';
+  h += '<div class="card"><h2>گرامر</h2><p class="pre">'+esc(g.explain_fa)+'</p></div>';
   h += '<div class="card"><h2>گفتگو</h2><div class="dl">';
   (L.dialogue||[]).forEach(function(l){
     h += '<div class="dline '+(l.speaker==='B'?'b':'')+'"><button type="button" class="mini" data-say="'+esc(l.en)+'">'+ic('vol')+'</button><div class="bub"><div dir="ltr">'+esc(l.en)+'</div><div class="fa">'+esc(l.fa)+'</div></div></div>';
@@ -1350,7 +1244,7 @@ function renderJob(){
     var h = '<h1>حالت شغلی</h1><p class="sub">سناریوهای واقعی کار.</p>';
     h += '<div class="card" style="margin-top:14px;background:var(--job-soft);border-color:var(--job)">';
     h += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">';
-    h += '<div><b>📥 مکالمه‌ی امروزت رو وارد کن</b><div class="sub" style="font-size:.85rem">سناریو تمرینی می‌سازم</div></div>';
+    h += '<div><b>📥 مکالمه رو وارد کن</b><div class="sub" style="font-size:.85rem">سناریو تمرینی می‌سازم</div></div>';
     h += '<button type="button" class="btn job small" id="openImport">'+ic('download')+' ایمپورت</button>';
     h += '</div></div>';
     h += '<div id="importBox"></div>';
@@ -1376,7 +1270,7 @@ function renderJob(){
       h += '<button type="button" class="card" data-cat="'+c.id+'" style="text-align:start;cursor:pointer;padding:16px"><div style="font-size:1.5rem;margin-bottom:6px">'+ic(c.icon)+'</div><div style="font-weight:700">'+esc(c.name)+'</div><div style="font-size:.82rem;color:var(--muted)">'+esc(c.desc)+'</div><div style="font-size:.78rem;color:var(--brand);margin-top:6px">'+fa(cnt)+' سناریو</div></button>';
     });
     h += '</div>';
-    h += '<div class="card" style="margin-top:20px;text-align:center"><b>برنامه‌ی ۸ هفته‌ای</b><button type="button" class="btn prog" id="toProg" style="margin-top:8px">'+ic('cal')+' برو به برنامه</button></div>';
+    h += '<div class="card" style="margin-top:20px;text-align:center"><b>برنامه‌ی ۸ هفته‌ای</b><button type="button" class="btn prog" id="toProg" style="margin-top:8px">'+ic('cal')+' برو</button></div>';
     el.innerHTML = h;
     var oi = $('#openImport'); if(oi) oi.onclick = renderImportForm;
     $$('.card[data-cat]').forEach(function(b){b.onclick=function(){job.view='list';job.catId=b.getAttribute('data-cat');renderJob()}});
@@ -1412,8 +1306,8 @@ function renderJob(){
 function renderImportForm(){
   var h = '<div class="card stack" style="margin-top:14px">';
   h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b>📥 مکالمه رو وارد کن</b><button type="button" class="link" id="cancelImp">✕</button></div>';
-  h += '<div class="field"><label>متن مکالمه</label><textarea id="impText" style="min-height:180px;font-family:inherit;font-size:.9rem" placeholder="Ildar: How many laptops do we have?\nArmin: We have 3." dir="ltr"></textarea></div>';
-  h += '<button type="button" class="btn job" id="buildImp">🎯 سناریو بساز</button></div>';
+  h += '<div class="field"><label>متن</label><textarea id="impText" style="min-height:180px;font-family:inherit;font-size:.9rem" placeholder="Ildar: How many laptops do we have?\nArmin: We have 3." dir="ltr"></textarea></div>';
+  h += '<button type="button" class="btn job" id="buildImp">🎯 بساز</button></div>';
   var box = $('#importBox');
   box.innerHTML = h;
   $('#cancelImp').onclick = function(){box.innerHTML=''};
@@ -1429,12 +1323,11 @@ function buildScenarioFromConversation(rawText){
   var dialogText = lines.join('\n');
   var box = $('#importBox');
   box.innerHTML = '<div class="card"><b>در حال ساخت…</b><div class="skel"></div></div>';
-  var sys = 'Extract a workplace scenario from a real conversation. Return ONLY JSON: {"title":"فارسی","desc":"فارسی","role":"User"|"Manager"|"Colleague","roleFa":"کاربر|مدیر|همکار","opening":"first English line by other person","hint":"راهنما فارسی","sample":"sample English reply","key_phrases":[{"en":"","fa":""}],"level":"easy|medium|hard|real"}';
+  var sys = 'Extract a workplace scenario. Return ONLY JSON: {"title":"فارسی","desc":"فارسی","role":"User"|"Manager"|"Colleague","roleFa":"کاربر|مدیر|همکار","opening":"first English line","hint":"راهنما","sample":"sample English reply","key_phrases":[{"en":"","fa":""}],"level":"easy|medium|hard|real"}';
   callAI(sys, [{role:'user',content:dialogText}], 1500)
     .then(function(raw){
       var j = parseJSON(raw);
       j.id = 'imp-'+Date.now();
-      j.cat = 'mine';
       importedScenarios.unshift(j);
       importedScenarios = importedScenarios.slice(0, 50);
       store.set('zy_imported', importedScenarios);
@@ -1476,8 +1369,8 @@ function renderJobPlay(){
   var sc = job.scenario; if(!sc){job.view='cats';return renderJob()}
   var lvlLabel = {easy:'ساده',medium:'متوسط',hard:'سخت',real:'واقعی'}[sc.level] || '';
   var h = '<button type="button" class="link" id="jback2">← بازگشت</button>';
-  h += '<div class="thead"><div>'+(sc.level?'<span class="pill '+sc.level+'">'+lvlLabel+'</span> ':'')+'<span class="pill job">'+esc(sc.roleFa||'')+'</span> <b>'+esc(sc.title)+'</b><div class="sub" style="font-size:.85rem">'+esc(sc.desc||'')+'</div></div>';
-  h += '<div class="row"><button type="button" class="btn ghost small" id="jHint">'+ic('light')+' راهنما</button>'+(sc.sample?'<button type="button" class="btn ghost small" id="jSample">📝 نمونه</button>':'')+'<button type="button" class="btn ghost small" id="jRestart">🔄</button></div></div>';
+  h += '<div class="thead"><div>'+(sc.level?'<span class="pill '+sc.level+'">'+lvlLabel+'</span> ':'')+'<span class="pill job">'+esc(sc.roleFa||'')+'</span> <b>'+esc(sc.title)+'</b></div>';
+  h += '<div class="row"><button type="button" class="btn ghost small" id="jHint">💡</button>'+(sc.sample?'<button type="button" class="btn ghost small" id="jSample">📝</button>':'')+'<button type="button" class="btn ghost small" id="jRestart">🔄</button></div></div>';
   h += '<div class="hint-box'+(job.showHint?' show':'')+'" id="hintBox"><div class="lbl">💡 راهنما</div>'+esc(sc.hint||'')+'</div>';
   h += '<div class="chat" id="chat">'+job.turns.map(jobBubble).join('')+'</div>';
   h += '<div class="composer"><div class="hint">به انگلیسی جواب بده.</div><div class="cbox"><button type="button" class="mic job-mic '+(listening?'rec':'')+'" id="mic">'+ic('mic')+'</button><input type="text" id="msg" dir="ltr" placeholder="Type reply…" autocomplete="off"><button type="button" class="send" id="sendB">'+ic('send')+'</button></div></div>';
@@ -1495,7 +1388,7 @@ function jobBubble(t){
   if(t.role==='ai') return '<div class="b job-ai"><div class="bt" dir="ltr">'+esc(t.text)+'</div><button type="button" class="mini" data-say="'+esc(t.text)+'">'+ic('vol')+'</button></div>';
   if(t.role==='sample') return '<div class="b ai" style="background:var(--accent-soft);border-color:var(--accent)"><div style="font-size:.75rem;color:#8a6d00;font-weight:700;margin-bottom:4px">📝 نمونه</div><div class="bt" dir="ltr">'+esc(t.text)+'</div></div>';
   if(t.role==='phrases'){
-    var ph = '<div class="b ai" style="background:var(--brand-soft);border-color:var(--brand);max-width:100%"><div style="font-size:.78rem;color:var(--brand);font-weight:700;margin-bottom:6px">🎁 عبارت‌های کلیدی</div>';
+    var ph = '<div class="b ai" style="background:var(--brand-soft);border-color:var(--brand);max-width:100%"><div style="font-size:.78rem;color:var(--brand);font-weight:700;margin-bottom:6px">🎁 عبارت‌ها</div>';
     (t.phrases||[]).forEach(function(p){
       ph += '<div style="padding:4px 0;border-bottom:1px dashed var(--line)"><span dir="ltr">'+esc(p.en)+'</span><div class="fa" style="font-size:.78rem">'+esc(p.fa||'')+'</div></div>';
     });
@@ -1560,10 +1453,7 @@ function toggleJobMic(){
   if(view!=='job' || job.busy || job.done) return;
   var b = $('#mic');
   if(listening){rec && rec.stop(); return}
-  rec = listen({
-    interim: function(t){var m=$('#msg'); if(m) m.value=t},
-    done: function(t,c){listening = false;var bb=$('#mic');if(bb)bb.classList.remove('rec');if(t) sendJob(t,c,true)}
-  });
+  rec = listen({interim:function(t){var m=$('#msg');if(m)m.value=t},done:function(t,c){listening = false;var bb=$('#mic');if(bb)bb.classList.remove('rec');if(t) sendJob(t,c,true)}});
   if(rec){listening = true; b && b.classList.add('rec')}
 }
 
@@ -1606,7 +1496,7 @@ function renderTalk(){
     $('#go').onclick = function(){var cust = $('#ft').value.trim();startTalk({level:$('#fl').value,topic:cust||topic})};
     return;
   }
-  el.innerHTML = '<div class="thead"><div><b dir="ltr">'+esc(talk.topic)+'</b><div class="sub">'+talk.level+'</div></div><div class="row"><button type="button" class="btn ghost" id="newT">جدید</button><button type="button" class="btn brand" id="endT">گزارش</button></div></div><div class="chat" id="chat"></div><div class="composer"><div class="cbox"><button type="button" class="mic '+(listening?'rec':'')+'" id="mic">'+ic('mic')+'</button><input type="text" id="msg" dir="ltr" placeholder="Say…"><button type="button" class="send" id="sendB">'+ic('send')+'</button></div></div>';
+  el.innerHTML = '<div class="thead"><div><b dir="ltr">'+esc(talk.topic)+'</b><div class="sub">'+talk.level+'</div></div><div class="row"><button type="button" class="btn ghost" id="newT">جدید</button><button type="button" class="btn brand" id="endT">گزارش</button></div></div><div class="chat" id="chat"></div><div id="report"></div><div class="composer"><div class="cbox"><button type="button" class="mic '+(listening?'rec':'')+'" id="mic">'+ic('mic')+'</button><input type="text" id="msg" dir="ltr" placeholder="Say…"><button type="button" class="send" id="sendB">'+ic('send')+'</button></div></div>';
   $('#newT').onclick = function(){if('speechSynthesis' in window)speechSynthesis.cancel();rec&&rec.stop();talk.started=false;renderTalk()};
   $('#endT').onclick = endTalk;
   $('#mic').onclick = toggleMic;
@@ -1658,7 +1548,7 @@ function endTalk(){
   rec && rec.stop();
   talk.reporting = true;
   var tr = talk.turns.map(function(t){return t.role==='ai'?'Tutor: '+t.text:'Learner: '+t.text}).join('\n');
-  callAI('Write a session report for a Persian learner. Return ONLY JSON: {"summary_fa":string,"level_estimate":string,"strengths_fa":[string],"weak_points_fa":[string],"next_steps_fa":[string],"vocab_to_review":[{"en":string,"fa":string}]}.', [{role:'user',content:tr}], 1200)
+  callAI('Write a session report. Return ONLY JSON: {"summary_fa":string,"level_estimate":string,"strengths_fa":[string],"weak_points_fa":[string],"next_steps_fa":[string],"vocab_to_review":[{"en":string,"fa":string}]}.', [{role:'user',content:tr}], 1200)
     .then(function(raw){
       talk.report = parseJSON(raw);
       award(20);
@@ -1676,7 +1566,7 @@ function renderNotes(){
   var byType = {};
   mistakes.forEach(function(m){var k=(m.type||'other');byType[k]=(byType[k]||0)+1});
   var patterns = Object.keys(byType).filter(function(k){return byType[k]>=3}).map(function(k){return {type:k,count:byType[k]}}).sort(function(a,b){return b.count-a.count});
-  var h = '<h1>دفترچه هوشمند</h1>';
+  var h = '<h1>دفترچه</h1>';
   if(patterns.length){
     h += '<div class="card" style="margin-bottom:16px"><h2>⚠️ الگوها</h2>';
     patterns.forEach(function(p){
@@ -1815,5 +1705,5 @@ try{
   if(settings.proxy && settings.syncCode) initSync().then(function(ok){if(ok)pullFromCloud(true)});
 }catch(e){
   console.error('Init error:', e);
-  var m = $('#main'); if(m) m.innerHTML = '<div class="card"><b>خطا</b><p dir="ltr" style="font-family:monospace;font-size:12px">'+esc(e.message)+'</p><button type="button" class="btn brand" onclick="localStorage.clear();location.reload()">پاک و رفرش</button></div>';
-                                                                                   }
+  var m = $('#main'); if(m) m.innerHTML = '<div class="card"><b>خطا</b><p dir="ltr" style="font-family:monospace;font-size:12px">'+esc(e.message)+'</p><button type="button" class="btn brand" onclick="try{localStorage.removeItem(\'zy_prog\')}catch(e){};location.reload()">ریست و رفرش</button></div>';
+                                                                                }
