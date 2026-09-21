@@ -649,6 +649,7 @@ function renderProgram(){
     p.scenarios.forEach(function(sc){
       var s = null;
       for(var i=0;i<JOB_SCENARIOS.length;i++) if(JOB_SCENARIOS[i].id===sc.id){s=JOB_SCENARIOS[i];break}
+if(!s) for(var k=0;k<importedScenarios.length;k++) if(importedScenarios[k].id===sc.id){s=importedScenarios[k];break}
       if(!s) return;
       var done = isTaskDone('sc', s.id);
       var lvlLabel = {easy:'ساده',medium:'متوسط',hard:'سخت',real:'واقعی'}[s.level] || '';
@@ -1266,7 +1267,8 @@ function renderJob(){
     h += '<h3 style="margin-top:20px">📚 سناریوهای آماده</h3>';
     h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:8px">';
     JOB_CATS.forEach(function(c){
-      var cnt = JOB_SCENARIOS.filter(function(s){return s.cat===c.id}).length;
+      var cnt = JOB_SCENARIOS.filter(function(s){return s.cat===c.id}).length
+          + importedScenarios.filter(function(s){return s.cat===c.id}).length;
       h += '<button type="button" class="card" data-cat="'+c.id+'" style="text-align:start;cursor:pointer;padding:16px"><div style="font-size:1.5rem;margin-bottom:6px">'+ic(c.icon)+'</div><div style="font-weight:700">'+esc(c.name)+'</div><div style="font-size:.82rem;color:var(--muted)">'+esc(c.desc)+'</div><div style="font-size:.78rem;color:var(--brand);margin-top:6px">'+fa(cnt)+' سناریو</div></button>';
     });
     h += '</div>';
@@ -1283,22 +1285,32 @@ function renderJob(){
     var cat = null;
     for(var i=0;i<JOB_CATS.length;i++) if(JOB_CATS[i].id===job.catId){cat=JOB_CATS[i];break}
     if(!cat){job.view='cats';return renderJob()}
-    var list = JOB_SCENARIOS.filter(function(s){return s.cat===job.catId});
+    
+    // ← merge سناریوهای آماده + سفارشی
+    var list = JOB_SCENARIOS.filter(function(s){return s.cat===job.catId})
+             .concat(importedScenarios.filter(function(s){return s.cat===job.catId}));
+    
     var h = '<button type="button" class="link" id="jback">← بازگشت</button><h1>'+esc(cat.name)+'</h1>';
     ['easy','medium','hard','real'].forEach(function(lvl){
-      var group = list.filter(function(s){return s.level===lvl});
+      var group = list.filter(function(s){return (s.level||'medium')===lvl});
       if(!group.length) return;
       var lbl = {easy:'🟢 ساده',medium:'🟡 متوسط',hard:'🟠 سخت',real:'🔴 واقعی'}[lvl];
       h += '<h3 style="margin-top:16px">'+lbl+'</h3><div style="display:grid;gap:10px;margin-top:8px">';
       group.forEach(function(s){
         var done = prog.done['job-'+s.id];
-        h += '<button type="button" class="card" data-sc="'+s.id+'" style="text-align:start;cursor:pointer;display:flex;gap:12px;align-items:center;padding:14px"><span style="display:grid;place-items:center;width:40px;height:40px;border-radius:10px;background:var(--job-soft);color:var(--job);flex:none">'+(done?'✓':'▶')+'</span><span style="flex:1"><div style="font-weight:600">'+esc(s.title)+'</div><div style="font-size:.82rem;color:var(--muted)">'+esc(s.desc)+'</div></span></button>';
+        // ← تشخیص خودکار: سناریوی سفارشی یا آماده؟
+        var isImported = importedScenarios.some(function(x){return x.id===s.id});
+        var attr = isImported ? 'data-imp="'+s.id+'"' : 'data-sc="'+s.id+'"';
+        var badge = isImported ? ' <span style="font-size:.7rem;color:var(--job);background:var(--job-soft);padding:2px 6px;border-radius:6px">سفارشی</span>' : '';
+        h += '<button type="button" class="card" '+attr+' style="text-align:start;cursor:pointer;display:flex;gap:12px;align-items:center;padding:14px"><span style="display:grid;place-items:center;width:40px;height:40px;border-radius:10px;background:var(--job-soft);color:var(--job);flex:none">'+(done?'✓':'▶')+'</span><span style="flex:1"><div style="font-weight:600">'+esc(s.title)+badge+'</div><div style="font-size:.82rem;color:var(--muted)">'+esc(s.desc)+'</div></span></button>';
       });
       h += '</div>';
     });
     el.innerHTML = h;
     var jb = $('#jback'); if(jb) jb.onclick = function(){job.view='cats';renderJob()};
+    // ← دو تا event listener جدا
     $$('.card[data-sc]').forEach(function(b){b.onclick=function(){startJobScenario(b.getAttribute('data-sc'))}});
+    $$('.card[data-imp]').forEach(function(b){b.onclick=function(){startImportedScenario(b.getAttribute('data-imp'))}});
     return;
   }
   renderJobPlay();
