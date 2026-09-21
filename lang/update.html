@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ویرایشگر زبان‌یار</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&family=Vazirmatn:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e9f1f1; --card:#fff; --ink:#14213d; --muted:#5b6b80; --line:#cddada;
+  --brand:#0e9a9a; --brand-soft:#d5efef; --ok:#23906a; --ok-soft:#d8f1e6;
+  --bad:#d64550; --bad-soft:#fbe0e2; --job:#6c4ad6; --job-soft:#eae4fb;
+  --accent:#f2b134; --accent-soft:#fdf0d0;
+}
+*{box-sizing:border-box;margin:0}
+body{font-family:'Vazirmatn',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.8;min-height:100vh}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input,select,textarea{font:inherit;width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid var(--line);background:#fff;color:var(--ink)}
+textarea{min-height:70px;resize:vertical;font-family:monospace;font-size:.85rem;line-height:1.5}
+.wrap{max-width:960px;margin:0 auto;padding:0 16px}
+header{padding:18px 0 8px;border-bottom:1px solid var(--line);margin-bottom:18px}
+h1{font-size:1.4rem;font-weight:800}
+h2{font-size:1.1rem;font-weight:700;margin-bottom:10px}
+h3{font-size:.95rem;font-weight:700;margin-bottom:8px;color:var(--brand)}
+.sub{color:var(--muted);font-size:.9rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:999px;background:var(--ink);color:#fff;font-weight:700;font-size:.9rem}
+.btn.brand{background:var(--brand)}
+.btn.job{background:var(--job)}
+.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+.btn.ok{background:var(--ok)}
+.btn.bad{background:var(--bad)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.tabs{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+.tab{padding:8px 18px;border-radius:999px;background:var(--card);border:1.5px solid var(--line);color:var(--muted);font-weight:600;font-size:.9rem}
+.tab[aria-current=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.field{display:grid;gap:5px;margin-bottom:10px}
+.field label{font-weight:600;font-size:.9rem}
+.field .hint{font-size:.78rem;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+@media(max-width:600px){.grid2,.grid3{grid-template-columns:1fr}}
+.item{padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:10px}
+.item .top{display:flex;justify-content:space-between;gap:10px;align-items:start;flex-wrap:wrap}
+.item .title{font-weight:700;font-size:1rem}
+.item .meta{font-size:.8rem;color:var(--muted);margin-top:2px}
+.item .preview{margin-top:8px;padding:8px 12px;background:var(--bg);border-radius:8px;font-family:'Lexend',sans-serif;font-size:.9rem;direction:ltr;text-align:left}
+.item .actions{display:flex;gap:6px}
+.mini{padding:5px 12px;border-radius:8px;font-size:.82rem;font-weight:600}
+.mini.edit{background:var(--accent-soft);color:#a86d00}
+.mini.del{background:var(--bad-soft);color:var(--bad)}
+.banner{padding:12px 16px;border-radius:12px;background:var(--job-soft);border:1px solid var(--job);color:var(--job);font-size:.9rem;margin-bottom:14px}
+.banner.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.banner.warn{background:var(--accent-soft);border-color:var(--accent);color:#a86d00}
+.hidden{display:none}
+.empty{text-align:center;padding:30px 20px;color:var(--muted);font-size:.9rem}
+.toast{position:fixed;inset-inline:16px;bottom:30px;max-width:400px;margin:auto;padding:12px 18px;border-radius:12px;background:var(--ink);color:#fff;text-align:center;font-size:.9rem;opacity:0;transition:opacity .25s;pointer-events:none;z-index:100}
+.toast.show{opacity:.95}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.75rem;font-weight:700}
+.pill.cat{background:var(--brand-soft);color:var(--brand)}
+.pill.role{background:var(--job-soft);color:var(--job)}
+.week-preview{padding:10px 14px;background:var(--bg);border-radius:10px;margin-top:8px;font-size:.85rem}
+.week-preview ul{margin:4px 0 4px 18px;padding:0}
+.week-preview li{margin-bottom:2px}
+</style>
+</head>
+<body>
+
+<header><div class="wrap">
+  <h1>🛠 ویرایشگر زبان‌یار</h1>
+  <p class="sub">سناریوها و هفته‌های برنامه رو اضافه کن. تغییرات در localStorage ذخیره می‌شه و برنامه‌ی اصلی خودکار می‌خونش.</p>
+</div></header>
+
+<main class="wrap">
+
+  <!-- وضعیت -->
+  <div class="banner" id="statusBanner">
+    <b>📊 وضعیت فعلی:</b>
+    <span id="statusText">در حال بارگذاری...</span>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab" data-t="scenario" aria-current="true">💼 سناریوها</button>
+    <button class="tab" data-t="program">📅 هفته‌های برنامه</button>
+    <button class="tab" data-t="tools">🔧 ابزارها</button>
+  </div>
+
+  <!-- ============ SCENARIO TAB ============ -->
+  <section id="tab-scenario">
+    <div class="card">
+      <h2 id="scFormTitle">➕ افزودن سناریوی جدید</h2>
+      <input type="hidden" id="scEditId" value="">
+      
+      <div class="grid2">
+        <div class="field">
+          <label>شناسه (id)</label>
+          <input type="text" id="scId" placeholder="مثلاً: rep-approval" dir="ltr">
+          <div class="hint">فقط حروف انگلیسی و خط تیره. یکتا باشه.</div>
+        </div>
+        <div class="field">
+          <label>دسته</label>
+          <select id="scCat">
+            <option value="it">پشتیبانی IT</option>
+            <option value="rep">گزارش به ایلدار</option>
+            <option value="phone">مکالمه تلفنی</option>
+            <option value="f2f">حضوری</option>
+            <option value="biz">وظایف کاری</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="grid2">
+        <div class="field">
+          <label>عنوان (فارسی)</label>
+          <input type="text" id="scTitle" placeholder="درخواست اپروف از ایلدار">
+        </div>
+        <div class="field">
+          <label>توضیح کوتاه</label>
+          <input type="text" id="scDesc" placeholder="درخواست کاربر رو به ایلدار می‌گی">
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>نقش AI</label>
+          <select id="scRole">
+            <option value="User">کاربر (User)</option>
+            <option value="Manager">مدیر (Manager)</option>
+            <option value="Colleague">همکار (Colleague)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>برچسب فارسی نقش</label>
+          <input type="text" id="scRoleFa" placeholder="مدیر / کاربر / همکار">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>جملات آغازین AI (به انگلیسی)</label>
+        <textarea id="scOpening" dir="ltr" placeholder="Hi Armin. Do you need something?"></textarea>
+      </div>
+
+      <div class="field">
+        <label>راهنما (💡 برای کاربر نمایش داده می‌شه)</label>
+        <textarea id="scHint" placeholder="چه چیزهایی رو بگو..."></textarea>
+      </div>
+
+      <div class="field">
+        <label>Workflow ویژه (اختیاری)</label>
+        <select id="scWorkflow">
+          <option value="">— هیچ —</option>
+          <option value="user-to-manager">درخواست اپروف از مدیر</option>
+          <option value="user-request">درخواست کاربر از تو</option>
+        </select>
+        <div class="hint">برای سناریوهای اپروف، این رو انتخاب کن تا AI رفتار درست داشته باشه.</div>
+      </div>
+
+      <div class="row" style="margin-top:14px">
+        <button class="btn brand" id="scSave">💾 ذخیره</button>
+        <button class="btn ghost" id="scCancel" style="display:none">انصراف</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📋 سناریوهای سفارشی (<span id="scCount">0</span>)</h2>
+      <div id="scList"></div>
+    </div>
+  </section>
+
+  <!-- ============ PROGRAM TAB ============ -->
+  <section id="tab-program" class="hidden">
+    <div class="card">
+      <h2>📅 ویرایش هفته‌ها</h2>
+      <p class="sub" style="margin-bottom:14px">اینجا می‌تونی هفته‌های برنامه‌ی ۸ هفته‌ای رو ویرایش کنی یا هفته‌های جدید اضافه کنی.</p>
+      <div id="wkList"></div>
+    </div>
+  </section>
+
+  <!-- ============ TOOLS TAB ============ -->
+  <section id="tab-tools" class="hidden">
+    <div class="card">
+      <h2>💾 پشتیبان‌گیری</h2>
+      <p class="sub" style="margin-bottom:12px">از داده‌های سفارشی خودت یک کد بگیر و در جای امن ذخیره کن.</p>
+      <div class="row">
+        <button class="btn brand" id="expBtn">📤 صادرات</button>
+        <button class="btn ghost" id="impBtn">📥 واردات</button>
+      </div>
+      <div id="expBox" class="hidden" style="margin-top:12px">
+        <textarea id="expText" readonly style="min-height:120px"></textarea>
+        <button class="btn ghost" id="expCopy" style="margin-top:8px">📋 کپی</button>
+      </div>
+      <div id="impBox" class="hidden" style="margin-top:12px">
+        <textarea id="impText" placeholder="کد را اینجا پیست کن..." style="min-height:120px"></textarea>
+        <button class="btn brand" id="impGo" style="margin-top:8px">وارد کن</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🗑 پاک کردن</h2>
+      <p class="sub" style="margin-bottom:12px">همه‌ی سناریوها و هفته‌های سفارشی رو پاک کن (برنامه‌ی اصلی دست‌نخورده می‌مونه).</p>
+      <button class="btn bad" id="clrBtn">پاک کردن همه</button>
+    </div>
+
+    <div class="card">
+      <h2>ℹ️ راهنما</h2>
+      <ol style="margin-inline-start:20px;line-height:2">
+        <li>سناریو یا هفته‌ی جدید رو در تب مربوطه اضافه کن.</li>
+        <li>تغییرات خودکار در <code>localStorage</code> ذخیره می‌شن.</li>
+        <li>برو به <code>index.html</code> و صفحه رو رفرش کن.</li>
+        <li>سناریوها خودکار در تب «حالت شغلی» ظاهر می‌شن.</li>
+      </ol>
+      <p class="sub" style="margin-top:12px">⚠️ اگر index.html رو در دستگاه دیگه‌ای باز می‌کنی، باید از تب «ابزارها → صادرات» کد بگیری و در اون دستگاه وارد کنی.</p>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fa=n=>Number(n).toLocaleString('fa-IR');
+
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+
+let customScenarios=store.get('zy_custom_scenarios',[]);
+let customProgram=store.get('zy_custom_program',[]);
+
+let toastTimer=null;
+function toast(msg,ms=2500){
+  const t=$('#toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),ms);
+}
+
+function updateStatus(){
+  $('#statusText').textContent=`${fa(customScenarios.length)} سناریوی سفارشی · ${fa(customProgram.length)} هفته‌ی سفارشی`;
+  $('#scCount').textContent=fa(customScenarios.length);
+}
+
+/* ============ TABS ============ */
+$$('.tab').forEach(t=>t.onclick=()=>{
+  $$('.tab').forEach(x=>x.setAttribute('aria-current','false'));
+  t.setAttribute('aria-current','true');
+  ['scenario','program','tools'].forEach(id=>{
+    $('#tab-'+id).classList.toggle('hidden',id!==t.dataset.t);
+  });
+});
+
+/* ============ SCENARIO FORM ============ */
+function resetScForm(){
+  $('#scEditId').value='';
+  $('#scId').value='';
+  $('#scTitle').value='';
+  $('#scDesc').value='';
+  $('#scRole').value='User';
+  $('#scRoleFa').value='';
+  $('#scOpening').value='';
+  $('#scHint').value='';
+  $('#scWorkflow').value='';
+  $('#scFormTitle').textContent='➕ افزودن سناریوی جدید';
+  $('#scCancel').style.display='none';
+  $('#scSave').textContent='💾 ذخیره';
+}
+
+$('#scSave').onclick=()=>{
+  const id=$('#scId').value.trim();
+  const cat=$('#scCat').value;
+  const title=$('#scTitle').value.trim();
+  const desc=$('#scDesc').value.trim();
+  const role=$('#scRole').value;
+  const roleFa=$('#scRoleFa').value.trim();
+  const opening=$('#scOpening').value.trim();
+  const hint=$('#scHint').value.trim();
+  const workflow=$('#scWorkflow').value;
+  const editId=$('#scEditId').value;
+
+  if(!id||!/^[a-z0-9-]+$/.test(id)){toast('شناسه باید فقط حروف انگلیسی کوچک و خط تیره باشه');return}
+  if(!title){toast('عنوان لازم است');return}
+  if(!opening){toast('جملات آغازین لازم است');return}
+
+  // چک تکراری
+  const existing=customScenarios.findIndex(s=>s.id===id && s.id!==editId);
+  if(existing>=0){toast('این شناسه قبلاً استفاده شده');return}
+
+  const obj={id,cat,title,desc,role,roleFa,opening,hint,workflow};
+  
+  if(editId){
+    const i=customScenarios.findIndex(s=>s.id===editId);
+    if(i>=0){customScenarios[i]=obj}
+    toast('✅ به‌روزرسانی شد');
+  }else{
+    customScenarios.push(obj);
+    toast('✅ اضافه شد');
+  }
+  
+  store.set('zy_custom_scenarios',customScenarios);
+  resetScForm();
+  renderScList();
+  updateStatus();
+};
+
+$('#scCancel').onclick=()=>resetScForm();
+
+function editSc(id){
+  const s=customScenarios.find(x=>x.id===id);
+  if(!s)return;
+  $('#scEditId').value=s.id;
+  $('#scId').value=s.id;
+  $('#scCat').value=s.cat||'it';
+  $('#scTitle').value=s.title||'';
+  $('#scDesc').value=s.desc||'';
+  $('#scRole').value=s.role||'User';
+  $('#scRoleFa').value=s.roleFa||'';
+  $('#scOpening').value=s.opening||'';
+  $('#scHint').value=s.hint||'';
+  $('#scWorkflow').value=s.workflow||'';
+  $('#scFormTitle').textContent='✏️ ویرایش سناریو';
+  $('#scCancel').style.display='inline-flex';
+  $('#scSave').textContent='💾 به‌روزرسانی';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function delSc(id){
+  if(!confirm('این سناریو حذف شود؟'))return;
+  customScenarios=customScenarios.filter(s=>s.id!==id);
+  store.set('zy_custom_scenarios',customScenarios);
+  renderScList();
+  updateStatus();
+  toast('حذف شد');
+}
+
+function renderScList(){
+  const el=$('#scList');
+  if(!customScenarios.length){
+    el.innerHTML='<div class="empty">هنوز سناریوی سفارشی نداری. از فرم بالا اضافه کن.</div>';
+    return;
+  }
+  const catNames={it:'IT',rep:'گزارش',phone:'تلفنی',f2f:'حضوری',biz:'کاری'};
+  el.innerHTML=customScenarios.map(s=>`
+    <div class="item">
+      <div class="top">
+        <div style="flex:1;min-width:200px">
+          <div class="title">${esc(s.title)}</div>
+          <div class="meta">
+            <span class="pill cat">${esc(catNames[s.cat]||s.cat)}</span>
+            <span class="pill role">${esc(s.roleFa||s.role)}</span>
+            ${s.workflow?'<span class="pill cat">workflow</span>':''}
+          </div>
+          <div class="meta" style="margin-top:4px">${esc(s.desc||'')}</div>
+        </div>
+        <div class="actions">
+          <button class="mini edit" data-edit="${esc(s.id)}">✏️ ویرایش</button>
+          <button class="mini del" data-del="${esc(s.id)}">🗑 حذف</button>
+        </div>
+      </div>
+      <div class="preview">${esc(s.opening)}</div>
+    </div>
+  `).join('');
+  $$('[data-edit]',el).forEach(b=>b.onclick=()=>editSc(b.dataset.edit));
+  $$('[data-del]',el).forEach(b=>b.onclick=()=>delSc(b.dataset.del));
+}
+
+/* ============ PROGRAM EDITOR ============ */
+function renderWkList(){
+  const el=$('#wkList');
+  if(!customProgram.length){
+    el.innerHTML=`<div class="empty">
+      هنوز هفته‌ی سفارشی نداری.<br>
+      <button class="btn ghost" id="addWkBtn" style="margin-top:10px">➕ افزودن هفته‌ی جدید</button>
+    </div>`;
+    const b=$('#addWkBtn');if(b)b.onclick=addWeekPrompt;
+    return;
+  }
+  el.innerHTML=customProgram.map((w,i)=>`
+    <div class="item">
+      <div class="top">
+        <div style="flex:1">
+          <div class="title">هفته ${fa(w.week)} — ${esc(w.title)}</div>
+          <div class="meta">${esc(w.goal||'')}</div>
+        </div>
+        <div class="actions">
+          <button class="mini del" data-delw="${i}">🗑 حذف</button>
+        </div>
+      </div>
+      <div class="week-preview">
+        <b>درس‌ها:</b>
+        <ul>${(w.lessons||[]).map(l=>`<li>${l.level} — ${esc(l.note||'')}</li>`).join('')}</ul>
+        <b>سناریوها:</b>
+        <ul>${(w.scenarios||[]).map(s=>`<li>${esc(s.id)} — ${esc(s.note||'')}</li>`).join('')}</ul>
+      </div>
+    </div>
+  `).join('')+`<button class="btn ghost" id="addWkBtn" style="margin-top:10px">➕ افزودن هفته‌ی جدید</button>`;
+  $$('[data-delw]',el).forEach(b=>b.onclick=()=>{
+    if(!confirm('این هفته حذف شود؟'))return;
+    customProgram.splice(+b.dataset.delw,1);
+    store.set('zy_custom_program',customProgram);
+    renderWkList();updateStatus();toast('حذف شد');
+  });
+  const ab=$('#addWkBtn');if(ab)ab.onclick=addWeekPrompt;
+}
+
+function addWeekPrompt(){
+  const weekStr=prompt('شماره‌ی هفته (مثلاً 9):');
+  if(!weekStr)return;
+  const week=+weekStr;
+  if(!week||week<1){toast('شماره معتبر وارد کن');return}
+  const title=prompt('عنوان هفته (مثلاً: "مکالمه پیشرفته"):');
+  if(!title)return;
+  const goal=prompt('هدف هفته (مثلاً: "تمرین مکالمه آزاد"):')||'';
+  
+  const obj={week,title,goal,lessons:[],scenarios:[],schedule:['۱۵ دقیقه تمرین','۱۵ دقیقه سناریو']};
+  customProgram.push(obj);
+  store.set('zy_custom_program',customProgram);
+  renderWkList();updateStatus();
+  toast('✅ هفته اضافه شد — برای ویرایش جزئیات، از تب سناریوها استفاده کن');
+}
+
+/* ============ IMPORT / EXPORT ============ */
+$('#expBtn').onclick=()=>{
+  const data={v:1,scenarios:customScenarios,program:customProgram,exportedAt:new Date().toISOString()};
+  const b64=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  $('#expText').value=b64;
+  $('#expBox').classList.remove('hidden');
+  $('#impBox').classList.add('hidden');
+};
+
+$('#expCopy').onclick=async()=>{
+  const t=$('#expText');t.select();
+  try{await navigator.clipboard.writeText(t.value);toast('✅ کپی شد')}
+  catch(e){document.execCommand('copy');toast('✅ کپی شد')}
+};
+
+$('#impBtn').onclick=()=>{
+  $('#impBox').classList.remove('hidden');
+  $('#expBox').classList.add('hidden');
+  $('#impText').value='';
+};
+
+$('#impGo').onclick=()=>{
+  try{
+    const b64=$('#impText').value.trim();
+    if(!b64){toast('کد خالی است');return}
+    const json=decodeURIComponent(escape(atob(b64)));
+    const data=JSON.parse(json);
+    if(!confirm('داده‌های فعلی با داده‌های وارداتی جایگزین شوند؟'))return;
+    if(Array.isArray(data.scenarios)){
+      // ادغام هوشمند: تکراری‌ها رو حذف کن
+      const existingIds=new Set(customScenarios.map(s=>s.id));
+      data.scenarios.forEach(s=>{
+        if(!existingIds.has(s.id)){customScenarios.push(s);existingIds.add(s.id)}
+      });
+    }
+    if(Array.isArray(data.program)){
+      const existingWeeks=new Set(customProgram.map(w=>w.week));
+      data.program.forEach(w=>{
+        if(!existingWeeks.has(w.week)){customProgram.push(w);existingWeeks.add(w.week)}
+      });
+    }
+    store.set('zy_custom_scenarios',customScenarios);
+    store.set('zy_custom_program',customProgram);
+    renderScList();renderWkList();updateStatus();
+    toast('✅ وارد شد');
+  }catch(e){toast('کد نامعتبر: '+e.message,4000)}
+};
+
+$('#clrBtn').onclick=()=>{
+  if(!confirm('همه‌ی سناریوها و هفته‌های سفارشی حذف شوند؟'))return;
+  customScenarios=[];customProgram=[];
+  store.set('zy_custom_scenarios',[]);
+  store.set('zy_custom_program',[]);
+  renderScList();renderWkList();updateStatus();
+  toast('پاک شد');
+};
+
+/* ============ INIT ============ */
+renderScList();
+renderWkList();
+updateStatus();
+</script>
+</body>
+</html>
