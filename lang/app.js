@@ -1702,7 +1702,7 @@ $$('.tab').forEach(function(t){t.onclick=function(){go(t.getAttribute('data-v'))
 try{
   updateStats();
   go('program');
-  if(settings.proxy && settings.syncCode) initSync().then(function(ok){if(ok)pullFromCloud(true)});
+if(settings.proxy && settings.syncCode) initSync();
 }catch(e){
   console.error('Init error:', e);
   var m = $('#main'); if(m) m.innerHTML = '<div class="card"><b>خطا</b><p dir="ltr" style="font-family:monospace;font-size:12px">'+esc(e.message)+'</p><button type="button" class="btn brand" onclick="try{localStorage.removeItem(\'zy_prog\')}catch(e){};location.reload()">ریست و رفرش</button></div>';
