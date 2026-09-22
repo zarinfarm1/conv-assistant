@@ -4,11 +4,17 @@
   if(window.__speedModuleLoaded) return;
   window.__speedModuleLoaded = true;
   
-  // Override render() to handle speed view
+  // Override render() and go() for speed view
   var _origRender = window.render;
   window.render = function(){
     if(window.view === 'speed') return window.renderSpeed();
     return _origRender();
+  };
+  var _origGo = window.go;
+  window.go = function(v){
+    _origGo(v);
+    window.view = v;
+    if(v === 'speed') window.renderSpeed();
   };
   // ============ 1. Inject CSS ============
   var css = [
