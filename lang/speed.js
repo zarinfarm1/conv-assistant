@@ -237,18 +237,32 @@
   }
 
   // ============ 7. Session ============
-  function startSession(){
-    speed.session = {questions: [], idx: 0};
-    var pool = SPEED_QUESTIONS.slice();
-    for(var i=0;i<10 && pool.length;i++){
-      var j = Math.floor(Math.random()*pool.length);
-      speed.session.questions.push(pool[j]);
-      pool.splice(j, 1);
-    }
-    speed.session.idx = 0;
-    speed.phase = 'play';
-    nextQuestion();
+function startSpeedSession(){
+  speed.session = {questions: [], idx: 0};
+  var pool = SPEED_QUESTIONS.slice();
+
+  // فیلتر بر اساس سطح هفته
+  if(window.speedActiveCats && window.speedActiveCats.length){
+    var filtered = pool.filter(function(q){
+      return window.speedActiveCats.indexOf(q.cat) >= 0;
+    });
+    if(filtered.length >= 5) pool = filtered;
   }
+
+  var count = window.speedQuestionCount || 10;
+  for(var i=0;i<count && pool.length;i++){
+    var j = Math.floor(Math.random()*pool.length);
+    speed.session.questions.push(pool[j]);
+    pool.splice(j, 1);
+  }
+  speed.session.idx = 0;
+  speed.phase = 'play';
+  nextQuestion();
+
+  // ریست بعد از استفاده
+  window.speedActiveCats = null;
+  window.speedQuestionCount = null;
+}
   function nextQuestion(){
     if(!speed.session) return;
     if(speed.session.idx >= speed.session.questions.length){
