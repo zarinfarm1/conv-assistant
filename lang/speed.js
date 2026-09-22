@@ -334,10 +334,10 @@ function startSpeedSession(){
       h += '<div class="speed-transcript" id="speedTranscript">دکمه رو بزن و بلند جواب بده…</div>';
     }
     if(speed.inputMode !== 'voice'){
-      h += '<div class="speed-type-row">';
-      h += '<input type="text" id="speedType" dir="ltr" lang="en" inputmode="latin" placeholder="Type your answer…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">';
-      h += '<button type="button" id="speedSend">ارسال</button>';
-      h += '</div>';
+      h += '<form class="speed-type-row" id="speedForm" autocomplete="off">';
+      h += '<input type="text" id="speedType" dir="ltr" lang="en" inputmode="latin" placeholder="Type your answer…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="send">';
+      h += '<button type="submit" id="speedSend">ارسال</button>';
+      h += '</form>';
     }
     h += '</div>';
     h += '<button type="button" class="speed-skip" id="speedSkip">رد کردن سؤال ⏭</button>';
@@ -361,6 +361,54 @@ function startSpeedSession(){
       setTimeout(function(){
         if(speed.phase === 'play' && !speed.busy) toggleMic();
       }, 400);
+    }
+    // ==== FOX ENTER DELAY ====
+    if(speed.inputMode !== 'voice'){
+      var form = document.getElementById('speedForm');
+      var inpEl = document.getElementById('speedType');
+
+      // فوکوس خودکار
+      if(inpEl){
+        setTimeout(function(){ try{ inpEl.focus(); }catch(e){} }, 100);
+
+        // حل مشکل composition کیبورد فارسی/موبایل
+        var composing = false;
+        inpEl.addEventListener('compositionstart', function(){ composing = true; });
+        inpEl.addEventListener('compositionend', function(){ composing = false; });
+
+        // Enter → ارسال با انتظار هوشمند
+        inpEl.addEventListener('keydown', function(e){
+          if(e.key === 'Enter' || e.keyCode === 13){
+            e.preventDefault();
+            e.stopPropagation();
+            if(composing) return; // صبر کن composition تموم بشه
+            var attempt = 0;
+            var trySubmit = function(){
+              var v = inpEl.value;
+              if(v && v.trim().length > 0){
+                submitAnswer(v, null, false);
+              } else if(attempt < 8){
+                attempt++;
+                setTimeout(trySubmit, 60);
+              }
+            };
+            trySubmit();
+          }
+        });
+      }
+
+      // submit فرم (برای دکمه‌ی Send کیبورد)
+      if(form){
+        form.addEventListener('submit', function(e){
+          e.preventDefault();
+          e.stopPropagation();
+          var v = inpEl ? inpEl.value : '';
+          if(v && v.trim().length > 0){
+            submitAnswer(v, null, false);
+          }
+        });
+      }
+    }, 400);
     }
     // فوکوس خودکار روی input تایپ
     if(speed.inputMode !== 'voice' && inp){
