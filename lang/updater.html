@@ -174,8 +174,8 @@ const BUILT_IN_PATCH = {
       id: 'bump-app-version',
       desc: 'آپدیت نسخه‌ی app.js در کش مرورگر',
       type: 'replace',
-      anchor: '<script src="app.js"></script>',
-      content: '<script src="app.js?v=27"></script>',
+      anchor: '<script src="app.js"><\/script>',
+      content: '<script src="app.js?v=27"><\/script>',
       skipIfFound: 'app.js?v=27'
     },
 
