@@ -3,7 +3,13 @@
 (function(){
   if(window.__speedModuleLoaded) return;
   window.__speedModuleLoaded = true;
-
+  
+  // Override render() to handle speed view
+  var _origRender = window.render;
+  window.render = function(){
+    if(window.view === 'speed') return window.renderSpeed();
+    return _origRender();
+  };
   // ============ 1. Inject CSS ============
   var css = [
     '.speed-setup{display:grid;gap:16px;max-width:600px;margin:0 auto}',
