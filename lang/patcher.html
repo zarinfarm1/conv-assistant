@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Patcher — ویرایشگر فایل‌ها</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=Lexend:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f0f4f4;--card:#fff;--ink:#14213d;--muted:#5b6b80;--line:#cddada;--ok:#23906a;--ok-soft:#d8f1e6;--bad:#d64550;--bad-soft:#fbe0e2;--warn:#c2410c;--warn-soft:#ffedd5;--brand:#0e9a9a;--brand-soft:#d5efef}
+@media (prefers-color-scheme:dark){:root{--bg:#0c1524;--card:#142038;--ink:#eaf0f7;--muted:#93a3ba;--line:#243554;--ok:#4cc494;--ok-soft:#12352b;--bad:#f2808a;--bad-soft:#3a1a22;--warn:#fb923c;--warn-soft:#3a2414;--brand:#2bc0bf;--brand-soft:#123a45}}
+*{box-sizing:border-box;margin:0}
+body{font-family:'Vazirmatn',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.8;min-height:100vh;padding:16px}
+.wrap{max-width:820px;margin:0 auto}
+h1{font-size:1.5rem;font-weight:800;margin-bottom:4px}
+.sub{color:var(--muted);font-size:.9rem;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:14px}
+.card h2{font-size:1.05rem;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.step{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--brand);color:#fff;font-size:.85rem;font-weight:700;flex:none}
+.file-slot{display:flex;align-items:center;gap:12px;padding:14px;border:2px dashed var(--line);border-radius:12px;background:var(--bg);cursor:pointer;transition:all .15s}
+.file-slot:hover{border-color:var(--brand);background:var(--brand-soft)}
+.file-slot.loaded{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.file-slot input{display:none}
+.file-slot .icon{width:44px;height:44px;border-radius:10px;background:var(--card);display:grid;place-items:center;font-size:1.4rem;flex:none;border:1px solid var(--line)}
+.file-slot.loaded .icon{background:var(--ok);color:#fff;border-color:var(--ok)}
+.file-slot .info{flex:1;min-width:0}
+.file-slot .name{font-weight:700;font-size:.95rem}
+.file-slot .status{font-size:.78rem;color:var(--muted);word-break:break-word}
+.file-slot.loaded .status{color:var(--ok)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 22px;border-radius:999px;background:var(--ink);color:var(--bg);font-weight:700;font-size:.95rem;border:0;cursor:pointer;font-family:inherit}
+.btn.brand{background:var(--brand);color:#fff}
+.btn.ok{background:var(--ok);color:#fff}
+.btn.bad{background:var(--bad);color:#fff}
+.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+textarea{width:100%;min-height:200px;padding:12px;border-radius:10px;border:1.5px solid var(--line);font-family:'SF Mono',monospace;font-size:.8rem;line-height:1.5;resize:vertical;background:var(--card);color:var(--ink);direction:ltr;text-align:left}
+.log{padding:14px;background:#0c1524;color:#e0e7ef;border-radius:12px;font-family:'SF Mono',monospace;font-size:.82rem;line-height:1.6;max-height:340px;overflow-y:auto;display:none;direction:ltr;text-align:left;margin-top:14px}
+.log.show{display:block}
+.log .line{margin-bottom:4px;word-break:break-word}
+.log .line.ok{color:#6ee7b7}
+.log .line.warn{color:#fbbf24}
+.log .line.err{color:#f87171}
+.log .line.info{color:#93c5fd}
+.log .line.hr{color:#64748b;margin:6px 0}
+.download-area{display:none;gap:10px;flex-wrap:wrap;margin-top:14px}
+.download-area.show{display:flex}
+details{border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px}
+summary{cursor:pointer;font-weight:600;font-size:.9rem}
+.help{font-size:.85rem;color:var(--muted);line-height:1.7}
+.help ol{margin-inline-start:20px}
+.help li{margin-bottom:4px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.stats .s{padding:10px;background:var(--bg);border-radius:10px;text-align:center;border:1px solid var(--line)}
+.stats .s b{display:block;font-family:'Lexend',sans-serif;font-size:1.1rem;color:var(--brand)}
+.stats .s small{font-size:.72rem;color:var(--muted)}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.72rem;font-weight:700;background:var(--brand-soft);color:var(--brand)}
+.patch-summary{margin-top:10px;padding:12px;background:var(--brand-soft);border:1px solid var(--brand);border-radius:10px;font-size:.88rem;color:var(--brand)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>🔧 Patcher</h1>
+  <p class="sub">فایل رو انتخاب کن، پچ رو پیست کن، دانلود کن</p>
+
+  <!-- Step 1: File -->
+  <div class="card">
+    <h2><span class="step">۱</span> فایل اصلی رو انتخاب کن</h2>
+    <label class="file-slot" id="fileSlot">
+      <input type="file" id="fileInput">
+      <div class="icon" id="fileIcon">📄</div>
+      <div class="info">
+        <div class="name" id="fileName">انتخاب فایل</div>
+        <div class="status" id="fileStatus">روی این کادر بزن یا فایل رو بکش و رها کن</div>
+      </div>
+    </label>
+    <div class="stats" id="fileStats" style="display:none">
+      <div class="s"><b id="statLines">0</b><small>خط</small></div>
+      <div class="s"><b id="statSize">0</b><small>KB</small></div>
+      <div class="s"><b id="statChars">0</b><small>کاراکتر</small></div>
+    </div>
+  </div>
+
+  <!-- Step 2: Patch -->
+  <div class="card">
+    <h2><span class="step">۲</span> پچ رو پیست کن</h2>
+    <p class="sub" style="font-size:.85rem">JSON پچ رو که برات می‌فرستم اینجا پیست کن</p>
+    <textarea id="patchInput" placeholder='{
+  "name": "Fix dark mode colors",
+  "patches": [
+    {
+      "op": "replace",
+      "anchor": "متن قدیمی",
+      "content": "متن جدید",
+      "desc": "توضیح"
+    }
+  ]
+}'></textarea>
+
+    <div id="patchSummary" class="patch-summary" style="display:none"></div>
+
+    <details style="margin-top:12px">
+      <summary>📖 راهنمای پچ (چیست و چطور نوشته می‌شه)</summary>
+      <div class="help" style="margin-top:10px">
+        <b>انواع عملیات:</b>
+        <ol>
+          <li><code>replace</code> — جایگزینی یک anchor</li>
+          <li><code>replace-between</code> — جایگزینی از شروع تا پایان (برای بلوک‌های بزرگ)</li>
+          <li><code>insert-before</code> — اضافه کردن قبل از anchor</li>
+          <li><code>insert-after</code> — اضافه کردن بعد از anchor</li>
+          <li><code>append</code> — اضافه کردن به آخر فایل</li>
+          <li><code>regex</code> — جایگزینی با regex (پیشرفته)</li>
+        </ol>
+        <b>نمونه:</b>
+        <pre style="background:var(--bg);padding:8px;border-radius:6px;margin-top:8px;font-size:.75rem;overflow-x:auto">{
+  "patches": [
+    {"op": "replace", "anchor": "old text", "content": "new text"},
+    {"op": "insert-before", "anchor": "// MARKER", "content": "// new code\n"},
+    {"op": "append", "content": "// end code"}
+  ]
+}</pre>
+      </div>
+    </details>
+  </div>
+
+  <!-- Step 3: Apply -->
+  <div class="card">
+    <h2><span class="step">۳</span> اعمال و دانلود</h2>
+    <div class="row">
+      <button class="btn brand" id="applyBtn" disabled>⚡ اعمال پچ</button>
+      <button class="btn ghost" id="resetBtn">🔄 از نو</button>
+    </div>
+
+    <div class="log" id="log"></div>
+
+    <div class="download-area" id="downloadArea">
+      <button class="btn ok" id="downloadBtn">⬇️ دانلود فایل نهایی</button>
+      <button class="btn ghost" id="copyBtn">📋 کپی محتوا</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+var $ = function(s){return document.querySelector(s)};
+var originalContent = '';
+var originalName = '';
+var patchedContent = '';
+
+// ============ File Input ============
+$('#fileInput').addEventListener('change', function(e){
+  var file = e.target.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    originalContent = ev.target.result;
+    originalName = file.name;
+    var slot = $('#fileSlot');
+    slot.classList.add('loaded');
+    $('#fileIcon').textContent = file.name.endsWith('.js') ? '⚙️' :
+                                 file.name.endsWith('.css') ? '🎨' :
+                                 file.name.endsWith('.html') ? '📄' : '📁';
+    $('#fileName').textContent = file.name;
+    $('#fileStatus').textContent = '✓ آماده';
+    // stats
+    var lines = originalContent.split('\n').length;
+    var sizeKB = (originalContent.length/1024).toFixed(1);
+    $('#statLines').textContent = lines;
+    $('#statSize').textContent = sizeKB;
+    $('#statChars').textContent = originalContent.length.toLocaleString('en');
+    $('#fileStats').style.display = 'grid';
+    updateApplyBtn();
+  };
+  reader.readAsText(file, 'UTF-8');
+});
+
+// Drag & drop
+['dragenter','dragover'].forEach(function(ev){
+  $('#fileSlot').addEventListener(ev, function(e){e.preventDefault(); e.currentTarget.style.borderColor = 'var(--brand)'});
+});
+['dragleave','drop'].forEach(function(ev){
+  $('#fileSlot').addEventListener(ev, function(e){e.preventDefault(); e.currentTarget.style.borderColor = ''});
+});
+$('#fileSlot').addEventListener('drop', function(e){
+  var file = e.dataTransfer.files[0];
+  if(!file) return;
+  $('#fileInput').files = e.dataTransfer.files;
+  $('#fileInput').dispatchEvent(new Event('change'));
+});
+
+// ============ Patch Input Live Preview ============
+$('#patchInput').addEventListener('input', function(){
+  var raw = this.value.trim();
+  var summary = $('#patchSummary');
+  if(!raw){ summary.style.display = 'none'; updateApplyBtn(); return; }
+  try{
+    var p = JSON.parse(raw);
+    var count = (p.patches || []).length;
+    var html = '<b>📦 ' + (p.name || 'بدون نام') + '</b>';
+    if(p.description) html += ' — ' + p.description;
+    html += '<br><span class="badge">' + count + ' تغییر</span>';
+    if(p.target) html += ' <span class="badge">هدف: ' + p.target + '</span>';
+    summary.innerHTML = html;
+    summary.style.display = 'block';
+  }catch(e){
+    summary.innerHTML = '<span style="color:var(--bad)">❌ JSON نامعتبر: ' + e.message + '</span>';
+    summary.style.display = 'block';
+  }
+  updateApplyBtn();
+});
+
+function updateApplyBtn(){
+  var hasFile = originalContent.length > 0;
+  var raw = $('#patchInput').value.trim();
+  var validPatch = false;
+  if(raw){
+    try{ JSON.parse(raw); validPatch = true; }catch(e){}
+  }
+  $('#applyBtn').disabled = !(hasFile && validPatch);
+}
+
+// ============ Logging ============
+function log(msg, cls){
+  var el = $('#log');
+  el.classList.add('show');
+  var line = document.createElement('div');
+  line.className = 'line ' + (cls || 'info');
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+function clearLog(){ $('#log').innerHTML = ''; $('#log').classList.remove('show'); }
+
+// ============ Patch Engine ============
+function applyPatch(content, p){
+  // check skip
+  if(p.skipIfFound && content.indexOf(p.skipIfFound) !== -1){
+    return {ok: true, content: content, skipped: true};
+  }
+
+  if(p.op === 'append'){
+    return {ok: true, content: content + (p.content || '')};
+  }
+
+  if(p.op === 'replace'){
+    if(!p.anchor) return {ok: false, reason: 'anchor خالی'};
+    var idx = content.indexOf(p.anchor);
+    if(idx === -1) return {ok: false, reason: 'anchor پیدا نشد: "' + p.anchor.slice(0, 60) + '..."'};
+    var count = content.split(p.anchor).length - 1;
+    if(count > 1 && !p.allowMultiple){
+      return {ok: false, reason: 'anchor ' + count + ' بار تکرار شده (allowMultiple:true بذار)'};
+    }
+    return {ok: true, content: content.split(p.anchor).join(p.content || '')};
+  }
+
+  if(p.op === 'replace-first'){
+    var idx2 = content.indexOf(p.anchor);
+    if(idx2 === -1) return {ok: false, reason: 'anchor پیدا نشد'};
+    return {ok: true, content: content.slice(0, idx2) + p.content + content.slice(idx2 + p.anchor.length)};
+  }
+
+  if(p.op === 'replace-between'){
+    if(!p.start || !p.end) return {ok: false, reason: 'start/end خالی'};
+    var startIdx = content.indexOf(p.start);
+    if(startIdx === -1) return {ok: false, reason: 'start پیدا نشد: "' + p.start.slice(0, 50) + '..."'};
+    var endIdx = content.indexOf(p.end, startIdx);
+    if(endIdx === -1) return {ok: false, reason: 'end پیدا نشد: "' + p.end.slice(0, 50) + '..."'};
+    var before = content.slice(0, startIdx);
+    var after = content.slice(endIdx + p.end.length);
+    var middle = p.content || '';
+    if(p.includeMarkers === false){
+      // محتوای جدید فقط بین start و end جایگزین می‌شه
+      return {ok: true, content: before + p.start + middle + p.end + after};
+    }
+    // پیش‌فرض: از start تا end حذف و content جایگزین
+    return {ok: true, content: before + middle + after};
+  }
+
+  if(p.op === 'insert-before'){
+    var idx3 = content.indexOf(p.anchor);
+    if(idx3 === -1) return {ok: false, reason: 'anchor پیدا نشد'};
+    return {ok: true, content: content.slice(0, idx3) + p.content + content.slice(idx3)};
+  }
+
+  if(p.op === 'insert-after'){
+    var idx4 = content.indexOf(p.anchor);
+    if(idx4 === -1) return {ok: false, reason: 'anchor پیدا نشد'};
+    var endP = idx4 + p.anchor.length;
+    return {ok: true, content: content.slice(0, endP) + p.content + content.slice(endP)};
+  }
+
+  if(p.op === 'regex'){
+    if(!p.pattern) return {ok: false, reason: 'pattern خالی'};
+    try{
+      var flags = p.flags || 'g';
+      var re = new RegExp(p.pattern, flags);
+      if(!re.test(content)) return {ok: false, reason: 'regex مطابقت نداشت'};
+      return {ok: true, content: content.replace(re, p.content || '')};
+    }catch(e){
+      return {ok: false, reason: 'regex نامعتبر: ' + e.message};
+    }
+  }
+
+  return {ok: false, reason: 'نوع ناشناخته: ' + p.op};
+}
+
+// ============ Apply ============
+$('#applyBtn').onclick = function(){
+  clearLog();
+  $('#downloadArea').classList.remove('show');
+
+  var patch;
+  try{
+    patch = JSON.parse($('#patchInput').value);
+  }catch(e){
+    log('❌ JSON نامعتبر: ' + e.message, 'err');
+    return;
+  }
+  if(!patch.patches || !Array.isArray(patch.patches)){
+    log('❌ پچ باید آرایه‌ی patches داشته باشه', 'err');
+    return;
+  }
+
+  // اگه target داره، چک کن فایل درست انتخاب شده
+  if(patch.target && patch.target !== originalName){
+    if(!confirm('هشدار: این پچ برای "' + patch.target + '" هست ولی تو "' + originalName + '" رو انتخاب کردی.\nادامه بدی؟')){
+      log('لغو شد', 'warn');
+      return;
+    }
+  }
+
+  log('📦 پچ: ' + (patch.name || 'بدون نام'), 'info');
+  if(patch.description) log('   ' + patch.description, 'info');
+  log('📄 فایل: ' + originalName, 'info');
+  log('', 'info');
+
+  var content = originalContent;
+  var okCount = 0, skipCount = 0, errCount = 0;
+
+  patch.patches.forEach(function(p, i){
+    var desc = p.desc || p.op;
+    var r = applyPatch(content, p);
+    if(r.ok && r.skipped){
+      log('⏭ [' + (i+1) + '] ' + desc + ' — قبلاً اعمال شده', 'warn');
+      skipCount++;
+    } else if(r.ok){
+      content = r.content;
+      log('✅ [' + (i+1) + '] ' + desc, 'ok');
+      okCount++;
+    } else {
+      log('❌ [' + (i+1) + '] ' + desc + ' → ' + r.reason, 'err');
+      errCount++;
+    }
+  });
+
+  log('', 'info');
+  log('━━━━━━━━━━━━━━━━━━', 'hr');
+  log('✅ ' + okCount + '  ⏭ ' + skipCount + '  ❌ ' + errCount, errCount ? 'warn' : 'ok');
+
+  if(errCount === 0){
+    patchedContent = content;
+    $('#downloadArea').classList.add('show');
+    log('', 'info');
+    log('🎉 آماده‌ی دانلود', 'ok');
+  } else if(okCount > 0){
+    // بعضی‌ها اعمال شدن — اجازه می‌دیم دانلود کنه ولی هشدار می‌دیم
+    patchedContent = content;
+    $('#downloadArea').classList.add('show');
+    log('', 'info');
+    log('⚠️ بعضی تغییرات اعمال نشدن. فایل ناقصه.', 'warn');
+    log('💡 اگه پچ رو دوباره بفرست، می‌تونم درستش کنم.', 'warn');
+  } else {
+    log('❌ هیچ تغییری اعمال نشد', 'err');
+  }
+};
+
+// ============ Download ============
+$('#downloadBtn').onclick = function(){
+  if(!patchedContent){alert('محتوایی نیست');return;}
+  var name = originalName || 'output.txt';
+  var type = name.endsWith('.js') ? 'text/javascript' :
+             name.endsWith('.css') ? 'text/css' :
+             name.endsWith('.html') ? 'text/html' : 'text/plain';
+  var blob = new Blob([patchedContent], {type: type + ';charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 100);
+};
+
+$('#copyBtn').onclick = function(){
+  if(!patchedContent){alert('محتوایی نیست');return;}
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(patchedContent).then(function(){
+      alert('✅ کپی شد');
+    }).catch(function(){
+      alert('❌ خطا در کپی');
+    });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = patchedContent;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('✅ کپی شد');
+  }
+};
+
+// ============ Reset ============
+$('#resetBtn').onclick = function(){
+  if(!confirm('همه‌چیز پاک بشه؟')) return;
+  originalContent = '';
+  originalName = '';
+  patchedContent = '';
+  $('#fileInput').value = '';
+  $('#patchInput').value = '';
+  $('#fileSlot').classList.remove('loaded');
+  $('#fileIcon').textContent = '📄';
+  $('#fileName').textContent = 'انتخاب فایل';
+  $('#fileStatus').textContent = 'روی این کادر بزن یا فایل رو بکش و رها کن';
+  $('#fileStats').style.display = 'none';
+  $('#patchSummary').style.display = 'none';
+  $('#downloadArea').classList.remove('show');
+  clearLog();
+  updateApplyBtn();
+};
+</script>
+</body>
+</html>
