@@ -335,7 +335,7 @@ function startSpeedSession(){
     }
     if(speed.inputMode !== 'voice'){
       h += '<div class="speed-type-row">';
-      h += '<input type="text" id="speedType" dir="ltr" placeholder="Type your answer…" autocomplete="off">';
+      h += '<input type="text" id="speedType" dir="ltr" lang="en" inputmode="latin" placeholder="Type your answer…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">';
       h += '<button type="button" id="speedSend">ارسال</button>';
       h += '</div>';
     }
@@ -361,6 +361,20 @@ function startSpeedSession(){
       setTimeout(function(){
         if(speed.phase === 'play' && !speed.busy) toggleMic();
       }, 400);
+    }
+    // فوکوس خودکار روی input تایپ
+    if(speed.inputMode !== 'voice' && inp){
+      setTimeout(function(){ try{ inp.focus(); }catch(e){} }, 100);
+      // Enter برای ارسال
+      inp.addEventListener('keydown', function(e){
+        if(e.key === 'Enter' || e.keyCode === 13){
+          e.preventDefault();
+          e.stopPropagation();
+          if(inp.value && inp.value.trim().length > 0){
+            submitAnswer(inp.value, null, false);
+          }
+        }
+      });
     }
   }
 
