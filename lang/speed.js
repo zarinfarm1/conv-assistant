@@ -321,7 +321,7 @@ function startSpeedSession(){
     h += '<circle class="track" cx="90" cy="90" r="85"/>';
     h += '<circle class="prog" cx="90" cy="90" r="85" style="stroke-dasharray:' + circ + ';stroke-dashoffset:0"/>';
     h += '</svg>';
-    h += '<div class="num">' + (speed.effectiveSec || speed.seconds) + '</div>';
+    h += '<div class="num">' + speed.seconds + '</div>';
     h += '</div>';
     h += '<div class="speed-question"><div>';
     h += '<div class="q-role">' + window.esc(q.role || 'پیام') + '</div>';
@@ -350,41 +350,25 @@ function startSpeedSession(){
     var mic = document.getElementById('speedMic');
     if(mic) mic.addEventListener('click', toggleMic);
 
-    var send = document.getElementById('speedSend');
-    var inp = document.getElementById('speedType');
-    if(send) send.addEventListener('click', function(){ submitAnswer(inp.value, null, false); });
-    if(inp) inp.addEventListener('keydown', function(e){
-      if(e.key === 'Enter'){ e.preventDefault(); submitAnswer(inp.value, null, false); }
-    });
-
-    if(speed.inputMode === 'voice' && mic){
-      setTimeout(function(){
-        if(speed.phase === 'play' && !speed.busy) toggleMic();
-      }, 400);
-    }
-    // ==== FOX ENTER DELAY ====
     if(speed.inputMode !== 'voice'){
       var form = document.getElementById('speedForm');
-      var inpEl = document.getElementById('speedType');
+      var inp = document.getElementById('speedType');
 
-      // فوکوس خودکار
-      if(inpEl){
-        setTimeout(function(){ try{ inpEl.focus(); }catch(e){} }, 100);
+      if(inp){
+        setTimeout(function(){ try{ inp.focus(); }catch(e){} }, 100);
 
-        // حل مشکل composition کیبورد فارسی/موبایل
         var composing = false;
-        inpEl.addEventListener('compositionstart', function(){ composing = true; });
-        inpEl.addEventListener('compositionend', function(){ composing = false; });
+        inp.addEventListener('compositionstart', function(){ composing = true; });
+        inp.addEventListener('compositionend', function(){ composing = false; });
 
-        // Enter → ارسال با انتظار هوشمند
-        inpEl.addEventListener('keydown', function(e){
+        inp.addEventListener('keydown', function(e){
           if(e.key === 'Enter' || e.keyCode === 13){
             e.preventDefault();
             e.stopPropagation();
-            if(composing) return; // صبر کن composition تموم بشه
+            if(composing) return;
             var attempt = 0;
             var trySubmit = function(){
-              var v = inpEl.value;
+              var v = inp.value;
               if(v && v.trim().length > 0){
                 submitAnswer(v, null, false);
               } else if(attempt < 8){
@@ -397,32 +381,22 @@ function startSpeedSession(){
         });
       }
 
-      // submit فرم (برای دکمه‌ی Send کیبورد)
       if(form){
         form.addEventListener('submit', function(e){
           e.preventDefault();
           e.stopPropagation();
-          var v = inpEl ? inpEl.value : '';
+          var v = inp ? inp.value : '';
           if(v && v.trim().length > 0){
             submitAnswer(v, null, false);
           }
         });
       }
-    }, 400);
     }
-    // فوکوس خودکار روی input تایپ
-    if(speed.inputMode !== 'voice' && inp){
-      setTimeout(function(){ try{ inp.focus(); }catch(e){} }, 100);
-      // Enter برای ارسال
-      inp.addEventListener('keydown', function(e){
-        if(e.key === 'Enter' || e.keyCode === 13){
-          e.preventDefault();
-          e.stopPropagation();
-          if(inp.value && inp.value.trim().length > 0){
-            submitAnswer(inp.value, null, false);
-          }
-        }
-      });
+
+    if(speed.inputMode === 'voice' && mic){
+      setTimeout(function(){
+        if(speed.phase === 'play' && !speed.busy) toggleMic();
+      }, 400);
     }
   }
 
