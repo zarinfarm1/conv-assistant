@@ -233,7 +233,7 @@
       });
     }
     var sb = document.getElementById('speedStart');
-    if(sb) sb.addEventListener('click', startSession);
+    if(sb) sb.addEventListener('click', startSpeedSession);
   }
 
   // ============ 7. Session ============
