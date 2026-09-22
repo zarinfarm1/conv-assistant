@@ -269,7 +269,7 @@ function startSpeedSession(){
       return endSession();
     }
     speed.question = speed.session.questions[speed.session.idx];
-    speed.remaining = speed.seconds;
+    speed.effectiveSec = (speed.inputMode === 'type' || speed.inputMode === 'both') ? Math.max(15, Math.round(speed.seconds * 2.5)) : speed.seconds; speed.remaining = speed.effectiveSec;
     speed.startTime = Date.now();
     speed.lastResult = null;
     speed.busy = false;
@@ -300,7 +300,7 @@ function startSpeedSession(){
     var progEl = timerEl.querySelector('.prog');
     if(!numEl || !progEl) return;
     numEl.textContent = Math.ceil(speed.remaining);
-    var pct = speed.remaining / speed.seconds;
+    var pct = speed.remaining / (speed.effectiveSec || speed.seconds);
     var circ = 2 * Math.PI * 85;
     progEl.style.strokeDasharray = circ;
     progEl.style.strokeDashoffset = circ * (1 - pct);
@@ -321,7 +321,7 @@ function startSpeedSession(){
     h += '<circle class="track" cx="90" cy="90" r="85"/>';
     h += '<circle class="prog" cx="90" cy="90" r="85" style="stroke-dasharray:' + circ + ';stroke-dashoffset:0"/>';
     h += '</svg>';
-    h += '<div class="num">' + speed.seconds + '</div>';
+    h += '<div class="num">' + (speed.effectiveSec || speed.seconds) + '</div>';
     h += '</div>';
     h += '<div class="speed-question"><div>';
     h += '<div class="q-role">' + window.esc(q.role || 'پیام') + '</div>';
@@ -477,7 +477,7 @@ function startSpeedSession(){
     var done = speed.session.idx + 1;
     var total = speed.session.questions.length;
     var circ = 2 * Math.PI * 85;
-    var pctShown = r.timeout ? 0 : Math.max(0, 1 - (speed.responseTime / speed.seconds));
+    var pctShown = r.timeout ? 0 : Math.max(0, 1 - (speed.responseTime / (speed.effectiveSec || speed.seconds)));
     var h = '<div class="speed-play">';
     h += '<div class="speed-timer">';
     h += '<svg viewBox="0 0 180 180">';
@@ -494,20 +494,20 @@ function startSpeedSession(){
     if(r.timeout){
       h += '<h3><span class="time-badge bad">⏱ ' + window.fa(speed.seconds) + ' ثانیه تموم شد</span></h3>';
       h += '<p style="margin:8px 0 4px;font-size:.9rem;color:#5b6b80">حتی یه جواب کوتاه هم کافی بود:</p>';
-      h += '<div style="background:#ffedd5;padding:12px 16px;border-radius:12px;margin-top:8px"><div dir="ltr" style="font:600 1.05rem Lexend,sans-serif">' + window.esc(q.sample) + '</div></div>';
+      h += '<div style="background:#ffedd5;padding:12px 16px;border-radius:12px;margin-top:8px;color:#14213d"><div dir="ltr" style="font:600 1.05rem Lexend,sans-serif;color:#14213d">' + window.esc(q.sample) + '</div></div>';
       h += '<div class="tip" style="margin-top:12px">💡 ' + window.esc(q.hint) + '</div>';
     } else {
       var a = r.analysis;
       var score = a.score != null ? a.score : 7;
       var timeClass = speed.responseTime <= 3 ? 'great' : (speed.responseTime <= speed.seconds * 0.75 ? 'ok' : 'bad');
       h += '<h3>زمان <span class="time-badge ' + timeClass + '">' + window.fa(speed.responseTime.toFixed(1)) + ' ثانیه</span> <span class="time-badge" style="background:#ffedd5;color:#c2410c">امتیاز ' + window.fa(score) + '/10</span></h3>';
-      h += '<div style="background:#f0f4f4;padding:12px 16px;border-radius:12px;margin:10px 0"><div style="font-size:.8rem;color:#5b6b80;margin-bottom:4px">جواب تو:</div><div dir="ltr" style="font-family:Lexend,sans-serif">' + window.esc(r.text) + '</div></div>';
+      h += '<div style="background:#f0f4f4;padding:12px 16px;border-radius:12px;margin:10px 0;color:#14213d"><div style="font-size:.8rem;color:#5b6b80;margin-bottom:4px">جواب تو:</div><div dir="ltr" style="font-family:Lexend,sans-serif;color:#14213d">' + window.esc(r.text) + '</div></div>';
       if(a.corrected && window.norm(a.corrected) !== window.norm(r.text)){
         h += '<div style="background:#d8f1e6;padding:12px 16px;border-radius:12px;margin:10px 0;border:1px solid #23906a"><div style="font-size:.8rem;color:#23906a;font-weight:700;margin-bottom:4px">✓ طبیعی‌تر:</div><div dir="ltr" style="font:600 1rem Lexend,sans-serif;color:#23906a">' + window.esc(a.corrected) + '</div></div>';
       }
       if(a.mistakes && a.mistakes.length){
         a.mistakes.forEach(function(m){
-          h += '<div style="margin-top:8px;padding:8px 12px;background:#fbe0e2;border-radius:8px"><div dir="ltr"><s style="color:#d64550">' + window.esc(m.original) + '</s> → <b style="color:#23906a">' + window.esc(m.fix) + '</b></div><div>' + window.esc(m.explain_fa || '') + '</div></div>';
+          h += '<div style="margin-top:8px;padding:8px 12px;background:#fbe0e2;border-radius:8px;color:#14213d"><div dir="ltr" style="color:#14213d"><s style="color:#d64550">' + window.esc(m.original) + '</s> → <b style="color:#23906a">' + window.esc(m.fix) + '</b></div><div style="color:#14213d">' + window.esc(m.explain_fa || '') + '</div></div>';
         });
       }
       if(a.tip_fa) h += '<div class="tip" style="margin-top:12px">💡 ' + window.esc(a.tip_fa) + '</div>';
