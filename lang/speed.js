@@ -482,6 +482,9 @@ function startSpeedSession(){
         waitForMic();
       }, 1200);
     }
+  }
+
+  // ============ 10. Mic ============
   function toggleMic(){
     if(speed.busy) return;
     var b = document.getElementById('speedMic');
