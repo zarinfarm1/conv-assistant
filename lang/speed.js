@@ -303,8 +303,11 @@ function startSpeedSession(){
     };
     var isOffice = false;
     try { isOffice = localStorage.getItem('zy_office_mode') === '1'; } catch(e){}
-    if(isOffice){ setTimeout(beginTimer, 250); return; }
-    if(!('speechSynthesis' in window)){ setTimeout(beginTimer, 250); return; }
+    var shouldSpeak = (speed.inputMode === 'voice' || speed.inputMode === 'both');
+    if(isOffice || !shouldSpeak || !('speechSynthesis' in window)){
+      setTimeout(beginTimer, 250);
+      return;
+    }
     try{
       window.speechSynthesis.cancel();
       var u = new SpeechSynthesisUtterance(q.q);
@@ -336,7 +339,6 @@ function startSpeedSession(){
   }
 
 
-  function startTimer(){
     if(speed.timerId) clearInterval(speed.timerId);
     speed.timerId = setInterval(function(){
       speed.remaining -= 0.1;
@@ -451,37 +453,10 @@ function startSpeedSession(){
       }
     }
 
-    if(speed.inputMode === 'voice' && mic){
-      // نمایش آماده‌سازی
-      var prepEl = document.createElement('div');
-      prepEl.id = 'speedPrep';
-      prepEl.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);display:grid;place-items:center;z-index:9999;color:#fff;font-size:1.3rem;font-weight:700;text-align:center';
-      prepEl.innerHTML = '<div><div style="font-size:3rem;margin-bottom:16px">🎤</div><div id="speedPrepText">آماده‌سازی میکروفون…</div><div style="font-size:.85rem;opacity:.7;margin-top:12px">بعد از شنیدن صدای بوق، جواب بده</div></div>';
-      document.body.appendChild(prepEl);
-
+    if(speed.inputMode === 'voice' && mic && !window.listening){
       setTimeout(function(){
-        if(speed.phase !== 'play'){ prepEl.remove(); return; }
-        // حالا میکروفون رو فعال کن
-        toggleMic();
-
-        // چک کردن که واقعاً listening شده
-        var waitForMic = function(){
-          if(window.listening){
-            // بوق یا پیام آماده
-            var txt = document.getElementById('speedPrepText');
-            if(txt) txt.textContent = '✅ حالا جواب بده';
-            setTimeout(function(){
-              if(prepEl.parentNode) prepEl.remove();
-              // حالا تایمر شروع بشه
-              speed.startTime = Date.now();
-              startTimer();
-            }, 400);
-          } else {
-            setTimeout(waitForMic, 100);
-          }
-        };
-        waitForMic();
-      }, 1200);
+        if(speed.phase === 'play' && !speed.busy && !window.listening) toggleMic();
+      }, 800);
     }
   }
 
