@@ -298,8 +298,7 @@ function startSpeedSession(){
     var beginTimer = function(){
       if(started) return;
       started = true;
-      speed.startTime = Date.now();
-      startTimer();
+      // startTime و startTimer الان در prep انجام می‌شه
     };
     var isOffice = false;
     try { isOffice = localStorage.getItem('zy_office_mode') === '1'; } catch(e){}
@@ -452,13 +451,37 @@ function startSpeedSession(){
     }
 
     if(speed.inputMode === 'voice' && mic){
-      setTimeout(function(){
-        if(speed.phase === 'play' && !speed.busy) toggleMic();
-      }, 400);
-    }
-  }
+      // نمایش آماده‌سازی
+      var prepEl = document.createElement('div');
+      prepEl.id = 'speedPrep';
+      prepEl.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);display:grid;place-items:center;z-index:9999;color:#fff;font-size:1.3rem;font-weight:700;text-align:center';
+      prepEl.innerHTML = '<div><div style="font-size:3rem;margin-bottom:16px">🎤</div><div id="speedPrepText">آماده‌سازی میکروفون…</div><div style="font-size:.85rem;opacity:.7;margin-top:12px">بعد از شنیدن صدای بوق، جواب بده</div></div>';
+      document.body.appendChild(prepEl);
 
-  // ============ 10. Mic ============
+      setTimeout(function(){
+        if(speed.phase !== 'play'){ prepEl.remove(); return; }
+        // حالا میکروفون رو فعال کن
+        toggleMic();
+
+        // چک کردن که واقعاً listening شده
+        var waitForMic = function(){
+          if(window.listening){
+            // بوق یا پیام آماده
+            var txt = document.getElementById('speedPrepText');
+            if(txt) txt.textContent = '✅ حالا جواب بده';
+            setTimeout(function(){
+              if(prepEl.parentNode) prepEl.remove();
+              // حالا تایمر شروع بشه
+              speed.startTime = Date.now();
+              startTimer();
+            }, 400);
+          } else {
+            setTimeout(waitForMic, 100);
+          }
+        };
+        waitForMic();
+      }, 1200);
+    }
   function toggleMic(){
     if(speed.busy) return;
     var b = document.getElementById('speedMic');
