@@ -338,7 +338,7 @@ function startSpeedSession(){
     }
   }
 
-
+  function startTimer(){
     if(speed.timerId) clearInterval(speed.timerId);
     speed.timerId = setInterval(function(){
       speed.remaining -= 0.1;
