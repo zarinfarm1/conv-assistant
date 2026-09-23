@@ -1654,33 +1654,180 @@ function buildReport(){
   var byType = {};
   mistakes.forEach(function(m){var k=m.type||'other';byType[k]=(byType[k]||0)+1});
   var topTypes = Object.keys(byType).sort(function(a,b){return byType[b]-byType[a]}).slice(0,5).map(function(k){return {type:k,count:byType[k]}});
+
+  // ==== Speed Stats ====
+  var speedStats = {sessions:0, totalResponses:0, avgTime:0, bestTime:0, accuracy:0};
+  if(prog.speed){
+    var ss = prog.speed;
+    speedStats.sessions = ss.sessions || 0;
+    speedStats.totalResponses = ss.totalResponses || 0;
+    speedStats.avgTime = ss.totalResponses ? +(ss.totalTime / ss.totalResponses).toFixed(2) : 0;
+    speedStats.bestTime = ss.bestTime === 999 ? 0 : +ss.bestTime.toFixed(2);
+    speedStats.accuracy = ss.totalResponses ? Math.round((ss.correctCount||0) * 100 / ss.totalResponses) : 0;
+    speedStats.recentTrend = (ss.history || []).slice(0, 10).map(function(h){return h.t;});
+  }
+
+  // ==== Daily Checklist History ====
+  var dailyHistory = [];
+  var today = new Date();
+  var completedDays = 0, totalChecklistItems = 0, totalChecklistDone = 0;
+  for(var dayOffset = 0; dayOffset < 60; dayOffset++){
+    var d = new Date(today.getTime() - dayOffset * 86400000);
+    var key = 'zy_dp_' + d.toDateString();
+    try {
+      var checks = JSON.parse(localStorage.getItem(key) || '{}');
+      var itemCount = Object.keys(checks).length;
+      if(itemCount > 0){
+        var dayStr = d.toISOString().split('T')[0];
+        dailyHistory.push({date: dayStr, items: itemCount});
+        totalChecklistItems += itemCount;
+        if(itemCount >= 4) completedDays++;
+      }
+    } catch(e){}
+  }
+  // آخرین ۱۴ روز رو برمی‌گردونیم
+  dailyHistory = dailyHistory.slice(0, 14);
+
+  // ==== Week Progress ====
   var weeksDone = 0;
   for(var w=1;w<=8;w++) if(weekProgress(w)===100) weeksDone++;
   var wp = {}; for(var i=1;i<=8;i++) wp['week_'+i]=weekProgress(i);
+
+  // ==== Grammar ====
   var gTopicsDone=0, gTopicsTotal=0;
-  GRAMMAR_CURRICULUM.forEach(function(lvl){gTopicsTotal+=lvl.topics.length;lvl.topics.forEach(function(t){if(prog.grammar&&prog.grammar[t.id])gTopicsDone++})});
+  GRAMMAR_CURRICULUM.forEach(function(lvl){
+    gTopicsTotal+=lvl.topics.length;
+    lvl.topics.forEach(function(t){if(prog.grammar&&prog.grammar[t.id])gTopicsDone++})
+  });
+
+  // ==== Week-level breakdown ====
+  var weekScenariosDone = {};
+  var weekLessonsDone = {};
+  Object.keys(prog.program||{}).forEach(function(k){
+    if(k.indexOf('sc:') === 0){
+      var scId = k.slice(3);
+      PROGRAM.forEach(function(w){
+        (w.scenarios||[]).forEach(function(s){
+          if(s.id === scId){ weekScenariosDone[w.week] = (weekScenariosDone[w.week]||0) + 1; }
+        });
+      });
+    }
+    if(k.indexOf('les:') === 0){
+      var parts = k.slice(4).split(':');
+      PROGRAM.forEach(function(w){
+        (w.lessons||[]).forEach(function(l){
+          if(l.level === parts[0] && String(l.idx) === String(parts[1])){
+            weekLessonsDone[w.week] = (weekLessonsDone[w.week]||0) + 1;
+          }
+        });
+      });
+    }
+  });
+
+  // ==== Build Report ====
   var report = {
-    version:1, generated_at:new Date().toISOString(), user:'Armin',
-    total_xp:prog.xp, streak:prog.streak, mistakes_count:mistakes.length,
-    weeks_completed:weeksDone, current_week:curWeek, week_progress:wp,
-    grammar:{topics_done:gTopicsDone, topics_total:gTopicsTotal, pct:gTopicsTotal?Math.round(gTopicsDone*100/gTopicsTotal):0},
-    top_mistake_types:topTypes,
-    recent_mistakes:mistakes.slice(0,30).map(function(m){return {type:m.type,original:m.original,fix:m.fix,level:m.level,topic:m.topic,date:m.date}}),
-    lessons_created:Object.keys(lessonCache).length,
-    grammar_lessons_created:Object.keys(grammarCache).length,
-    custom_lessons:customLessons.length,
-    imported_scenarios:importedScenarios.length,
-    program_done:Object.keys(prog.program||{}).filter(function(k){return k.indexOf('les:')===0||k.indexOf('sc:')===0}).length,
-    program_total:32
+    version: 2,
+    generated_at: new Date().toISOString(),
+    user: 'Armin',
+
+    // کلی
+    total_xp: prog.xp,
+    streak_days: prog.streak,
+    first_seen: prog.last || null,
+
+    // پیشرفت کلی
+    current_week: curWeek,
+    weeks_completed: weeksDone,
+    week_progress: wp,
+
+    // جواب سریع
+    speed: {
+      sessions_completed: speedStats.sessions,
+      total_responses: speedStats.totalResponses,
+      avg_response_time_sec: speedStats.avgTime,
+      best_response_time_sec: speedStats.bestTime,
+      accuracy_pct: speedStats.accuracy,
+      recent_times_sec: speedStats.recentTrend
+    },
+
+    // پیوستگی
+    consistency: {
+      days_with_activity_60d: dailyHistory.length,
+      days_with_4plus_tasks_60d: completedDays,
+      total_checklist_items: totalChecklistItems,
+      last_14_days: dailyHistory
+    },
+
+    // گرامر
+    grammar: {
+      topics_done: gTopicsDone,
+      topics_total: gTopicsTotal,
+      pct: gTopicsTotal ? Math.round(gTopicsDone*100/gTopicsTotal) : 0
+    },
+
+    // اشتباهات
+    mistakes: {
+      total: mistakes.length,
+      top_types: topTypes,
+      recent_30: mistakes.slice(0,30).map(function(m){
+        return {type:m.type, original:m.original, fix:m.fix, level:m.level, topic:m.topic, date:m.date};
+      })
+    },
+
+    // محتوا
+    content: {
+      program_scenarios_done_by_week: weekScenariosDone,
+      program_lessons_done_by_week: weekLessonsDone,
+      lessons_generated: Object.keys(lessonCache).length,
+      grammar_lessons_generated: Object.keys(grammarCache).length,
+      custom_lessons: customLessons.length,
+      imported_scenarios: importedScenarios.length
+    },
+
+    // نسخه‌ها
+    modules_loaded: {
+      speed: !!window.__speedModuleLoaded,
+      plan: !!window.__planModuleLoaded,
+      office: !!window.__officeModuleLoaded
+    }
   };
+
   var jsonStr = JSON.stringify(report, null, 2);
-  box.innerHTML = '<div class="card"><h2>'+ic('chart')+' گزارش پیشرفت</h2><div class="row" style="margin:12px 0"><button type="button" class="btn brand" id="copyReport">📋 کپی</button><button type="button" class="btn ghost" id="downloadReport">'+ic('download')+' دانلود</button><button type="button" class="btn ghost" id="closeReport">بستن</button></div><textarea readonly style="min-height:240px;font-size:11px" dir="ltr">'+esc(jsonStr)+'</textarea></div>';
+
+  // ==== Summary card ====
+  var summary = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px">';
+  summary += '<div style="padding:10px;background:var(--brand-soft);border-radius:10px;text-align:center"><b style="display:block;font-size:1.3rem;color:var(--brand)">' + fa(prog.xp) + '</b><small style="color:var(--muted);font-size:.72rem">امتیاز کل</small></div>';
+  summary += '<div style="padding:10px;background:var(--prog-soft);border-radius:10px;text-align:center"><b style="display:block;font-size:1.3rem;color:var(--prog)">' + fa(speedStats.totalResponses) + '</b><small style="color:var(--muted);font-size:.72rem">جواب سریع</small></div>';
+  summary += '<div style="padding:10px;background:#d8f1e6;border-radius:10px;text-align:center"><b style="display:block;font-size:1.3rem;color:#23906a">' + fa(dailyHistory.length) + '</b><small style="color:var(--muted);font-size:.72rem">روز فعال (۶۰ روز)</small></div>';
+  summary += '<div style="padding:10px;background:#fef3c7;border-radius:10px;text-align:center"><b style="display:block;font-size:1.3rem;color:#a86d00">' + fa(gTopicsDone) + '/' + fa(gTopicsTotal) + '</b><small style="color:var(--muted);font-size:.72rem">گرامر</small></div>';
+  summary += '</div>';
+
+  box.innerHTML = '<div class="card"><h2>' + ic('chart') + ' گزارش کامل پیشرفت</h2>' + summary +
+    '<div class="row" style="margin:12px 0">' +
+      '<button type="button" class="btn brand" id="copyReport">📋 کپی</button>' +
+      '<button type="button" class="btn ghost" id="downloadReport">' + ic('download') + ' دانلود JSON</button>' +
+      '<button type="button" class="btn ghost" id="closeReport">بستن</button>' +
+    '</div>' +
+    '<textarea readonly style="min-height:300px;font-size:11px" dir="ltr">' + esc(jsonStr) + '</textarea></div>';
+
   $('#closeReport').onclick = function(){box.innerHTML=''};
-  $('#copyReport').onclick = function(){var ta=box.querySelector('textarea');ta.select();if(navigator.clipboard)navigator.clipboard.writeText(ta.value).then(function(){toast('کپی ✅')}).catch(function(){document.execCommand('copy');toast('کپی ✅')});else{document.execCommand('copy');toast('کپی ✅')}};
+  $('#copyReport').onclick = function(){
+    var ta = box.querySelector('textarea');
+    ta.select();
+    if(navigator.clipboard) navigator.clipboard.writeText(ta.value).then(function(){toast('کپی ✅')}).catch(function(){document.execCommand('copy');toast('کپی ✅')});
+    else { document.execCommand('copy'); toast('کپی ✅'); }
+  };
   $('#downloadReport').onclick = function(){
     var blob = new Blob([jsonStr], {type:'application/json'});
     var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');a.href=url;a.download='zabanyar-report-'+new Date().toISOString().split('T')[0]+'.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast('دانلود ✅');
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'zabanyar-report-' + new Date().toISOString().split('T')[0] + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast('دانلود ✅');
   };
   box.scrollIntoView({behavior:'smooth'});
 }
