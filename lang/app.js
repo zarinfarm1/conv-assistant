@@ -482,21 +482,37 @@ function callAI(system,messages,max){
   if(!settings.key) return Promise.reject(new Error('NOKEY'));
   var baseUrl = (settings.proxy && settings.proxy.trim()) ? settings.proxy.trim().replace(/\/+$/,'') : 'https://1xai.ir';
   var body = {model:settings.model, max_tokens:max, messages:[{role:'system',content:system}].concat(messages)};
-  return fetch(baseUrl+'/v1/chat/completions',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+settings.key},
-    body:JSON.stringify(body)
-  }).then(function(r){
-    if(!r.ok) return r.json().catch(function(){return{}}).then(function(d){
-      var m = (d.error && d.error.message) || (d.error) || '';
-      throw new Error(r.status + (m?' — '+m:''));
+  var attempt = 0;
+  var maxAttempts = 3;
+  var tryFetch = function(){
+    attempt++;
+    return fetch(baseUrl+'/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+settings.key},
+      body:JSON.stringify(body)
+    }).then(function(r){
+      if(r.status >= 500 && attempt < maxAttempts){
+        console.log('[Retry] server error ' + r.status + ', attempt ' + attempt);
+        return new Promise(function(resolve){ setTimeout(resolve, 800); }).then(tryFetch);
+      }
+      if(!r.ok) return r.json().catch(function(){return{}}).then(function(d){
+        var m = (d.error && d.error.message) || (d.error) || '';
+        throw new Error(r.status + (m?' — '+m:''));
+      });
+      return r.json();
+    }).then(function(d){
+      return ((d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content)||'').trim();
+    }).catch(function(e){
+      if(attempt < maxAttempts && /Failed to fetch|NetworkError|500/.test(e.message||'')){
+        console.log('[Retry] network error, attempt ' + attempt);
+        return new Promise(function(resolve){ setTimeout(resolve, 800); }).then(tryFetch);
+      }
+      throw e;
     });
-    return r.json();
-  }).then(function(d){
-    return ((d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content)||'').trim();
-  });
+  };
+  return tryFetch();
 }
-function parseJSON(t){
+
   t = t.replace(/```json|```/g,'');
   var a = t.indexOf('{'), b = t.lastIndexOf('}');
   if(a<0 || b<0) throw new Error('bad json');
