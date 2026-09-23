@@ -133,7 +133,7 @@ function pullFromCloud(silent){
     return r.json().then(function(d){
       if(d.prog){
         var _oldSpeed = (prog && prog.speed) ? prog.speed : null;
-        prog = Object.assign({xp:0,streak:0,last:'',done:{},program:{},grammar:{},speed:_oldSpeed||{sessions:0,totalResponses:0,totalTime:0,bestTime:999,correctCount:0,history:[]}}, d.prog);
+        prog = (function(){var _sp=(prog&&prog.speed)?prog.speed:null;var _p=Object.assign({xp:0,streak:0,last:'',done:{},program:{},grammar:{},speed:_sp||{sessions:0,totalResponses:0,totalTime:0,bestTime:999,correctCount:0,history:[]}}, d.prog);if(!_p.speed)_p.speed={sessions:0,totalResponses:0,totalTime:0,bestTime:999,correctCount:0,history:[]};return _p;})();
         if(!prog.speed && _oldSpeed) prog.speed = _oldSpeed;
         if(!prog.program || typeof prog.program !== 'object') prog.program={};
         if(!prog.done || typeof prog.done !== 'object') prog.done={};
