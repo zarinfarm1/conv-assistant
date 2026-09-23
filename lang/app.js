@@ -1643,6 +1643,7 @@ function renderNotes(){
   h += '<button type="button" class="btn brand" id="drill" '+(mistakes.length?'':'disabled')+'>تمرین</button>';
   h += '<button type="button" class="btn prog" id="reportBtn">'+ic('chart')+' گزارش</button>';
   h += '<button type="button" class="btn ghost" id="clr" '+(mistakes.length?'':'disabled')+'>پاک</button>';
+  h += '<button type="button" class="btn job" id="lessonFromMistakesBtn" '+(mistakes.length?'':'disabled')+'>📚 درس از اشتباهات</button>';
   h += '</div><div id="drillBox"></div><div id="reportBox"></div>';
   h += '<div class="nb" style="margin-top:16px">';
   if(mistakes.length){
@@ -1666,6 +1667,47 @@ function renderNotes(){
       .catch(function(e){box.innerHTML='';toast(errText(e),6000)});
   };
   var rb = $('#reportBtn'); if(rb) rb.onclick = buildReport;
+  var lfm = $('#lessonFromMistakesBtn'); if(lfm) lfm.onclick = buildLessonFromMistakes;
+
+}
+function buildLessonFromMistakes(){
+  if(!mistakes.length){toast('هیچ اشتباهی نیست');return}
+  var box = $('#drillBox');
+  box.innerHTML = '<div class="card"><b>در حال تحلیل اشتباهات…</b><p class="sub">۳۰-۶۰ ثانیه صبر کن.</p><div class="skel"></div><div class="skel" style="width:80%"></div></div>';
+  box.scrollIntoView({behavior:'smooth'});
+
+  var recent = mistakes.slice(0, 30);
+  var byType = {};
+  recent.forEach(function(m){ byType[m.type||'other'] = (byType[m.type||'other']||0)+1; });
+  var topType = Object.keys(byType).sort(function(a,b){return byType[b]-byType[a]})[0] || 'grammar';
+  var samples = recent.slice(0, 20).map(function(m){
+    return 'WRONG: ' + m.original + ' | RIGHT: ' + m.fix + ' | TOPIC: ' + (m.topic||'');
+  }).join(' || ');
+
+  var sys = 'You are an expert EFL teacher for Persian speakers. Create ONE focused lesson targeting the patterns in the mistakes. Return ONLY valid JSON: {"id":string,"title":string,"topic":string,"level":"A1","intro_fa":string,"vocab":[{"en":string,"say":string,"fa":string,"ex":string,"ex_fa":string}],"grammar":{"title":string,"explain_fa":string,"rules":[string],"examples":[{"en":string,"fa":string}]},"dialogue":[{"speaker":"A","en":string,"fa":string}],"phrases":[{"en":string,"fa":string}],"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}],"speaking_goal":string} Rules: title in Persian like درس جبرانی; 8-10 vocab; grammar addresses ROOT CAUSE; 6-8 dialogue; 5 phrases; 8 quiz targeting the mistakes; Persian explanations; JSON only.';
+
+  var userMsg = 'TOP TYPE: ' + topType + ' || MISTAKES: ' + samples;
+
+  callAI(sys, [{role:'user', content: userMsg}], 6000)
+    .then(function(raw){
+      var j = parseJSON(raw);
+      j.id = 'cust-' + Date.now();
+      j.customTopic = 'از دفترچه';
+      j.createdAt = Date.now();
+      if(!j.level) j.level = 'B1';
+      customLessons.unshift(j);
+      customLessons = customLessons.slice(0, 30);
+      store.set('zy_custom_lessons', customLessons);
+      schedulePushToCloud();
+      box.innerHTML = '<div class="card" style="background:var(--ok-soft);border-color:var(--ok)"><b>درس ساخته شد</b><div style="margin-top:10px;font-weight:700">' + esc(j.title||'درس از اشتباهات') + '</div><div class="sub" style="font-size:.85rem;margin-top:6px">' + esc((j.intro_fa||'').substring(0,140)) + '</div><div class="row" style="margin-top:14px"><button type="button" class="btn brand" id="openMistakeLesson">باز کردن درس</button><button type="button" class="btn ghost" id="closeMistakeLesson">بستن</button></div></div>';
+      var om = $('#openMistakeLesson'); if(om) om.onclick = function(){openCustomLesson(j.id)};
+      var cm = $('#closeMistakeLesson'); if(cm) cm.onclick = function(){box.innerHTML=''};
+      toast('درس اختصاصی ساخته شد ✅');
+    })
+    .catch(function(e){
+      box.innerHTML = '<div class="card"><p style="color:var(--bad)">' + esc(errText(e)) + '</p><button type="button" class="btn brand" id="retryMistakeLesson">تلاش دوباره</button></div>';
+      var r = $('#retryMistakeLesson'); if(r) r.onclick = buildLessonFromMistakes;
+    });
 }
 function buildReport(){
   var box = $('#reportBox');
