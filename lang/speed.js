@@ -269,15 +269,60 @@ function startSpeedSession(){
       return endSession();
     }
     speed.question = speed.session.questions[speed.session.idx];
-    speed.effectiveSec = (speed.inputMode === 'type' || speed.inputMode === 'both') ? Math.max(15, Math.round(speed.seconds * 2.5)) : speed.seconds; speed.remaining = speed.effectiveSec;
-    speed.startTime = Date.now();
+    speed.effectiveSec = (speed.inputMode === 'type' || speed.inputMode === 'both') ? Math.max(15, Math.round(speed.seconds * 2.5)) : speed.seconds;
+    speed.remaining = speed.effectiveSec;
+    speed.startTime = 0;
     speed.lastResult = null;
     speed.busy = false;
     renderPlay();
-    startTimer();
+    speakQuestionThenStart();
   }
 
-  // ============ 8. Timer ============
+  function speakQuestionThenStart(){
+    var q = speed.question;
+    if(!q) return;
+    var started = false;
+    var beginTimer = function(){
+      if(started) return;
+      started = true;
+      speed.startTime = Date.now();
+      startTimer();
+    };
+    var isOffice = false;
+    try { isOffice = localStorage.getItem('zy_office_mode') === '1'; } catch(e){}
+    if(isOffice){ setTimeout(beginTimer, 250); return; }
+    if(!('speechSynthesis' in window)){ setTimeout(beginTimer, 250); return; }
+    try{
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(q.q);
+      u.lang = 'en-US';
+      var rateMap = {slow:0.72, normal:0.95, fast:1.15};
+      u.rate = rateMap[(window.settings && window.settings.rate) || 'slow'] || 0.9;
+      if(window.voices && window.voices.length){
+        var chosen = null;
+        if(window.settings && window.settings.voice){
+          for(var i=0;i<window.voices.length;i++){
+            if(window.voices[i].name === window.settings.voice){ chosen = window.voices[i]; break; }
+          }
+        }
+        if(!chosen){
+          for(var j=0;j<window.voices.length;j++){
+            if(window.voices[j].lang === 'en-US'){ chosen = window.voices[j]; break; }
+          }
+        }
+        if(!chosen && window.voices.length) chosen = window.voices[0];
+        if(chosen) u.voice = chosen;
+      }
+      u.onend = function(){ setTimeout(beginTimer, 250); };
+      u.onerror = function(){ setTimeout(beginTimer, 250); };
+      setTimeout(beginTimer, 8000);
+      window.speechSynthesis.speak(u);
+    }catch(e){
+      beginTimer();
+    }
+  }
+
+
   function startTimer(){
     if(speed.timerId) clearInterval(speed.timerId);
     speed.timerId = setInterval(function(){
@@ -321,7 +366,7 @@ function startSpeedSession(){
     h += '<circle class="track" cx="90" cy="90" r="85"/>';
     h += '<circle class="prog" cx="90" cy="90" r="85" style="stroke-dasharray:' + circ + ';stroke-dashoffset:0"/>';
     h += '</svg>';
-    h += '<div class="num">' + speed.seconds + '</div>';
+    h += '<div class="num">' + (speed.effectiveSec || speed.seconds) + '</div>';
     h += '</div>';
     h += '<div class="speed-question"><div>';
     h += '<div class="q-role">' + window.esc(q.role || 'پیام') + '</div>';
