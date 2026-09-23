@@ -132,7 +132,9 @@ function pullFromCloud(silent){
     if(!r.ok) throw new Error('HTTP '+r.status);
     return r.json().then(function(d){
       if(d.prog){
-        prog = Object.assign({xp:0,streak:0,last:'',done:{},program:{},grammar:{}}, d.prog);
+        var _oldSpeed = (prog && prog.speed) ? prog.speed : null;
+        prog = Object.assign({xp:0,streak:0,last:'',done:{},program:{},grammar:{},speed:_oldSpeed||{sessions:0,totalResponses:0,totalTime:0,bestTime:999,correctCount:0,history:[]}}, d.prog);
+        if(!prog.speed && _oldSpeed) prog.speed = _oldSpeed;
         if(!prog.program || typeof prog.program !== 'object') prog.program={};
         if(!prog.done || typeof prog.done !== 'object') prog.done={};
         if(!prog.grammar || typeof prog.grammar !== 'object') prog.grammar={};
@@ -161,7 +163,7 @@ function exportData(){
 function importData(b64){
   var json = decodeURIComponent(escape(atob(b64.trim())));
   var data = JSON.parse(json);
-  if(data.prog){prog=Object.assign({xp:0,streak:0,last:'',done:{},program:{},grammar:{}},data.prog);if(!prog.program)prog.program={};if(!prog.grammar)prog.grammar={};store.set('zy_prog',prog);updateStats()}
+  if(data.prog){var _oldSpeed2=(prog&&prog.speed)?prog.speed:null;prog=Object.assign({xp:0,streak:0,last:'',done:{},program:{},grammar:{},speed:_oldSpeed2||{sessions:0,totalResponses:0,totalTime:0,bestTime:999,correctCount:0,history:[]}},data.prog);if(!prog.program)prog.program={};if(!prog.grammar)prog.grammar={};if(!prog.speed&&_oldSpeed2)prog.speed=_oldSpeed2;store.set('zy_prog',prog);updateStats()}
   if(data.lessonCache){lessonCache=data.lessonCache;store.set('zy_lessons',lessonCache)}
   if(data.grammarCache){grammarCache=data.grammarCache;store.set('zy_grammar',grammarCache)}
   if(data.mistakes){mistakes=data.mistakes;store.set('zy_mistakes',mistakes)}
