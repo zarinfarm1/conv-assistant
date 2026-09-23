@@ -1673,43 +1673,58 @@ function renderNotes(){
 function buildLessonFromMistakes(){
   if(!mistakes.length){toast('هیچ اشتباهی نیست');return}
   var box = $('#drillBox');
-  box.innerHTML = '<div class="card"><b>در حال تحلیل اشتباهات…</b><p class="sub">۳۰-۶۰ ثانیه صبر کن.</p><div class="skel"></div><div class="skel" style="width:80%"></div></div>';
+  box.innerHTML = '<div class="card"><b>در حال تحلیل همه‌ی اشتباهات…</b><p class="sub">۳۰-۶۰ ثانیه صبر کن.</p><div class="skel"></div><div class="skel" style="width:80%"></div></div>';
   box.scrollIntoView({behavior:'smooth'});
 
-  var recent = mistakes.slice(0, 30);
+  var recent = mistakes.slice(0, 60);
   var byType = {};
-  recent.forEach(function(m){ byType[m.type||'other'] = (byType[m.type||'other']||0)+1; });
-  var topType = Object.keys(byType).sort(function(a,b){return byType[b]-byType[a]})[0] || 'grammar';
-  var samples = recent.slice(0, 20).map(function(m){
-    return 'WRONG: ' + m.original + ' | RIGHT: ' + m.fix + ' | TOPIC: ' + (m.topic||'');
-  }).join(' || ');
+  recent.forEach(function(m){
+    var t = m.type || 'other';
+    if(!byType[t]) byType[t] = [];
+    byType[t].push(m);
+  });
 
-  var sys = 'You are an expert EFL teacher for Persian speakers. Create ONE focused lesson targeting the patterns in the mistakes. Return ONLY valid JSON: {"id":string,"title":string,"topic":string,"level":"A1","intro_fa":string,"vocab":[{"en":string,"say":string,"fa":string,"ex":string,"ex_fa":string}],"grammar":{"title":string,"explain_fa":string,"rules":[string],"examples":[{"en":string,"fa":string}]},"dialogue":[{"speaker":"A","en":string,"fa":string}],"phrases":[{"en":string,"fa":string}],"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}],"speaking_goal":string} Rules: title in Persian like درس جبرانی; 8-10 vocab; grammar addresses ROOT CAUSE; 6-8 dialogue; 5 phrases; 8 quiz targeting the mistakes; Persian explanations; JSON only.';
+  var summary = '';
+  Object.keys(byType).forEach(function(t){
+    var items = byType[t];
+    summary += '\n\n=== ' + t.toUpperCase() + ' (' + items.length + ' errors) ===\n';
+    items.slice(0, 8).forEach(function(m){
+      summary += '  WRONG: ' + m.original + '  ->  RIGHT: ' + m.fix + '  | TOPIC: ' + (m.topic||'');
+      summary += '\n';
+    });
+  });
 
-  var userMsg = 'TOP TYPE: ' + topType + ' || MISTAKES: ' + samples;
+  var totalErrors = recent.length;
+  var totalTypes = Object.keys(byType).length;
 
-  callAI(sys, [{role:'user', content: userMsg}], 6000)
+  var sys = 'You are an expert EFL teacher for Persian speakers. Create ONE comprehensive lesson addressing ALL mistake types in the student history. Return ONLY valid JSON: {"id":string,"title":string,"topic":string,"level":string,"intro_fa":string,"vocab":[{"en":string,"say":string,"fa":string,"ex":string,"ex_fa":string}],"grammar":{"title":string,"explain_fa":string,"rules":[string],"examples":[{"en":string,"fa":string}]},"dialogue":[{"speaker":"A"|"B","en":string,"fa":string}],"phrases":[{"en":string,"fa":string}],"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}],"speaking_goal":string} Rules: title in Persian like درس جامع از اشتباهات; intro_fa explains ALL types covered with counts; vocab 12 items INCLUDING correct spelling of misspelled words (like HP ProBook, Milad, etc); grammar addresses ALL grammar mistakes specifically; dialogue 8-10 lines showing BRIEF NATURAL answers; phrases 10 SHORT ready-made phrases for speed/brevity; quiz 12 questions MIXED (grammar + spelling + choosing brief version); level from B1; Persian explanations; JSON only.';
+
+  var userMsg = 'TOTAL ERRORS: ' + totalErrors + ' | TYPES: ' + totalTypes + '\n' + summary;
+
+  callAI(sys, [{role:'user', content: userMsg}], 8000)
     .then(function(raw){
       var j = parseJSON(raw);
       j.id = 'cust-' + Date.now();
-      j.customTopic = 'از دفترچه';
+      j.customTopic = 'درس جامع از اشتباهات (' + totalErrors + ' مورد)';
       j.createdAt = Date.now();
       if(!j.level) j.level = 'B1';
       customLessons.unshift(j);
       customLessons = customLessons.slice(0, 30);
       store.set('zy_custom_lessons', customLessons);
       schedulePushToCloud();
-      box.innerHTML = '<div class="card" style="background:var(--ok-soft);border-color:var(--ok)"><b>درس ساخته شد</b><div style="margin-top:10px;font-weight:700">' + esc(j.title||'درس از اشتباهات') + '</div><div class="sub" style="font-size:.85rem;margin-top:6px">' + esc((j.intro_fa||'').substring(0,140)) + '</div><div class="row" style="margin-top:14px"><button type="button" class="btn brand" id="openMistakeLesson">باز کردن درس</button><button type="button" class="btn ghost" id="closeMistakeLesson">بستن</button></div></div>';
+      var typeSummary = Object.keys(byType).map(function(t){return t + ': ' + byType[t].length;}).join(' · ');
+      box.innerHTML = '<div class="card" style="background:var(--ok-soft);border-color:var(--ok)"><b>درس جامع ساخته شد</b><div style="margin-top:10px;font-weight:700">' + esc(j.title||'درس از اشتباهات') + '</div><div class="sub" style="font-size:.85rem;margin-top:6px">' + esc((j.intro_fa||'').substring(0,180)) + '</div><div style="margin-top:10px;padding:8px 12px;background:var(--bg);border-radius:8px;font-size:.8rem;font-family:monospace">' + esc(typeSummary) + '</div><div class="row" style="margin-top:14px"><button type="button" class="btn brand" id="openMistakeLesson">باز کردن درس</button><button type="button" class="btn ghost" id="closeMistakeLesson">بستن</button></div></div>';
       var om = $('#openMistakeLesson'); if(om) om.onclick = function(){openCustomLesson(j.id)};
       var cm = $('#closeMistakeLesson'); if(cm) cm.onclick = function(){box.innerHTML=''};
-      toast('درس اختصاصی ساخته شد ✅');
+      toast('درس جامع ساخته شد ✅');
     })
     .catch(function(e){
       box.innerHTML = '<div class="card"><p style="color:var(--bad)">' + esc(errText(e)) + '</p><button type="button" class="btn brand" id="retryMistakeLesson">تلاش دوباره</button></div>';
       var r = $('#retryMistakeLesson'); if(r) r.onclick = buildLessonFromMistakes;
     });
 }
-function buildReport(){
+
+
   var box = $('#reportBox');
   var byType = {};
   mistakes.forEach(function(m){var k=m.type||'other';byType[k]=(byType[k]||0)+1});
