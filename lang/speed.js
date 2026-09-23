@@ -162,7 +162,7 @@
       var s = window.prog.speed;
       s.totalResponses = (s.totalResponses || 0) + 1;
       s.totalTime = (s.totalTime || 0) + rt;
-      if(rt < (s.bestTime || 999)) s.bestTime = rt;
+      if(rt < (s.bestTime || 999) && rt >= 0.5) s.bestTime = rt;
       if(wasCorrect) s.correctCount = (s.correctCount || 0) + 1;
       s.history = s.history || [];
       s.history.unshift({t:rt, c:wasCorrect, at:Date.now()});
@@ -298,7 +298,8 @@ function startSpeedSession(){
     var beginTimer = function(){
       if(started) return;
       started = true;
-      // startTime و startTimer الان در prep انجام می‌شه
+      speed.startTime = Date.now();
+      startTimer();
     };
     var isOffice = false;
     try { isOffice = localStorage.getItem('zy_office_mode') === '1'; } catch(e){}
@@ -549,7 +550,9 @@ function startSpeedSession(){
     if(!text) return;
     if(speed.timerId){ clearInterval(speed.timerId); speed.timerId = null; }
     if(window.listening && window.rec) window.rec.stop();
-    speed.responseTime = (Date.now() - speed.startTime) / 1000;
+    var _elapsed = speed.startTime > 0 ? (Date.now() - speed.startTime) / 1000 : speed.seconds;
+    if(_elapsed < 0.5 || _elapsed > 120) _elapsed = speed.seconds;
+    speed.responseTime = _elapsed;
     speed.busy = true;
     var q = speed.question;
     var sys = 'Armin is practicing FAST English responses for workplace situations (Iranian IT support, manager Ildar is Russian).\n\nHe was asked: "' + q.q + '"\nHis answer: "' + text + '"\nResponse time: ' + speed.responseTime.toFixed(1) + 's (target: ' + speed.seconds + 's)\n\nAnalyse:\n1. Correct and appropriate?\n2. Brief enough? Ildar prefers 1-2 sentences.\n3. Suggest a NATURAL, SHORTER version.\n4. Score 0-10.\n\nReturn ONLY JSON:\n{"score":0-10,"is_correct":true,"corrected":"best version","mistakes":[{"original":"...","fix":"...","explain_fa":"توضیح"}],"tip_fa":"نکته","too_long":false}';
