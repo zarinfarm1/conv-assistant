@@ -841,4 +841,1120 @@ function renderGrammarTopic(){
     h += '<div class="card"><h2>مقدمه</h2><p class="pre" style="line-height:1.9">'+esc(L.intro_fa||'')+'</p></div>';
     h += '<h2 style="margin-top:20px">📐 قواعد</h2>';
     (L.rules||[]).forEach(function(r,i){
-      h += '<div class="g-rule"><span class="gr-num">قاعده 
+      h += '<div class="g-rule"><span class="gr-num">قاعده '+(i+1)+'</span>';
+      h += '<div class="gr-t" dir="ltr">'+esc(r.title)+'</div>';
+      h += '<div class="gr-explain">'+esc(r.explain_fa||'')+'</div>';
+      if(r.structure) h += '<div class="gr-struct">'+esc(r.structure)+'</div>';
+      if(r.examples && r.examples.length){
+        h += '<div class="gr-ex">';
+        r.examples.forEach(function(ex){
+          h += '<div class="ex-row"><button type="button" class="mini" data-say="'+esc(ex.en)+'">'+ic('vol')+'</button><div style="flex:1"><div class="ex-en">'+esc(ex.en)+'</div><div class="ex-fa">'+esc(ex.fa)+'</div></div></div>';
+        });
+        h += '</div>';
+      }
+      if(r.persian_warning) h += '<div class="gr-warn"><b>⚠️ فارسی‌زبان:</b> '+esc(r.persian_warning)+'</div>';
+      h += '</div>';
+    });
+    if(L.when_to_use && L.when_to_use.length){
+      h += '<div class="card" style="margin-top:16px"><h2>🎯 کِی استفاده کنیم؟</h2>';
+      L.when_to_use.forEach(function(w){
+        h += '<div style="padding:10px 0;border-bottom:1px dashed var(--line)"><div>'+esc(w.situation_fa)+'</div><div dir="ltr" style="font-family:Lexend;color:var(--gram);margin-top:4px">'+esc(w.example_en)+'</div></div>';
+      });
+      h += '</div>';
+    }
+    h += '<div class="row between" style="margin-top:18px"><button type="button" class="btn gram" data-gnext="mistakes">مرحله بعد: اشتباهات →</button></div>';
+  }
+  else if(gram.step==='mistakes'){
+    h += '<div class="card"><h2>⚠️ اشتباهات رایج</h2>';
+    (L.common_mistakes||[]).forEach(function(m){
+      h += '<div class="g-mist"><div class="gm-row"><s>'+esc(m.wrong)+'</s> → <b>'+esc(m.right)+'</b></div><div class="gm-why">'+esc(m.why_fa)+'</div></div>';
+    });
+    h += '</div>';
+    h += '<div class="row between" style="margin-top:18px"><button type="button" class="btn ghost" data-gnext="learn">← قبلی</button><button type="button" class="btn gram" data-gnext="quiz">مرحله بعد: تست →</button></div>';
+  }
+  else if(gram.step==='quiz'){
+    h += '<div class="card"><h2>❓ تست ('+fa((L.quiz||[]).length)+')</h2><div id="gquiz">'+quizHTML(L.quiz||[])+'</div></div>';
+    h += '<div class="row between" style="margin-top:18px"><button type="button" class="btn ghost" data-gnext="mistakes">← قبلی</button><button type="button" class="btn gram" data-gnext="fill">مرحله بعد: جای خالی →</button></div>';
+  }
+  else if(gram.step==='fill'){
+    h += '<div class="card"><h2>✏️ جای خالی ('+fa((L.fill_blanks||[]).length)+')</h2><div id="gfill"></div></div>';
+    h += '<div class="row between" style="margin-top:18px"><button type="button" class="btn ghost" data-gnext="quiz">← قبلی</button><button type="button" class="btn gram" data-gnext="correction">مرحله بعد: اصلاح →</button></div>';
+  }
+  else if(gram.step==='correction'){
+    h += '<div class="card"><h2>🔧 اصلاح جمله ('+fa((L.correction||[]).length)+')</h2><div id="gcorr"></div></div>';
+    h += '<div class="row between" style="margin-top:18px"><button type="button" class="btn ghost" data-gnext="fill">← قبلی</button><button type="button" class="btn gram" data-gnext="speaking">مرحله بعد: گفتار →</button></div>';
+  }
+  else if(gram.step==='speaking'){
+    h += '<div class="card"><h2>🎤 تمرین گفتاری</h2>';
+    (L.speaking_practice||[]).forEach(function(s){
+      h += '<div style="padding:12px 0;border-bottom:1px dashed var(--line)"><div style="display:flex;gap:10px;align-items:center"><button type="button" class="mini" data-say="'+esc(s.en)+'">'+ic('vol')+'</button><div style="flex:1"><div dir="ltr" style="font-family:Lexend;font-size:1rem">'+esc(s.en)+'</div><div class="sub" style="font-size:.82rem">'+esc(s.fa)+'</div></div></div></div>';
+    });
+    h += '</div>';
+    h += '<div class="row between" style="margin-top:18px"><button type="button" class="btn ghost" data-gnext="correction">← قبلی</button><button type="button" class="btn gram" data-gnext="cheat">پایان: خلاصه →</button></div>';
+  }
+  else if(gram.step==='cheat'){
+    h += '<div class="card"><h2>📋 خلاصه‌ی نهایی</h2><div class="g-cheat">'+esc(L.cheat_sheet_fa||'')+'</div></div>';
+    if(L.extra_tips_fa && L.extra_tips_fa.length){
+      h += '<div class="card" style="margin-top:14px"><h2>💡 نکات اضافه</h2>';
+      L.extra_tips_fa.forEach(function(tp){h += '<div class="g-tip">'+esc(tp)+'</div>'});
+      h += '</div>';
+    }
+    var done = prog.grammar && prog.grammar[t.id];
+    if(!done){
+      if(!prog.grammar) prog.grammar={};
+      prog.grammar[t.id] = Date.now();
+      award(15);
+      saveProg();
+      h += '<div class="card" style="margin-top:14px;text-align:center;background:var(--ok-soft);border-color:var(--ok)"><b>🎉 تبریک! تموم شد.</b><p class="sub" style="margin-top:6px">+۱۵ امتیاز</p></div>';
+    }
+    h += '<div class="row between" style="margin-top:18px"><button type="button" class="btn ghost" data-gnext="speaking">← قبلی</button><button type="button" class="btn gram" id="gback3">بازگشت به گرامر</button></div>';
+  }
+  $('#main').innerHTML = h;
+
+  var gb = $('#gback'); if(gb) gb.onclick = function(){go('grammar')};
+  var gb3 = $('#gback3'); if(gb3) gb3.onclick = function(){go('grammar')};
+  $$('[data-gstep]').forEach(function(b){b.onclick = function(){gram.step = b.getAttribute('data-gstep'); render(); window.scrollTo(0,0)}});
+  $$('[data-gnext]').forEach(function(b){b.onclick = function(){gram.step = b.getAttribute('data-gnext'); render(); window.scrollTo(0,0)}});
+
+  if(gram.step==='quiz'){
+    var qz = $('#gquiz');
+    if(qz) bindQuiz(qz, L.quiz||[], function(s,n){award(s*2); $('.qres',qz).innerHTML='نتیجه: '+fa(s)+' از '+fa(n)});
+  }
+  if(gram.step==='fill'){
+    var fc = $('#gfill');
+    if(fc && L.fill_blanks){
+      L.fill_blanks.forEach(function(f,idx){
+        var div = document.createElement('div');
+        div.style.cssText = 'padding:12px 0;border-bottom:1px dashed var(--line)';
+        div.innerHTML = '<div style="direction:ltr;text-align:left;font-family:Lexend;margin-bottom:8px;font-size:.95rem">'+(idx+1)+'. '+esc(f.sentence)+'</div><div style="display:flex;gap:8px"><input type="text" dir="ltr" style="flex:1" placeholder="جواب..." data-fidx="'+idx+'"><button type="button" class="btn small gram" data-check="'+idx+'">بررسی</button></div><div class="sub" style="font-size:.82rem;margin-top:6px">💡 '+esc(f.hint_fa||'')+'</div><div class="fg-res" style="margin-top:6px;font-weight:600;min-height:1.2em"></div>';
+        fc.appendChild(div);
+      });
+      $$('[data-check]', fc).forEach(function(b){
+        b.onclick = function(){
+          var idx = +b.getAttribute('data-check');
+          var input = fc.querySelector('input[data-fidx="'+idx+'"]');
+          var res = input.parentNode.parentNode.querySelector('.fg-res');
+          var correct = norm(L.fill_blanks[idx].answer);
+          var given = norm(input.value);
+          if(given === correct){res.style.color='var(--ok)';res.textContent='✓ درست!';award(2)}
+          else{res.style.color='var(--bad)';res.innerHTML='✗ درست: <b dir="ltr">'+esc(L.fill_blanks[idx].answer)+'</b>'}
+        };
+      });
+    }
+  }
+  if(gram.step==='correction'){
+    var cc = $('#gcorr');
+    if(cc && L.correction){
+      L.correction.forEach(function(f,idx){
+        var div = document.createElement('div');
+        div.style.cssText = 'padding:12px 0;border-bottom:1px dashed var(--line)';
+        div.innerHTML = '<div style="direction:ltr;text-align:left;font-family:Lexend;margin-bottom:8px;color:var(--bad)">✗ '+esc(f.wrong)+'</div><div style="display:flex;gap:8px"><input type="text" dir="ltr" style="flex:1" placeholder="جمله درست..." data-cidx="'+idx+'"><button type="button" class="btn small gram" data-corr="'+idx+'">بررسی</button></div><div class="cg-res" style="margin-top:6px;font-weight:600;min-height:1.2em"></div><div class="sub" style="font-size:.82rem;margin-top:4px">💡 '+esc(f.why_fa||'')+'</div>';
+        cc.appendChild(div);
+      });
+      $$('[data-corr]', cc).forEach(function(b){
+        b.onclick = function(){
+          var idx = +b.getAttribute('data-corr');
+          var input = cc.querySelector('input[data-cidx="'+idx+'"]');
+          var res = input.parentNode.parentNode.querySelector('.cg-res');
+          var correct = norm(L.correction[idx].right);
+          var given = norm(input.value);
+          if(given === correct || sim(given, correct) >= 0.8){res.style.color='var(--ok)';res.innerHTML='✓ درست! <span dir="ltr" style="color:var(--muted);font-size:.85rem">'+esc(L.correction[idx].right)+'</span>';award(2)}
+          else{res.style.color='var(--bad)';res.innerHTML='✗ درست: <b dir="ltr">'+esc(L.correction[idx].right)+'</b>'}
+        };
+      });
+    }
+  }
+}
+
+// ============ FREE PRACTICE ============
+function renderFree(){
+  var h = '';
+  if(!free.mode){
+    h += '<h1>🎲 تمرین آزاد</h1><p class="sub">ایلدار یا کاربر سؤال می‌پرسه، تو جواب می‌دی.</p>';
+    h += '<div class="mode-grid">';
+    h += '<button type="button" class="mode-card" data-freemode="ildar"><div class="mi">'+ic('briefcase')+'</div><div class="mt">گفتگو با ایلدار</div><div class="md">ایلدار سؤال می‌پرسه</div></button>';
+    h += '<button type="button" class="mode-card" data-freemode="user"><div class="mi">'+ic('users')+'</div><div class="mt">گفتگو با کاربر</div><div class="md">کاربر مشکل داره</div></button>';
+    h += '<button type="button" class="mode-card" data-freemode="persian"><div class="mi">🇮🇷</div><div class="mt">سناریوی فارسی</div><div class="md">سناریو فارسی، جواب انگلیسی</div></button>';
+    h += '</div>';
+    $('#main').innerHTML = h;
+    $$('[data-freemode]').forEach(function(b){b.onclick=function(){startFree(b.getAttribute('data-freemode'))}});
+    return;
+  }
+  var sit = free.situation;
+  if(!sit){toast('سناریو نیست');free.mode=null;render();return}
+  h += '<button type="button" class="link" id="fexit">← بازگشت</button>';
+  h += '<div class="situation-card"><div class="sc-cat">📌 '+esc(sit.cat)+' · سطح: '+esc(sit.level)+'</div><div class="sc-fa">'+esc(sit.fa)+'</div>'+(free.showHint?'<div class="sc-hint">💡 '+esc(sit.hint)+'</div>':'')+'</div>';
+  h += '<div class="row" style="margin-bottom:12px"><button type="button" class="btn ghost small" id="fhint">'+(free.showHint?'پنهان':'💡 راهنما')+'</button><button type="button" class="btn ghost small" id="fsample">📝 نمونه</button><button type="button" class="btn ghost small" id="fnext">🎲 جدید</button></div>';
+  h += '<div class="chat" id="fchat">'+free.turns.map(freeBubble).join('')+'</div>';
+  h += '<div class="composer"><div class="hint">به انگلیسی جواب بده.</div><div class="cbox"><button type="button" class="mic free-mic '+(listening?'rec':'')+'" id="fmic">'+ic('mic')+'</button><input type="text" id="fmsg" dir="ltr" placeholder="Type reply…" autocomplete="off"><button type="button" class="send" id="fsend">'+ic('send')+'</button></div></div>';
+  $('#main').innerHTML = h;
+  $('#fexit').onclick = function(){free.mode=null;free.turns=[];free.situation=null;render()};
+  $('#fhint').onclick = function(){free.showHint=!free.showHint;render()};
+  $('#fsample').onclick = function(){if(!sit.sample){toast('نمونه نیست');return}free.turns.push({role:'sample',text:sit.sample});drawFree()};
+  $('#fnext').onclick = function(){startFree(free.mode)};
+  $('#fmic').onclick = toggleFreeMic;
+  $('#fsend').onclick = function(){sendFree($('#fmsg').value,null,false)};
+  $('#fmsg').onkeydown = function(e){if(e.key==='Enter'){e.preventDefault();sendFree($('#fmsg').value,null,false)}};
+  drawFree();
+}
+function startFree(mode){
+  var sit = FREE_SITUATIONS[Math.floor(Math.random()*FREE_SITUATIONS.length)];
+  if(mode==='ildar'){
+    var ildarCats = ['موجودی','گزارش','پیگیری','تأخیر','تأیید','پیدا کردن','جلسه','اولویت','پیشنهاد','نظر','فنی','منابع','زمان‌بندی','انبار','مرخصی','همکاری'];
+    var pool = FREE_SITUATIONS.filter(function(s){return ildarCats.indexOf(s.cat)>=0});
+    sit = pool[Math.floor(Math.random()*pool.length)];
+  }
+  if(mode==='user'){
+    var userCats = ['پشتیبانی','شبکه','چاپ','امنیت'];
+    var pool2 = FREE_SITUATIONS.filter(function(s){return userCats.indexOf(s.cat)>=0});
+    sit = pool2[Math.floor(Math.random()*pool2.length)];
+  }
+  free.mode = mode; free.situation = sit; free.turns = []; free.busy=false; free.count=0; free.showHint=false;
+  if(mode==='persian'){
+    free.turns.push({role:'situation',text:sit.fa});
+  } else {
+    free.turns.push({role:'ai',text:sit.fa});
+  }
+  go('free');
+  if(settings.autoplay && sit.sample) speak(sit.sample);
+}
+function freeBubble(t){
+  if(t.role==='ai') return '<div class="b free-ai"><div class="bt">'+esc(t.text)+'</div></div>';
+  if(t.role==='situation') return '<div class="b free-ai"><div style="font-size:.78rem;color:#0e7490;font-weight:700;margin-bottom:4px">📌 سناریو</div><div class="bt">'+esc(t.text)+'</div></div>';
+  if(t.role==='sample') return '<div class="b ai" style="background:var(--accent-soft);border-color:var(--accent)"><div style="font-size:.75rem;color:#8a6d00;font-weight:700;margin-bottom:4px">📝 نمونه</div><div class="bt" dir="ltr">'+esc(t.text)+'</div><button type="button" class="mini" data-say="'+esc(t.text)+'">'+ic('vol')+'</button></div>';
+  return '<div class="b free-me"><div class="bt" dir="ltr">'+esc(t.text)+'</div></div>'+(t.err?'<div class="an">ارسال نشد.</div>':freeAnalysis(t));
+}
+function freeAnalysis(t){
+  if(t.pending) return '<div class="an"><span class="dots"><i></i><i></i><i></i></span> در حال تحلیل…</div>';
+  var a = t.an; if(!a) return '';
+  var ms = a.mistakes||[];
+  var h = '<div class="an"><div class="an-top">'+(a.is_correct&&!ms.length?'<span class="pill ok">عالی</span>':'<span class="pill warn">بهتر می‌شه</span>');
+  if(a.score!=null) h += '<span class="sc">امتیاز <b>'+a.score+'</b>/10</span>';
+  h += '</div>';
+  if(a.corrected && norm(a.corrected)!==norm(t.text)) h += '<div class="fix"><span>✓</span><span dir="ltr">'+esc(a.corrected)+'</span></div>';
+  ms.forEach(function(m){h += '<div class="mk"><div dir="ltr"><s>'+esc(m.original)+'</s> → <b>'+esc(m.fix)+'</b></div><div>'+esc(m.explain_fa||'')+'</div></div>'});
+  if(a.tip_fa) h += '<div class="tip">💡 '+esc(a.tip_fa)+'</div>';
+  return h+'</div>';
+}
+function drawFree(){
+  var c = $('#fchat'); if(!c || view!=='free') return;
+  c.innerHTML = free.turns.map(freeBubble).join('');
+  window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
+}
+function sendFree(text, conf, voice){
+  text = (text||'').trim();
+  if(!text || free.busy) return;
+  var m = $('#fmsg'); if(m) m.value='';
+  var ut = {role:'me', text:text, pending:true};
+  free.turns.push(ut); free.count++;
+  free.busy = true; drawFree();
+  var sit = free.situation;
+  var sys = 'You are helping Armin (Iranian IT support) practice English. Situation: '+sit.fa+'. He must reply in English. Analyse his reply in Persian. Return ONLY valid JSON: {"score":0-10,"is_correct":true,"corrected":"natural version","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"نکته","next":"a follow-up line the other person would say"}';
+  callAI(sys, [{role:'user',content:'Armin replied: "'+text+'"'}], 800)
+    .then(function(raw){
+      var j; try{j=parseJSON(raw)}catch(e){j={is_correct:true,mistakes:[],score:7}}
+      ut.pending = false; ut.an = j;
+      (j.mistakes||[]).forEach(function(mk){
+        if(!mk.original || !mk.fix) return;
+        var exists = mistakes.some(function(x){return x.original===mk.original && x.fix===mk.fix});
+        if(exists) return;
+        mistakes.unshift({original:mk.original, fix:mk.fix, explain:mk.explain_fa||'', type:'grammar', level:'free', topic:sit.cat, date:new Date().toLocaleDateString('fa-IR')});
+      });
+      mistakes = mistakes.slice(0,300);
+      store.set('zy_mistakes', mistakes);
+      if(j.next) free.turns.push({role:'ai',text:j.next});
+      free.busy = false;
+      award(j.is_correct && !(j.mistakes||[]).length ? 4 : 2);
+      drawFree();
+      if(settings.autoplay && j.next) speak(j.next);
+    })
+    .catch(function(e){free.busy = false; ut.pending = false; ut.err = true; drawFree(); toast(errText(e), 6000)});
+}
+function toggleFreeMic(){
+  if(view!=='free' || free.busy) return;
+  var b = $('#fmic');
+  if(listening){rec && rec.stop(); return}
+  rec = listen({interim:function(t){var m=$('#fmsg');if(m)m.value=t},done:function(t,c){listening=false;var bb=$('#fmic');if(bb)bb.classList.remove('rec');if(t)sendFree(t,c,true)}});
+  if(rec){listening = true; b && b.classList.add('rec')}
+}
+
+// ============ PATH ============
+function unitId(l,i){return l+'-'+i}
+function renderPath(){
+  var L = null;
+  for(var i=0;i<LEVELS.length;i++) if(LEVELS[i].id===pathLevel){L=LEVELS[i];break}
+  if(!L){pathLevel='A1';L=LEVELS[0]}
+  var h = '';
+  if(!settings.key) h += '<div class="banner"><div><b>برای درس‌های کامل، کلید API لازم است.</b></div><button type="button" class="btn brand" id="gset">تنظیمات</button></div>';
+  h += '<div class="card" style="margin-bottom:14px;background:var(--prog-soft);border-color:var(--prog)">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">';
+  h += '<div><b>🎯 کجا مشکل داری؟</b><div class="sub" style="font-size:.85rem">درس اختصاصی</div></div>';
+  h += '<button type="button" class="btn prog small" id="openCustom">'+ic('light')+' بساز</button>';
+  h += '</div></div>';
+  h += '<div id="customBox"></div>';
+  if(customLessons.length){
+    h += '<h3 style="margin-top:18px">🎯 درس‌های اختصاصی ('+fa(customLessons.length)+')</h3>';
+    h += '<div style="display:grid;gap:10px;margin-top:8px;margin-bottom:18px">';
+    customLessons.forEach(function(cl){
+      h += '<div class="card" style="display:flex;gap:12px;align-items:center;padding:14px">';
+      h += '<button type="button" class="task" data-cust="'+cl.id+'" style="flex:1;padding:0;border:0;background:transparent;display:flex;gap:12px;align-items:center;text-align:start;cursor:pointer">';
+      h += '<span style="display:grid;place-items:center;width:40px;height:40px;border-radius:10px;background:var(--prog-soft);color:var(--prog);flex:none">🎯</span>';
+      h += '<span style="flex:1"><div style="font-weight:600" dir="ltr">'+esc(cl.title||'')+'</div><div style="font-size:.82rem;color:var(--muted)">'+esc(cl.customTopic||cl.topic||'')+' · '+esc(cl.level||'')+'</div></span>';
+      h += '</button>';
+      h += '<button type="button" class="mini" data-del-cust="'+cl.id+'" style="background:var(--bad-soft);color:var(--bad)">✕</button>';
+      h += '</div>';
+    });
+    h += '</div>';
+  }
+  h += '<h1>همه‌ی درس‌ها</h1>';
+  h += '<div class="levels">';
+  LEVELS.forEach(function(l){
+    h += '<button type="button" class="lv" data-lv="'+l.id+'" aria-pressed="'+(l.id===pathLevel)+'"><b>'+l.id+'</b><small>'+l.name+'</small></button>';
+  });
+  h += '</div><div class="units">';
+  L.units.forEach(function(u,i){
+    var d = prog.done[unitId(L.id,i)] || {};
+    var st = d.talk ? 'کامل' : (d.quiz!=null ? 'آزمون '+fa(d.quiz)+'٪' : '');
+    h += '<button type="button" class="unit '+(d.talk?'done':'')+'" data-u="'+i+'"><span class="n">'+(d.talk?'✓':fa(i+1))+'</span><span><div class="t" dir="ltr">'+esc(u[0])+'</div><div class="f">'+esc(u[1])+'</div></span><span class="st">'+st+'</span></button>';
+  });
+  h += '</div>';
+  $('#main').innerHTML = h;
+  var oc = $('#openCustom'); if(oc) oc.onclick = function(){
+    $('#customBox').innerHTML = renderCustomLessonForm();
+    $('#cancelCust').onclick = function(){$('#customBox').innerHTML=''};
+    $('#buildCust').onclick = function(){
+      var topic = $('#custTopic').value.trim();
+      if(!topic){toast('موضوع رو وارد کن');return}
+      var count = parseInt($('#custCount').value) || 10;
+      var level = $('#custLevel').value;
+      var note = $('#custNote').value.trim();
+      buildCustomLesson(topic, count, level, note);
+    };
+  };
+  $$('.lv').forEach(function(b){b.onclick=function(){pathLevel=b.getAttribute('data-lv');renderPath()}});
+  $$('.unit').forEach(function(b){b.onclick=function(){openLesson(pathLevel, +b.getAttribute('data-u'))}});
+  $$('[data-cust]').forEach(function(b){b.onclick=function(){openCustomLesson(b.getAttribute('data-cust'))}});
+  $$('[data-del-cust]').forEach(function(b){b.onclick = function(ev){ev.stopPropagation(); deleteCustomLesson(b.getAttribute('data-del-cust'))}});
+  var g = $('#gset'); if(g) g.onclick = function(){go('settings')};
+}
+function renderCustomLessonForm(){
+  var h = '<div class="card stack" style="margin-top:14px">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center"><b>🎯 درس اختصاصی</b><button type="button" class="link" id="cancelCust">✕</button></div>';
+  h += '<div class="field"><label>موضوع</label><input type="text" id="custTopic" placeholder="مثلاً: Present Perfect" dir="ltr"></div>';
+  h += '<div class="row"><div class="field" style="flex:1"><label>تعداد</label><select id="custCount"><option>8</option><option selected>10</option><option>15</option><option>20</option></select></div>';
+  h += '<div class="field" style="flex:1"><label>سطح</label><select id="custLevel"><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option></select></div></div>';
+  h += '<div class="field"><label>توضیح (اختیاری)</label><input type="text" id="custNote" dir="ltr"></div>';
+  h += '<button type="button" class="btn prog" id="buildCust">ساخت</button></div>';
+  return h;
+}
+function buildCustomLesson(topic, count, level, extraNote){
+  var box = $('#customBox');
+  box.innerHTML = '<div class="card"><b>در حال ساخت…</b><div class="skel"></div><div class="skel" style="width:80%"></div></div>';
+  var sys = 'You are an EFL curriculum designer. Create FOCUSED lesson. Return ONLY valid JSON: {"id":string,"title":string,"topic":string,"intro_fa":string,"vocab":[{"en":string,"say":string,"fa":string,"ex":string,"ex_fa":string}],"grammar":{"title":string,"explain_fa":string,"rules":[string],"examples":[{"en":string,"fa":string}]},"dialogue":[{"speaker":"A"|"B","en":string,"fa":string}],"phrases":[{"en":string,"fa":string}],"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}],"speaking_goal":string,"practice_tips_fa":[string]}\nRules: 10 vocab. LONG grammar. Exactly '+count+' quiz. All Persian explanations.';
+  callAI(sys, [{role:'user',content:'Topic: '+topic+'\nLevel: '+level+(extraNote?'\nNote: '+extraNote:'')}], 5000)
+    .then(function(raw){
+      var j = parseJSON(raw);
+      j.id = 'cust-'+Date.now();
+      j.customTopic = topic; j.level = level; j.createdAt = Date.now();
+      customLessons.unshift(j);
+      customLessons = customLessons.slice(0, 30);
+      store.set('zy_custom_lessons', customLessons);
+      schedulePushToCloud();
+      toast('ساخته شد ✅');
+      renderPath();
+    })
+    .catch(function(e){box.innerHTML = '<div class="card"><p style="color:var(--bad)">'+esc(errText(e))+'</p></div>'});
+}
+function deleteCustomLesson(id){
+  if(!confirm('پاک بشه؟')) return;
+  customLessons = customLessons.filter(function(l){return l.id!==id});
+  store.set('zy_custom_lessons', customLessons);
+  schedulePushToCloud();
+  renderPath();
+}
+function openCustomLesson(id){
+  var cl = null;
+  for(var i=0;i<customLessons.length;i++) if(customLessons[i].id===id){cl=customLessons[i];break}
+  if(!cl){toast('پیدا نشد');return}
+  lessonCtx = {id:cl.id,level:cl.level||'B1',idx:0,unit:[cl.title||'Custom',cl.topic||'',''],lesson:cl,step:'learn',loading:false,err:null,quizDone:false,isCustom:true};
+  go('lesson');
+}
+
+// ============ LESSON ============
+var LESSON_SYS='You are an EFL curriculum designer for Persian speakers. Create ONE lesson as strict JSON.\nSchema: {"title":string,"intro_fa":string,"vocab":[{"en":string,"say":string,"fa":string,"ex":string,"ex_fa":string}],"grammar":{"title":string,"explain_fa":string,"rules":[string],"examples":[{"en":string,"fa":string}]},"dialogue":[{"speaker":"A"|"B","en":string,"fa":string}],"phrases":[{"en":string,"fa":string}],"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}],"speaking_goal":string}\nRules: 10 vocab, "say" for A1-A2, Persian grammar, 6-8 dialogue, 5 phrases, 6 quiz, valid JSON.';
+function openLesson(level,idx){
+  var L = null;
+  for(var i=0;i<LEVELS.length;i++) if(LEVELS[i].id===level){L=LEVELS[i];break}
+  if(!L) return;
+  var unit = L.units[idx]; if(!unit) return;
+  var id = unitId(level,idx);
+  var cached = lessonCache[id];
+  var hasLesson = (id==='A1-0') || !!cached;
+  lessonCtx = {id:id,level:level,idx:idx,unit:unit,lesson:(id==='A1-0'?DEMO:(cached||null)),step:'learn',loading:!hasLesson,err:null,quizDone:false};
+  go('lesson');
+  if(!hasLesson) genLesson();
+}
+function genLesson(){
+  var C = lessonCtx; if(!C) return;
+  C.loading = true; C.err = null; render();
+  callAI(LESSON_SYS, [{role:'user',content:'CEFR: '+C.level+'\nUnit: "'+C.unit[0]+'" ('+C.unit[1]+')\nFocus: '+C.unit[2]}], 5000)
+    .then(function(raw){
+      var j = parseJSON(raw);
+      if(!j.vocab || !j.quiz) throw new Error('incomplete');
+      lessonCache[C.id] = j; store.set('zy_lessons', lessonCache); C.lesson = j;
+      schedulePushToCloud();
+      C.loading = false;
+      if(view==='lesson' && lessonCtx===C) render();
+    })
+    .catch(function(e){C.err = errText(e);C.loading = false;if(view==='lesson' && lessonCtx===C) render()});
+}
+function renderLesson(){
+  var C = lessonCtx; if(!C){go('path');return}
+  var h = '<button type="button" class="link" id="back">← بازگشت</button><div class="lh">';
+  if(C.isCustom) h += '<span class="lvl" style="background:var(--prog);color:#fff">🎯 اختصاصی</span>';
+  else h += '<span class="lvl">'+C.level+'</span>';
+  h += '<h1 class="en" dir="ltr">'+esc(C.unit[0])+'</h1><p class="sub">'+esc(C.unit[1])+'</p></div>';
+  if(C.loading || (!C.lesson && !C.err)) h += '<div class="card"><b>در حال ساخت…</b><div class="skel"></div><div class="skel" style="width:80%"></div></div>';
+  else if(C.err) h += '<div class="card"><p>'+esc(C.err)+'</p><button type="button" class="btn brand" id="retry">تلاش دوباره</button></div>';
+  else {
+    h += '<div class="steps">';
+    [['learn','۱. آموزش'],['quiz','۲. آزمون'],['speak','۳. صحبت']].forEach(function(x){
+      h += '<button type="button" class="stp" data-s="'+x[0]+'" aria-current="'+(C.step===x[0])+'">'+x[1]+'</button>';
+    });
+    h += '</div>';
+    if(C.step==='learn') h += learnHTML(C.lesson);
+    else if(C.step==='quiz') h += '<div class="card"><h2>آزمون</h2><div id="quiz">'+quizHTML(C.lesson.quiz)+'</div></div>';
+    else h += '<div class="card stack"><h2>هدف صحبت</h2><p>'+esc(C.lesson.speaking_goal||'')+'</p><button type="button" class="btn brand" id="startTalk">'+ic('mic')+' شروع</button></div>';
+  }
+  $('#main').innerHTML = h;
+  var back = $('#back'); if(back) back.onclick = function(){if(C.isCustom){go('path');return} if(prog.program && prog.program.lastFrom==='program'){prog.program.lastFrom='';saveProg();go('program')}else go('path')};
+  var rt = $('#retry'); if(rt) rt.onclick = genLesson;
+  $$('.stp').forEach(function(b){b.onclick=function(){C.step=b.getAttribute('data-s');renderLesson();window.scrollTo(0,0)}});
+  var nx = $('#nextQuiz'); if(nx) nx.onclick = function(){C.step='quiz';renderLesson();window.scrollTo(0,0)};
+  var qz = $('#quiz'); if(qz) bindQuiz(qz, C.lesson.quiz, function(s,n){
+    var pct = Math.round(100*s/n);
+    if(!C.isCustom){var d = prog.done[C.id] = prog.done[C.id] || {};d.quiz = Math.max(d.quiz||0, pct);}
+    award(s*3);
+    if(prog.program && prog.program.lastFrom==='program'){if(!prog.program) prog.program={};prog.program[taskKey('les', C.level+':'+C.idx)] = Date.now();saveProg();}
+    $('.qres',qz).innerHTML = 'نتیجه: '+fa(s)+' از '+fa(n)+' <button type="button" class="btn brand" id="toSpeak" style="margin-top:10px">برو به صحبت</button>';
+    $('#toSpeak').onclick = function(){C.step='speak';renderLesson();window.scrollTo(0,0)};
+  });
+  var st = $('#startTalk'); if(st) st.onclick = function(){startTalk({level:C.level,topic:C.unit[0],focus:C.unit[2],unitId:C.id})};
+}
+function learnHTML(L){
+  var h = '<div class="stack"><div class="card"><p>'+esc(L.intro_fa)+'</p></div>';
+  h += '<div class="card"><h2>لغت‌ها</h2><div class="vgrid">';
+  (L.vocab||[]).forEach(function(v){
+    h += '<div class="vc"><div class="row between"><span class="w" dir="ltr">'+esc(v.en)+'</span><span class="row"><button type="button" class="mini" data-say="'+esc(v.en)+'">'+ic('vol')+'</button><button type="button" class="mini" data-prac="'+esc(v.en)+'">'+ic('mic')+'</button></span></div>'+(v.say?'<div class="say">'+esc(v.say)+'</div>':'')+'<div>'+esc(v.fa)+'</div><div class="ex" dir="ltr">'+esc(v.ex)+'</div><div class="exfa">'+esc(v.ex_fa)+'</div><div class="pr"></div></div>';
+  });
+  h += '</div></div>';
+  var g = L.grammar||{};
+  h += '<div class="card"><h2>گرامر</h2><p class="pre">'+esc(g.explain_fa)+'</p></div>';
+  h += '<div class="card"><h2>گفتگو</h2><div class="dl">';
+  (L.dialogue||[]).forEach(function(l){
+    h += '<div class="dline '+(l.speaker==='B'?'b':'')+'"><button type="button" class="mini" data-say="'+esc(l.en)+'">'+ic('vol')+'</button><div class="bub"><div dir="ltr">'+esc(l.en)+'</div><div class="fa">'+esc(l.fa)+'</div></div></div>';
+  });
+  h += '</div></div>';
+  h += '<div class="row between"><button type="button" class="btn brand" id="nextQuiz">برو به آزمون</button></div></div>';
+  return h;
+}
+function quizHTML(q){
+  return q.map(function(x,i){
+    return '<div class="q" data-i="'+i+'"><div class="qt en" dir="ltr">'+(i+1)+'. '+esc(x.q)+'</div><div class="opts">'+x.options.map(function(o,j){return '<button type="button" class="opt en" data-j="'+j+'" dir="ltr">'+esc(o)+'</button>'}).join('')+'</div><div class="why"></div></div>';
+  }).join('')+'<div class="qres"></div>';
+}
+function bindQuiz(root, quiz, done){
+  var answered=0, score=0;
+  $$('.q',root).forEach(function(qe){
+    var q = quiz[+qe.getAttribute('data-i')];
+    $$('.opt',qe).forEach(function(b){
+      b.onclick = function(){
+        if(qe.classList.contains('done')) return;
+        qe.classList.add('done');
+        var ok = +b.getAttribute('data-j') === +q.answer;
+        if(ok) score++;
+        b.classList.add(ok?'ok':'bad');
+        if(!ok){var c=$$('.opt',qe)[+q.answer]; if(c) c.classList.add('ok')}
+        $('.why',qe).textContent = (ok?'درست! ':'نه. ')+(q.why_fa||'');
+        if(++answered === quiz.length) done(score, quiz.length);
+      };
+    });
+  });
+}
+
+// ============ JOB MODE ============
+function jobSystemPrompt(){
+  var sc = job.scenario; if(!sc) return '';
+  var roleDesc = ({'User':'a non-technical office worker','Manager':'Ildar, a Russian IT manager (English is second language; brief and direct)','Colleague':'a friendly colleague'})[sc.role] || 'a colleague';
+  var levelHint = {easy:'VERY simple questions.',medium:'Moderate questions.',hard:'Natural questions.',real:'Fully natural.'}[sc.level] || '';
+  return 'Role-play as '+roleDesc+' with Armin (Iranian IT support).\nSCENARIO: '+sc.title+'\nCONTEXT: '+sc.opening+'\nYOUR ROLE: '+sc.role+'\nLEVEL: '+(sc.level||'medium')+' — '+levelHint+'\n\nRules: SHORT lines (1-2 sentences). Analyse Armin\'s LAST message.\nReturn ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"natural","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"...","brevity_note":"too long|too short|good"},"scenario_complete":false}';
+}
+function renderJob(){
+  var el = $('#main');
+  if(job.view==='cats'){
+    var h = '<h1>حالت شغلی</h1><p class="sub">سناریوهای واقعی کار.</p>';
+    h += '<div class="card" style="margin-top:14px;background:var(--job-soft);border-color:var(--job)">';
+    h += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">';
+    h += '<div><b>📥 مکالمه رو وارد کن</b><div class="sub" style="font-size:.85rem">سناریو تمرینی می‌سازم</div></div>';
+    h += '<button type="button" class="btn job small" id="openImport">'+ic('download')+' ایمپورت</button>';
+    h += '</div></div>';
+    h += '<div id="importBox"></div>';
+    if(importedScenarios.length){
+      h += '<h3 style="margin-top:18px">📁 سناریوهای من ('+fa(importedScenarios.length)+')</h3>';
+      h += '<div style="display:grid;gap:10px;margin-top:8px">';
+      importedScenarios.forEach(function(s){
+        var done = prog.done['job-'+s.id];
+        h += '<div class="card" style="display:flex;gap:12px;align-items:center;padding:14px">';
+        h += '<button type="button" class="task" data-imp="'+s.id+'" style="flex:1;padding:0;border:0;background:transparent;display:flex;gap:12px;align-items:center;text-align:start;cursor:pointer">';
+        h += '<span style="display:grid;place-items:center;width:40px;height:40px;border-radius:10px;background:var(--job-soft);color:var(--job);flex:none">'+(done?'✓':'▶')+'</span>';
+        h += '<span style="flex:1"><div style="font-weight:600">'+esc(s.title||'سناریو')+'</div><div style="font-size:.82rem;color:var(--muted)">'+esc(s.desc||'')+'</div></span>';
+        h += '</button>';
+        h += '<button type="button" class="mini" data-del-imp="'+s.id+'" style="background:var(--bad-soft);color:var(--bad)">✕</button>';
+        h += '</div>';
+      });
+      h += '</div>';
+    }
+    h += '<h3 style="margin-top:20px">📚 سناریوهای آماده</h3>';
+    h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:8px">';
+    JOB_CATS.forEach(function(c){
+      var cnt = JOB_SCENARIOS.filter(function(s){return s.cat===c.id}).length
+          + importedScenarios.filter(function(s){return s.cat===c.id}).length;
+      h += '<button type="button" class="card" data-cat="'+c.id+'" style="text-align:start;cursor:pointer;padding:16px"><div style="font-size:1.5rem;margin-bottom:6px">'+ic(c.icon)+'</div><div style="font-weight:700">'+esc(c.name)+'</div><div style="font-size:.82rem;color:var(--muted)">'+esc(c.desc)+'</div><div style="font-size:.78rem;color:var(--brand);margin-top:6px">'+fa(cnt)+' سناریو</div></button>';
+    });
+    h += '</div>';
+    h += '<div class="card" style="margin-top:20px;text-align:center"><b>برنامه‌ی ۸ هفته‌ای</b><button type="button" class="btn prog" id="toProg" style="margin-top:8px">'+ic('cal')+' برو</button></div>';
+    el.innerHTML = h;
+    var oi = $('#openImport'); if(oi) oi.onclick = renderImportForm;
+    $$('.card[data-cat]').forEach(function(b){b.onclick=function(){job.view='list';job.catId=b.getAttribute('data-cat');renderJob()}});
+    $$('[data-imp]').forEach(function(b){b.onclick=function(){startImportedScenario(b.getAttribute('data-imp'))}});
+    $$('[data-del-imp]').forEach(function(b){b.onclick=function(ev){ev.stopPropagation();deleteImportedScenario(b.getAttribute('data-del-imp'))}});
+    var tp = $('#toProg'); if(tp) tp.onclick = function(){go('program')};
+    return;
+  }
+  if(job.view==='list'){
+    var cat = null;
+    for(var i=0;i<JOB_CATS.length;i++) if(JOB_CATS[i].id===job.catId){cat=JOB_CATS[i];break}
+    if(!cat){job.view='cats';return renderJob()}
+    
+    // ← merge سناریوهای آماده + سفارشی
+    var list = JOB_SCENARIOS.filter(function(s){return s.cat===job.catId})
+             .concat(importedScenarios.filter(function(s){return s.cat===job.catId}));
+    
+    var h = '<button type="button" class="link" id="jback">← بازگشت</button><h1>'+esc(cat.name)+'</h1>';
+    ['easy','medium','hard','real'].forEach(function(lvl){
+      var group = list.filter(function(s){return (s.level||'medium')===lvl});
+      if(!group.length) return;
+      var lbl = {easy:'🟢 ساده',medium:'🟡 متوسط',hard:'🟠 سخت',real:'🔴 واقعی'}[lvl];
+      h += '<h3 style="margin-top:16px">'+lbl+'</h3><div style="display:grid;gap:10px;margin-top:8px">';
+      group.forEach(function(s){
+        var done = prog.done['job-'+s.id];
+        // ← تشخیص خودکار: سناریوی سفارشی یا آماده؟
+        var isImported = importedScenarios.some(function(x){return x.id===s.id});
+        var attr = isImported ? 'data-imp="'+s.id+'"' : 'data-sc="'+s.id+'"';
+        var badge = isImported ? ' <span style="font-size:.7rem;color:var(--job);background:var(--job-soft);padding:2px 6px;border-radius:6px">سفارشی</span>' : '';
+        h += '<button type="button" class="card" '+attr+' style="text-align:start;cursor:pointer;display:flex;gap:12px;align-items:center;padding:14px"><span style="display:grid;place-items:center;width:40px;height:40px;border-radius:10px;background:var(--job-soft);color:var(--job);flex:none">'+(done?'✓':'▶')+'</span><span style="flex:1"><div style="font-weight:600">'+esc(s.title)+badge+'</div><div style="font-size:.82rem;color:var(--muted)">'+esc(s.desc)+'</div></span></button>';
+      });
+      h += '</div>';
+    });
+    el.innerHTML = h;
+    var jb = $('#jback'); if(jb) jb.onclick = function(){job.view='cats';renderJob()};
+    // ← دو تا event listener جدا
+    $$('.card[data-sc]').forEach(function(b){b.onclick=function(){startJobScenario(b.getAttribute('data-sc'))}});
+    $$('.card[data-imp]').forEach(function(b){b.onclick=function(){startImportedScenario(b.getAttribute('data-imp'))}});
+    return;
+  }
+  renderJobPlay();
+}
+function renderImportForm(){
+  var h = '<div class="card stack" style="margin-top:14px">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b>📥 مکالمه رو وارد کن</b><button type="button" class="link" id="cancelImp">✕</button></div>';
+  h += '<div class="field"><label>متن</label><textarea id="impText" style="min-height:180px;font-family:inherit;font-size:.9rem" placeholder="Ildar: How many laptops do we have?\nArmin: We have 3." dir="ltr"></textarea></div>';
+  h += '<button type="button" class="btn job" id="buildImp">🎯 بساز</button></div>';
+  var box = $('#importBox');
+  box.innerHTML = h;
+  $('#cancelImp').onclick = function(){box.innerHTML=''};
+  $('#buildImp').onclick = function(){
+    var txt = $('#impText').value.trim();
+    if(!txt){toast('متن رو وارد کن');return}
+    buildScenarioFromConversation(txt);
+  };
+}
+function buildScenarioFromConversation(rawText){
+  var lines = rawText.split('\n').filter(function(l){return l.trim()});
+  if(lines.length < 2){toast('حداقل ۲ خط');return}
+  var dialogText = lines.join('\n');
+  var box = $('#importBox');
+  box.innerHTML = '<div class="card"><b>در حال ساخت…</b><div class="skel"></div></div>';
+  var sys = 'Extract a workplace scenario. Return ONLY JSON: {"title":"فارسی","desc":"فارسی","role":"User"|"Manager"|"Colleague","roleFa":"کاربر|مدیر|همکار","opening":"first English line","hint":"راهنما","sample":"sample English reply","key_phrases":[{"en":"","fa":""}],"level":"easy|medium|hard|real"}';
+  callAI(sys, [{role:'user',content:dialogText}], 1500)
+    .then(function(raw){
+      var j = parseJSON(raw);
+      j.id = 'imp-'+Date.now();
+      importedScenarios.unshift(j);
+      importedScenarios = importedScenarios.slice(0, 50);
+      store.set('zy_imported', importedScenarios);
+      schedulePushToCloud();
+      toast('ساخته شد ✅');
+      renderJob();
+    })
+    .catch(function(e){box.innerHTML = '<div class="card"><p style="color:var(--bad)">'+esc(errText(e))+'</p></div>'});
+}
+function deleteImportedScenario(id){
+  if(!confirm('پاک بشه؟')) return;
+  importedScenarios = importedScenarios.filter(function(s){return s.id!==id});
+  store.set('zy_imported', importedScenarios);
+  schedulePushToCloud();
+  renderJob();
+}
+function startImportedScenario(id){
+  var sc = null;
+  for(var i=0;i<importedScenarios.length;i++) if(importedScenarios[i].id===id){sc=importedScenarios[i];break}
+  if(!sc) return;
+  job.scenario = sc;
+  job.turns = [{role:'ai',text:sc.opening||'...',fa:''}];
+  if(sc.key_phrases && sc.key_phrases.length) job.turns.push({role:'phrases',phrases:sc.key_phrases});
+  job.busy=false;job.count=0;job.done=false;job.view='play';job.showHint=false;
+  go('job');
+  if(settings.autoplay && sc.opening) speak(sc.opening);
+}
+function startJobScenario(id){
+  var sc = null;
+  for(var i=0;i<JOB_SCENARIOS.length;i++) if(JOB_SCENARIOS[i].id===id){sc=JOB_SCENARIOS[i];break}
+  if(!sc) return;
+  job.scenario = sc;
+  job.turns = [{role:'ai',text:sc.opening,fa:''}];
+  job.busy=false;job.count=0;job.done=false;job.view='play';job.showHint=false;
+  go('job');
+  if(settings.autoplay) speak(sc.opening);
+}
+function renderJobPlay(){
+  var sc = job.scenario; if(!sc){job.view='cats';return renderJob()}
+  var lvlLabel = {easy:'ساده',medium:'متوسط',hard:'سخت',real:'واقعی'}[sc.level] || '';
+  var h = '<button type="button" class="link" id="jback2">← بازگشت</button>';
+  h += '<div class="thead"><div>'+(sc.level?'<span class="pill '+sc.level+'">'+lvlLabel+'</span> ':'')+'<span class="pill job">'+esc(sc.roleFa||'')+'</span> <b>'+esc(sc.title)+'</b></div>';
+  h += '<div class="row"><button type="button" class="btn ghost small" id="jHint">💡</button>'+(sc.sample?'<button type="button" class="btn ghost small" id="jSample">📝</button>':'')+'<button type="button" class="btn ghost small" id="jRestart">🔄</button></div></div>';
+  h += '<div class="hint-box'+(job.showHint?' show':'')+'" id="hintBox"><div class="lbl">💡 راهنما</div>'+esc(sc.hint||'')+'</div>';
+  h += '<div class="chat" id="chat">'+job.turns.map(jobBubble).join('')+'</div>';
+  h += '<div class="composer"><div class="hint">به انگلیسی جواب بده.</div><div class="cbox"><button type="button" class="mic job-mic '+(listening?'rec':'')+'" id="mic">'+ic('mic')+'</button><input type="text" id="msg" dir="ltr" placeholder="Type reply…" autocomplete="off"><button type="button" class="send" id="sendB">'+ic('send')+'</button></div></div>';
+  $('#main').innerHTML = h;
+  $('#jback2').onclick = function(){job.view='list';renderJob()};
+  $('#jRestart').onclick = function(){startJobScenario(sc.id)};
+  $('#jHint').onclick = function(){job.showHint=!job.showHint;var b=$('#hintBox');if(b)b.className='hint-box'+(job.showHint?' show':'')};
+  var js = $('#jSample'); if(js) js.onclick = function(){if(!sc.sample)return;job.turns.push({role:'sample',text:sc.sample});drawJobChat();toast('📝 حالا خودت امتحان کن!',4000)};
+  $('#mic').onclick = toggleJobMic;
+  $('#sendB').onclick = function(){sendJob($('#msg').value,null,false)};
+  $('#msg').onkeydown = function(e){if(e.key==='Enter'){e.preventDefault();sendJob($('#msg').value,null,false)}};
+  drawJobChat();
+}
+function jobBubble(t){
+  if(t.role==='ai') return '<div class="b job-ai"><div class="bt" dir="ltr">'+esc(t.text)+'</div><button type="button" class="mini" data-say="'+esc(t.text)+'">'+ic('vol')+'</button></div>';
+  if(t.role==='sample') return '<div class="b ai" style="background:var(--accent-soft);border-color:var(--accent)"><div style="font-size:.75rem;color:#8a6d00;font-weight:700;margin-bottom:4px">📝 نمونه</div><div class="bt" dir="ltr">'+esc(t.text)+'</div></div>';
+  if(t.role==='phrases'){
+    var ph = '<div class="b ai" style="background:var(--brand-soft);border-color:var(--brand);max-width:100%"><div style="font-size:.78rem;color:var(--brand);font-weight:700;margin-bottom:6px">🎁 عبارت‌ها</div>';
+    (t.phrases||[]).forEach(function(p){
+      ph += '<div style="padding:4px 0;border-bottom:1px dashed var(--line)"><span dir="ltr">'+esc(p.en)+'</span><div class="fa" style="font-size:.78rem">'+esc(p.fa||'')+'</div></div>';
+    });
+    return ph+'</div>';
+  }
+  return '<div class="b job-me"><div class="bt" dir="ltr">'+esc(t.text)+'</div></div>'+(t.err?'<div class="an">ارسال نشد.</div>':jobAnalysis(t));
+}
+function jobAnalysis(t){
+  if(t.pending) return '<div class="an"><span class="dots"><i></i><i></i><i></i></span> در حال تحلیل…</div>';
+  var a = t.an; if(!a) return '';
+  var ms = a.mistakes||[];
+  var h = '<div class="an"><div class="an-top">'+(a.is_correct&&!ms.length?'<span class="pill ok">عالی</span>':'<span class="pill warn">بهتر می‌شه</span>');
+  if(a.score!=null) h += '<span class="sc">امتیاز <b>'+a.score+'</b>/10</span>';
+  h += '</div>';
+  if(a.corrected && norm(a.corrected)!==norm(t.text)) h += '<div class="fix"><span>✓</span><span dir="ltr">'+esc(a.corrected)+'</span></div>';
+  ms.forEach(function(m){h += '<div class="mk"><div dir="ltr"><s>'+esc(m.original)+'</s> → <b>'+esc(m.fix)+'</b></div><div>'+esc(m.explain_fa||'')+'</div></div>'});
+  if(a.tip_fa) h += '<div class="tip">💡 '+esc(a.tip_fa)+'</div>';
+  return h+'</div>';
+}
+function drawJobChat(){
+  var c = $('#chat'); if(!c) return;
+  c.innerHTML = job.turns.map(jobBubble).join('');
+  window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
+}
+function sendJob(text, conf, voice){
+  text = (text||'').trim();
+  if(!text || job.busy || job.done) return;
+  var m = $('#msg'); if(m) m.value='';
+  var ut = {role:'me', text:text, pending:true};
+  job.turns.push(ut); job.count++;
+  job.busy = true; drawJobChat();
+  var history = job.turns.filter(function(t){return (t.role==='me'&&!t.pending)||t.role==='ai'}).map(function(t){return {role:t.role==='ai'?'assistant':'user',content:t.text}});
+  history.push({role:'user',content:text});
+  callAI('Return ONLY valid JSON.\n\n'+jobSystemPrompt(), history.slice(-12), 1400)
+    .then(function(raw){
+      var j; try{j = parseJSON(raw)}catch(e){j = {reply:raw, reply_fa:'', analysis:{is_correct:true,mistakes:[]}}}
+      ut.pending = false; ut.an = j.analysis || {is_correct:true};
+      (j.analysis && j.analysis.mistakes || []).forEach(function(mk){
+        if(!mk.original||!mk.fix) return;
+        var exists = mistakes.some(function(x){return x.original===mk.original && x.fix===mk.fix});
+        if(exists) return;
+        mistakes.unshift({original:mk.original, fix:mk.fix, explain:mk.explain_fa||'', type:mk.type||'grammar', level:'job', topic:job.scenario?job.scenario.title:'', date:new Date().toLocaleDateString('fa-IR')});
+      });
+      mistakes = mistakes.slice(0,300);
+      store.set('zy_mistakes', mistakes);
+      if(j.reply) job.turns.push({role:'ai',text:j.reply,fa:j.reply_fa||''});
+      job.busy = false;
+      if(j.scenario_complete){
+        job.done = true;
+        var d = prog.done['job-'+job.scenario.id] = prog.done['job-'+job.scenario.id] || {};
+        d.done = true; d.count = job.count;
+        award(job.count*2);
+        if(prog.program && prog.program.lastFrom==='program'){if(!prog.program) prog.program={};prog.program[taskKey('sc', job.scenario.id)] = Date.now();}
+        saveProg();
+      } else award(2);
+      drawJobChat();
+      if(settings.autoplay && j.reply) speak(j.reply);
+    })
+    .catch(function(e){job.busy = false;ut.pending = false;ut.err = true;drawJobChat();toast(errText(e), 6000)});
+}
+function toggleJobMic(){
+  if(view!=='job' || job.busy || job.done) return;
+  var b = $('#mic');
+  if(listening){rec && rec.stop(); return}
+  rec = listen({interim:function(t){var m=$('#msg');if(m)m.value=t},done:function(t,c){listening = false;var bb=$('#mic');if(bb)bb.classList.remove('rec');if(t) sendJob(t,c,true)}});
+  if(rec){listening = true; b && b.classList.add('rec')}
+}
+
+// ============ TALK ============
+function talkSystem(){
+  var style = ({A1:'Simple words, 1-2 sentences.',A2:'Simple clear, 2-3 sentences.',B1:'Natural, 2-3 sentences.',B2:'Natural with idioms, 2-4 sentences.',C1:'Sophisticated, 2-4 sentences.',C2:'Native-level.'})[talk.level];
+  return 'You are "Sam", English tutor for a Persian speaker at CEFR '+talk.level+'.\nTopic: '+talk.topic+'.\nReply: '+style+' React then ask ONE question.\nAnalyse the learner\'s LAST message. Explanations in Persian.\nReturn ONLY valid JSON: {"reply":string,"reply_fa":string,"corrected":string,"is_correct":boolean,"mistakes":[{"type":string,"original":string,"fix":string,"explain_fa":string}],"better_version":string,"scores":{"grammar":0-10,"vocabulary":0-10,"fluency":0-10}|null,"new_words":[{"en":string,"fa":string}],"tip_fa":string}';
+}
+function startTalk(o){
+  talk = {started:true,level:o.level,topic:o.topic,focus:o.focus||'',unitId:o.unitId||null,history:[],turns:[],busy:false,count:0,report:null,reporting:false};
+  go('talk');
+  aiTurn('[START]', null);
+}
+function aiTurn(content, ut){
+  talk.busy = true; drawChat();
+  callAI(talkSystem(), talk.history.concat([{role:'user',content:content}]), 1400)
+    .then(function(raw){
+      var j; try{j=parseJSON(raw)}catch(e){j={reply:raw,reply_fa:'',mistakes:[],is_correct:true}}
+      talk.history.push({role:'user',content:content},{role:'assistant',content:raw});
+      talk.history = talk.history.slice(-16);
+      if(ut){ut.pending=false;ut.an=j;award(j.is_correct&&!(j.mistakes||[]).length?4:2)}
+      talk.turns.push({role:'ai',text:j.reply||'…',fa:j.reply_fa||''});
+      talk.busy = false; drawChat();
+      if(settings.autoplay) speak(j.reply);
+    })
+    .catch(function(e){talk.busy=false;if(ut){ut.pending=false;ut.err=true}drawChat();toast(errText(e),6000)});
+}
+function renderTalk(){
+  var el = $('#main');
+  if(!talk.started){
+    var TOPICS=['Introduce yourself','Ordering at a café','My daily routine','Travel plans','My job','Movies and music','Technology','A job interview','Health','Money and shopping'];
+    var h = '<h1>مکالمه آزاد</h1><div class="card stack" style="margin-top:14px"><div class="field"><label>سطح</label><select id="fl">';
+    LEVELS.forEach(function(l){h += '<option value="'+l.id+'">'+l.id+' — '+l.name+'</option>'});
+    h += '</select></div><div class="field"><label>موضوع</label><div class="chips" id="chips">';
+    TOPICS.forEach(function(t,i){h += '<button type="button" class="chip" data-t="'+esc(t)+'" aria-pressed="'+(i===0)+'">'+esc(t)+'</button>'});
+    h += '</div><input type="text" id="ft" dir="ltr" placeholder="موضوع دلخواه…"></div><button type="button" class="btn brand" id="go">'+ic('mic')+' شروع</button></div>';
+    el.innerHTML = h;
+    var topic = TOPICS[0];
+    $$('.chip').forEach(function(c){c.onclick=function(){$$('.chip').forEach(function(x){x.setAttribute('aria-pressed','false')});c.setAttribute('aria-pressed','true');topic=c.getAttribute('data-t');$('#ft').value=''}});
+    $('#go').onclick = function(){var cust = $('#ft').value.trim();startTalk({level:$('#fl').value,topic:cust||topic})};
+    return;
+  }
+  el.innerHTML = '<div class="thead"><div><b dir="ltr">'+esc(talk.topic)+'</b><div class="sub">'+talk.level+'</div></div><div class="row"><button type="button" class="btn ghost" id="newT">جدید</button><button type="button" class="btn brand" id="endT">گزارش</button></div></div><div class="chat" id="chat"></div><div id="report"></div><div class="composer"><div class="cbox"><button type="button" class="mic '+(listening?'rec':'')+'" id="mic">'+ic('mic')+'</button><input type="text" id="msg" dir="ltr" placeholder="Say…"><button type="button" class="send" id="sendB">'+ic('send')+'</button></div></div>';
+  $('#newT').onclick = function(){if('speechSynthesis' in window)speechSynthesis.cancel();rec&&rec.stop();talk.started=false;renderTalk()};
+  $('#endT').onclick = endTalk;
+  $('#mic').onclick = toggleMic;
+  $('#sendB').onclick = function(){send($('#msg').value,null,false)};
+  $('#msg').onkeydown = function(e){if(e.key==='Enter'){e.preventDefault();send($('#msg').value,null,false)}};
+  drawChat();
+}
+function bubbleHTML(t){
+  if(t.role==='ai') return '<div class="b ai"><div class="bt" dir="ltr">'+esc(t.text)+'</div>'+(settings.showFa&&t.fa?'<div class="fa">'+esc(t.fa)+'</div>':'')+'<button type="button" class="mini" data-say="'+esc(t.text)+'">'+ic('vol')+'</button></div>';
+  return '<div class="b me"><div class="bt" dir="ltr">'+esc(t.text)+'</div></div>'+(t.err?'<div class="an">ارسال نشد.</div>':analysisHTML(t));
+}
+function analysisHTML(t){
+  if(t.pending) return '<div class="an"><span class="dots"><i></i><i></i><i></i></span> در حال تحلیل…</div>';
+  var a = t.an; if(!a) return '';
+  var ms = a.mistakes||[];
+  var h = '<div class="an"><div class="an-top">'+(a.is_correct&&!ms.length?'<span class="pill ok">درست</span>':'<span class="pill warn">بهتر می‌شه</span>');
+  if(a.scores) h += [['grammar','گرامر'],['vocabulary','لغت'],['fluency','روانی']].map(function(x){return '<span class="sc">'+x[1]+' <b>'+(a.scores[x[0]]==null?'–':a.scores[x[0]])+'</b></span>'}).join('');
+  h += '</div>';
+  if(a.corrected && norm(a.corrected)!==norm(t.text)) h += '<div class="fix"><span>✓</span><span dir="ltr">'+esc(a.corrected)+'</span></div>';
+  ms.forEach(function(m){h += '<div class="mk"><div dir="ltr"><s>'+esc(m.original)+'</s> → <b>'+esc(m.fix)+'</b></div><div>'+esc(m.explain_fa||'')+'</div></div>'});
+  if(a.tip_fa) h += '<div class="tip">'+esc(a.tip_fa)+'</div>';
+  return h+'</div>';
+}
+function drawChat(){
+  var c = $('#chat'); if(!c || view!=='talk') return;
+  var hasPending = talk.turns.some(function(t){return t.pending});
+  c.innerHTML = talk.turns.map(bubbleHTML).join('') + (talk.busy && !hasPending ? '<div class="b ai"><span class="dots"><i></i><i></i><i></i></span></div>' : '');
+  window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
+}
+function send(text, conf, voice){
+  text = (text||'').trim(); if(!text || talk.busy) return;
+  var m = $('#msg'); if(m) m.value='';
+  var ut = {role:'me', text:text, pending:true};
+  talk.turns.push(ut); talk.count++;
+  var content = voice && conf!=null ? text+'\n[speech_confidence: '+Number(conf).toFixed(2)+']' : text;
+  aiTurn(content, ut);
+}
+function toggleMic(){
+  if(view!=='talk' || talk.busy) return;
+  var b = $('#mic');
+  if(listening){rec && rec.stop(); return}
+  rec = listen({interim:function(t){var m=$('#msg');if(m)m.value=t},done:function(t,c){listening=false;var bb=$('#mic');if(bb)bb.classList.remove('rec');if(t)send(t,c,true)}});
+  if(rec){listening = true; b && b.classList.add('rec')}
+}
+function endTalk(){
+  if(talk.count<1){toast('اول چند جمله');return}
+  if(talk.reporting) return;
+  if('speechSynthesis' in window) speechSynthesis.cancel();
+  rec && rec.stop();
+  talk.reporting = true;
+  var tr = talk.turns.map(function(t){return t.role==='ai'?'Tutor: '+t.text:'Learner: '+t.text}).join('\n');
+  callAI('Write a session report. Return ONLY JSON: {"summary_fa":string,"level_estimate":string,"strengths_fa":[string],"weak_points_fa":[string],"next_steps_fa":[string],"vocab_to_review":[{"en":string,"fa":string}]}.', [{role:'user',content:tr}], 1200)
+    .then(function(raw){
+      talk.report = parseJSON(raw);
+      award(20);
+      if(talk.unitId){var d=prog.done[talk.unitId]=prog.done[talk.unitId]||{};d.talk=true;saveProg()}
+      talk.reporting = false;
+      var r = talk.report, li = function(a){return (a||[]).map(function(x){return '<li>'+esc(x)+'</li>'}).join('')};
+      var el = $('#report');
+      if(el) el.innerHTML = '<div class="card"><h2>گزارش</h2><p>'+esc(r.summary_fa)+'</p><p><b>سطح:</b> '+esc(r.level_estimate)+'</p><h2>قوت</h2><ul>'+li(r.strengths_fa)+'</ul><h2>ضعف</h2><ul>'+li(r.weak_points_fa)+'</ul><h2>بعدی</h2><ul>'+li(r.next_steps_fa)+'</ul></div>';
+    })
+    .catch(function(e){talk.reporting=false;toast(errText(e),6000)});
+}
+
+// ============ NOTEBOOK ============
+function renderNotes(){
+  var byType = {};
+  mistakes.forEach(function(m){var k=(m.type||'other');byType[k]=(byType[k]||0)+1});
+  var patterns = Object.keys(byType).filter(function(k){return byType[k]>=3}).map(function(k){return {type:k,count:byType[k]}}).sort(function(a,b){return b.count-a.count});
+  var h = '<h1>دفترچه</h1>';
+  if(patterns.length){
+    h += '<div class="card" style="margin-bottom:16px"><h2>⚠️ الگوها</h2>';
+    patterns.forEach(function(p){
+      h += '<div class="pattern-card"><div class="pt">'+esc(p.type)+' <span class="pill warn">'+fa(p.count)+' بار</span></div>';
+      var ex = mistakes.filter(function(m){return m.type===p.type}).slice(0,3).map(function(m){return m.original+' → '+m.fix});
+      ex.forEach(function(e){h += '<div class="pe">'+esc(e)+'</div>'});
+      h += '</div>';
+    });
+    h += '</div>';
+  }
+  h += '<div class="row" style="margin-bottom:16px">';
+  h += '<button type="button" class="btn brand" id="drill" '+(mistakes.length?'':'disabled')+'>تمرین</button>';
+  h += '<button type="button" class="btn prog" id="reportBtn">'+ic('chart')+' گزارش</button>';
+  h += '<button type="button" class="btn ghost" id="clr" '+(mistakes.length?'':'disabled')+'>پاک</button>';
+  h += '<button type="button" class="btn job" id="lessonFromMistakesBtn" '+(mistakes.length?'':'disabled')+'>📚 درس از اشتباهات</button>';
+  h += '</div><div id="drillBox"></div><div id="reportBox"></div>';
+  h += '<div class="nb" style="margin-top:16px">';
+  if(mistakes.length){
+    mistakes.slice(0,50).forEach(function(m){
+      h += '<div class="nbi"><div class="row between"><span dir="ltr"><s style="color:var(--bad)">'+esc(m.original)+'</s> → <b style="color:var(--ok)">'+esc(m.fix)+'</b></span><button type="button" class="mini" data-say="'+esc(m.fix)+'">'+ic('vol')+'</button></div><div>'+esc(m.explain)+'</div><div class="sub" style="font-size:.8rem">'+esc(m.type)+' · '+esc(m.level)+' · '+esc(m.date)+'</div></div>';
+    });
+  } else h += '<div class="card">هنوز اشتباهی نیست.</div>';
+  h += '</div>';
+  $('#main').innerHTML = h;
+  var c = $('#clr'); if(c) c.onclick = function(){if(confirm('پاک شود؟')){mistakes=[];store.set('zy_mistakes',mistakes);schedulePushToCloud();renderNotes()}};
+  var d = $('#drill'); if(d) d.onclick = function(){
+    var box = $('#drillBox');
+    box.innerHTML = '<div class="card"><b>در حال ساخت…</b><div class="skel"></div></div>';
+    var src = mistakes.slice(0,15).map(function(m){return 'wrong: '+m.original+' | right: '+m.fix}).join('\n');
+    callAI('Create 6 MC exercises. Return ONLY JSON: {"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}]}.', [{role:'user',content:src}], 2500)
+      .then(function(raw){
+        var j = parseJSON(raw);
+        box.innerHTML = '<div class="card"><h2>تمرین شخصی</h2><div id="dq">'+quizHTML(j.quiz)+'</div></div>';
+        bindQuiz($('#dq'), j.quiz, function(s,n){award(s*2);$('.qres',$('#dq')).textContent='نتیجه: '+fa(s)+' از '+fa(n)});
+      })
+      .catch(function(e){box.innerHTML='';toast(errText(e),6000)});
+  };
+  var rb = $('#reportBtn'); if(rb) rb.onclick = buildReport;
+  var lfm = $('#lessonFromMistakesBtn'); if(lfm) lfm.onclick = buildLessonFromMistakes;
+
+}
+function buildLessonFromMistakes(){
+  if(!mistakes.length){toast('هیچ اشتباهی نیست');return}
+  var box = $('#drillBox');
+  box.innerHTML = '<div class="card"><b>در حال تحلیل اشتباهات…</b><p class="sub">۳۰-۶۰ ثانیه صبر کن.</p><div class="skel"></div><div class="skel" style="width:80%"></div></div>';
+  box.scrollIntoView({behavior:'smooth'});
+
+  var recent = mistakes.slice(0, 30);
+  var byType = {};
+  recent.forEach(function(m){ byType[m.type||'other'] = (byType[m.type||'other']||0)+1; });
+  var topType = Object.keys(byType).sort(function(a,b){return byType[b]-byType[a]})[0] || 'grammar';
+  var samples = recent.slice(0, 20).map(function(m){
+    return 'WRONG: ' + m.original + ' | RIGHT: ' + m.fix + ' | TOPIC: ' + (m.topic||'');
+  }).join(' || ');
+
+  var sys = 'You are an expert EFL teacher for Persian speakers. Create ONE focused lesson targeting the patterns in the mistakes. Return ONLY valid JSON: {"id":string,"title":string,"topic":string,"level":"A1","intro_fa":string,"vocab":[{"en":string,"say":string,"fa":string,"ex":string,"ex_fa":string}],"grammar":{"title":string,"explain_fa":string,"rules":[string],"examples":[{"en":string,"fa":string}]},"dialogue":[{"speaker":"A","en":string,"fa":string}],"phrases":[{"en":string,"fa":string}],"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}],"speaking_goal":string} Rules: title in Persian like درس جبرانی; 8-10 vocab; grammar addresses ROOT CAUSE; 6-8 dialogue; 5 phrases; 8 quiz targeting the mistakes; Persian explanations; JSON only.';
+
+  var userMsg = 'TOP TYPE: ' + topType + ' || MISTAKES: ' + samples;
+
+  callAI(sys, [{role:'user', content: userMsg}], 6000)
+    .then(function(raw){
+      var j = parseJSON(raw);
+      j.id = 'cust-' + Date.now();
+      j.customTopic = 'از دفترچه';
+      j.createdAt = Date.now();
+      if(!j.level) j.level = 'B1';
+      customLessons.unshift(j);
+      customLessons = customLessons.slice(0, 30);
+      store.set('zy_custom_lessons', customLessons);
+      schedulePushToCloud();
+      box.innerHTML = '<div class="card" style="background:var(--ok-soft);border-color:var(--ok)"><b>درس ساخته شد</b><div style="margin-top:10px;font-weight:700">' + esc(j.title||'درس از اشتباهات') + '</div><div class="sub" style="font-size:.85rem;margin-top:6px">' + esc((j.intro_fa||'').substring(0,140)) + '</div><div class="row" style="margin-top:14px"><button type="button" class="btn brand" id="openMistakeLesson">باز کردن درس</button><button type="button" class="btn ghost" id="closeMistakeLesson">بستن</button></div></div>';
+      var om = $('#openMistakeLesson'); if(om) om.onclick = function(){openCustomLesson(j.id)};
+      var cm = $('#closeMistakeLesson'); if(cm) cm.onclick = function(){box.innerHTML=''};
+      toast('درس اختصاصی ساخته شد ✅');
+    })
+    .catch(function(e){
+      box.innerHTML = '<div class="card"><p style="color:var(--bad)">' + esc(errText(e)) + '</p><button type="button" class="btn brand" id="retryMistakeLesson">تلاش دوباره</button></div>';
+      var r = $('#retryMistakeLesson'); if(r) r.onclick = buildLessonFromMistakes;
+    });
+}
+function buildReport(){
+  var box = $('#reportBox');
+  var byType = {};
+  mistakes.forEach(function(m){var k=m.type||'other';byType[k]=(byType[k]||0)+1});
+  var topTypes = Object.keys(byType).sort(function(a,b){return byType[b]-byType[a]}).slice(0,5).map(function(k){return {type:k,count:byType[k]}});
+
+  // ==== Speed Stats ====
+  var speedStats = {sessions:0, totalResponses:0, avgTime:0, bestTime:0, accuracy:0};
+  if(prog.speed){
+    var ss = prog.speed;
+    speedStats.sessions = ss.sessions || 0;
+    speedStats.totalResponses = ss.totalResponses || 0;
+    speedStats.avgTime = ss.totalResponses ? +(ss.totalTime / ss.totalResponses).toFixed(2) : 0;
+    speedStats.bestTime = ss.bestTime === 999 ? 0 : +ss.bestTime.toFixed(2);
+    speedStats.accuracy = ss.totalResponses ? Math.round((ss.correctCount||0) * 100 / ss.totalResponses) : 0;
+    speedStats.recentTrend = (ss.history || []).slice(0, 10).map(function(h){return h.t;});
+  }
+
+  // ==== Daily Checklist History ====
+  var dailyHistory = [];
+  var today = new Date();
+  var completedDays = 0, totalChecklistItems = 0, totalChecklistDone = 0;
+  for(var dayOffset = 0; dayOffset < 60; dayOffset++){
+    var d = new Date(today.getTime() - dayOffset * 86400000);
+    var key = 'zy_dp_' + d.toDateString();
+    try {
+      var checks = JSON.parse(localStorage.getItem(key) || '{}');
+      var itemCount = Object.keys(checks).length;
+      if(itemCount > 0){
+        var dayStr = d.toISOString().split('T')[0];
+        dailyHistory.push({date: dayStr, items: itemCount});
+        totalChecklistItems += itemCount;
+        if(itemCount >= 4) completedDays++;
+      }
+    } catch(e){}
+  }
+  // آخرین ۱۴ روز رو برمی‌گردونیم
+  dailyHistory = dailyHistory.slice(0, 14);
+
+  // ==== Week Progress ====
+  var weeksDone = 0;
+  for(var w=1;w<=8;w++) if(weekProgress(w)===100) weeksDone++;
+  var wp = {}; for(var i=1;i<=8;i++) wp['week_'+i]=weekProgress(i);
+
+  // ==== Grammar ====
+  var gTopicsDone=0, gTopicsTotal=0;
+  GRAMMAR_CURRICULUM.forEach(function(lvl){
+    gTopicsTotal+=lvl.topics.length;
+    lvl.topics.forEach(function(t){if(prog.grammar&&prog.grammar[t.id])gTopicsDone++})
+  });
+
+  // ==== Week-level breakdown ====
+  var weekScenariosDone = {};
+  var weekLessonsDone = {};
+  Object.keys(prog.program||{}).forEach(function(k){
+    if(k.indexOf('sc:') === 0){
+      var scId = k.slice(3);
+      PROGRAM.forEach(function(w){
+        (w.scenarios||[]).forEach(function(s){
+          if(s.id === scId){ weekScenariosDone[w.week] = (weekScenariosDone[w.week]||0) + 1; }
+        });
+      });
+    }
+    if(k.indexOf('les:') === 0){
+      var parts = k.slice(4).split(':');
+      PROGRAM.forEach(function(w){
+        (w.lessons||[]).forEach(function(l){
+          if(l.level === parts[0] && String(l.idx) === String(parts[1])){
+            weekLessonsDone[w.week] = (weekLessonsDone[w.week]||0) + 1;
+          }
+        });
+      });
+    }
+  });
+
+  // ==== Build Report ====
+  var report = {
+    version: 2,
+    generated_at: new Date().toISOString(),
+    user: 'Armin',
+
+    // کلی
+    total_xp: prog.xp,
+    streak_days: prog.streak,
+    first_seen: prog.last || null,
+
+    // پیشرفت کلی
+    current_week: curWeek,
+    weeks_completed: weeksDone,
+    week_progress: wp,
+
+    // جواب سریع
+    speed: {
+      sessions_completed: speedStats.sessions,
+      total_responses: speedStats.totalResponses,
+      avg_response_time_sec: speedStats.avgTime,
+      best_response_time_sec: speedStats.bestTime,
+      accuracy_pct: speedStats.accuracy,
+      recent_times_sec: speedStats.recentTrend
+    },
+
+    // پیوستگی
+    consistency: {
+      days_with_activity_60d: dailyHistory.length,
+      days_with_4plus_tasks_60d: completedDays,
+      total_checklist_items: totalChecklistItems,
+      last_14_days: dailyHistory
+    },
+
+    // گرامر
+    grammar: {
+      topics_done: gTopicsDone,
+      topics_total: gTopicsTotal,
+      pct: gTopicsTotal ? Math.round(gTopicsDone*100/gTopicsTotal) : 0
+    },
+
+    // اشتباهات
+    mistakes: {
+      total: mistakes.length,
+      top_types: topTypes,
+      recent_30: mistakes.slice(0,30).map(function(m){
+        return {type:m.type, original:m.original, fix:m.fix, level:m.level, topic:m.topic, date:m.date};
+      })
+    },
+
+    // محتوا
+    content: {
+      program_scenarios_done_by_week: weekScenariosDone,
+      program_lessons_done_by_week: weekLessonsDone,
+      lessons_generated: Object.keys(lessonCache).length,
+      grammar_lessons_generated: Object.keys(grammarCache).length,
+      custom_lessons: customLessons.length,
+      imported_scenarios: importedScenarios.length
+    },
+
+    // نسخه‌ها
+    modules_loaded: {
+      speed: !!window.__speedModuleLoaded,
+      plan: !!window.__planModuleLoaded,
+      office: !!window.__officeModuleLoaded
+    }
+  };
+
+  var jsonStr = JSON.stringify(report, null, 2);
+
+  // ==== Summary card ====
+  var summary = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px">';
+  summary += '<div style="padding:10px;background:var(--brand-soft);border-radius:10px;text-align:center"><b style="display:block;font-size:1.3rem;color:var(--brand)">' + fa(prog.xp) + '</b><small style="color:var(--muted);font-size:.72rem">امتیاز کل</small></div>';
+  summary += '<div style="padding:10px;background:var(--prog-soft);border-radius:10px;text-align:center"><b style="display:block;font-size:1.3rem;color:var(--prog)">' + fa(speedStats.totalResponses) + '</b><small style="color:var(--muted);font-size:.72rem">جواب سریع</small></div>';
+  summary += '<div style="padding:10px;background:#d8f1e6;border-radius:10px;text-align:center"><b style="display:block;font-size:1.3rem;color:#23906a">' + fa(dailyHistory.length) + '</b><small style="color:var(--muted);font-size:.72rem">روز فعال (۶۰ روز)</small></div>';
+  summary += '<div style="padding:10px;background:#fef3c7;border-radius:10px;text-align:center"><b style="display:block;font-size:1.3rem;color:#a86d00">' + fa(gTopicsDone) + '/' + fa(gTopicsTotal) + '</b><small style="color:var(--muted);font-size:.72rem">گرامر</small></div>';
+  summary += '</div>';
+
+  box.innerHTML = '<div class="card"><h2>' + ic('chart') + ' گزارش کامل پیشرفت</h2>' + summary +
+    '<div class="row" style="margin:12px 0">' +
+      '<button type="button" class="btn brand" id="copyReport">📋 کپی</button>' +
+      '<button type="button" class="btn ghost" id="downloadReport">' + ic('download') + ' دانلود JSON</button>' +
+      '<button type="button" class="btn ghost" id="closeReport">بستن</button>' +
+    '</div>' +
+    '<textarea readonly style="min-height:300px;font-size:11px" dir="ltr">' + esc(jsonStr) + '</textarea></div>';
+
+  $('#closeReport').onclick = function(){box.innerHTML=''};
+  $('#copyReport').onclick = function(){
+    var ta = box.querySelector('textarea');
+    ta.select();
+    if(navigator.clipboard) navigator.clipboard.writeText(ta.value).then(function(){toast('کپی ✅')}).catch(function(){document.execCommand('copy');toast('کپی ✅')});
+    else { document.execCommand('copy'); toast('کپی ✅'); }
+  };
+  $('#downloadReport').onclick = function(){
+    var blob = new Blob([jsonStr], {type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'zabanyar-report-' + new Date().toISOString().split('T')[0] + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast('دانلود ✅');
+  };
+  box.scrollIntoView({behavior:'smooth'});
+}
+
+// ============ SETTINGS ============
+function renderSettings(){
+  loadVoices();
+  var syncActive = syncEnabled;
+  var h = '<h1>تنظیمات</h1>';
+  h += '<div class="card stack" style="margin-top:14px"><h3>AI</h3>';
+  h += '<div class="field"><label>کلید API</label><input type="password" id="k" dir="ltr" value="'+esc(settings.key)+'"></div>';
+  h += '<div class="field"><label>آدرس پروکسی</label><input type="text" id="p" dir="ltr" value="'+esc(settings.proxy||'')+'"></div>';
+  h += '<div class="field"><label>مدل</label><select id="m">';
+  ['gpt-4o-mini','gpt-4.1-mini','gpt-3.5-turbo','deepseek-chat','claude-3-5-haiku','claude-sonnet-4-6','gemini-2.0-flash-lite','gemini-2.5-flash'].forEach(function(mm){h += '<option value="'+mm+'">'+mm+'</option>'});
+  h += '</select></div>';
+  h += '<div class="field"><label>سرعت صدا</label><select id="r"><option value="slow">آهسته</option><option value="normal">عادی</option><option value="fast">سریع</option></select></div>';
+  h += '<div class="field"><label>صدا</label><select id="v"><option value="">پیش‌فرض</option>';
+  voices.forEach(function(v){h += '<option value="'+esc(v.name)+'">'+esc(v.name)+'</option>'});
+  h += '</select></div>';
+  h += '<div class="row"><button type="button" class="btn brand" id="sv">ذخیره</button><button type="button" class="btn ghost" id="ts">آزمایش</button></div></div>';
+  h += '<div class="card stack" style="margin-top:16px"><h3>☁️ همگام‌سازی</h3><div class="field"><label>کد</label><input type="password" id="sc" dir="ltr" value="'+esc(settings.syncCode||'')+'"></div><div class="row"><button type="button" class="btn brand" id="scActivate">'+(syncActive?'به‌روز':'فعال')+'</button><button type="button" class="btn ghost" id="scPull">دریافت</button><button type="button" class="btn ghost" id="scPush">ارسال</button></div></div>';
+  h += '<div class="card stack" style="margin-top:16px"><h3>📤 صادرات/واردات</h3><div class="row"><button type="button" class="btn brand" id="exBtn">صادرات</button><button type="button" class="btn ghost" id="imBtn">واردات</button></div><div id="exBox" style="display:none"><textarea id="exText" readonly></textarea><button type="button" class="btn ghost" id="exCopy" style="margin-top:8px">کپی</button></div><div id="imBox" style="display:none"><textarea id="imText" placeholder="کد..."></textarea><button type="button" class="btn brand" id="imGo" style="margin-top:8px">وارد</button></div></div>';
+  h += '<div class="card stack" style="margin-top:16px"><h3>🗑 پاک کردن</h3><button type="button" class="btn ghost" id="rs">پاک کردن همه</button></div>';
+  $('#main').innerHTML = h;
+  $('#m').value=settings.model;$('#r').value=settings.rate;$('#v').value=settings.voice;
+  var save = function(){settings.key=$('#k').value.trim();settings.model=$('#m').value;settings.rate=$('#r').value;settings.voice=$('#v').value;settings.proxy=$('#p').value.trim();settings.syncCode=$('#sc').value.trim();store.set('zy_settings',settings)};
+  $('#sv').onclick = function(){save();toast('ذخیره ✅')};
+  $('#ts').onclick = function(){save();callAI('Reply: ok',[{role:'user',content:'ping'}],20).then(function(){toast('اتصال ✅')}).catch(function(e){toast(errText(e),6000)})};
+  $('#scActivate').onclick = function(){save();if(!settings.proxy||!settings.syncCode||settings.syncCode.length<8){toast('پروکسی و کد');return}syncEnabled=false;initSync().then(function(ok){if(ok){toast('بارگذاری...');pullFromCloud(true).then(function(){toast('فعال ✅');renderSettings()})}})};
+  $('#scPull').onclick = function(){save();if(!syncEnabled)initSync().then(function(ok){if(ok)pullFromCloud().then(renderSettings)});else pullFromCloud().then(renderSettings)};
+  $('#scPush').onclick = function(){save();if(!syncEnabled)initSync().then(function(ok){if(ok)pushToCloud().then(function(){toast('ارسال ✅')})});else pushToCloud().then(function(){toast('ارسال ✅')})};
+  $('#exBtn').onclick = function(){try{$('#exText').value=exportData();$('#exBox').style.display='block';$('#imBox').style.display='none'}catch(e){toast('خطا')}};
+  $('#imBtn').onclick = function(){$('#imBox').style.display='block';$('#exBox').style.display='none'};
+  var ec = $('#exCopy'); if(ec) ec.onclick = function(){var t=$('#exText');t.select();if(navigator.clipboard)navigator.clipboard.writeText(t.value).then(function(){toast('کپی ✅')}).catch(function(){document.execCommand('copy');toast('کپی ✅')});else{document.execCommand('copy');toast('کپی ✅')}};
+  var ig = $('#imGo'); if(ig) ig.onclick = function(){try{var b64=$('#imText').value.trim();if(!b64){toast('خالی');return}if(!confirm('جایگزین شود؟'))return;importData(b64);schedulePushToCloud();toast('وارد ✅');updateStats();go('program')}catch(e){toast('نامعتبر',5000)}};
+  $('#rs').onclick = function(){if(confirm('همه پاک شود؟')){prog={xp:0,streak:0,last:'',done:{},program:{},grammar:{}};lessonCache={};grammarCache={};importedScenarios=[];customLessons=[];store.set('zy_lessons',{});store.set('zy_grammar',{});store.set('zy_imported',[]);store.set('zy_custom_lessons',[]);saveProg();toast('پاک شد')}};
+  updateSyncUI();
+}
+
+// ============ INIT ============
+document.addEventListener('click', function(e){
+  var s = e.target.closest && e.target.closest('[data-say]');
+  if(s){speak(s.getAttribute('data-say'));return}
+  var p = e.target.closest && e.target.closest('[data-prac]');
+  if(p){
+    var en = p.getAttribute('data-prac');
+    var out = p.closest('.vc').querySelector('.pr');
+    if(p.classList.contains('rec')){rec && rec.stop();return}
+    p.classList.add('rec'); out.className='pr'; out.textContent='…';
+    rec = listen({done:function(t){
+      p.classList.remove('rec');
+      var a=norm(t),b=norm(en);
+      if(!a){out.textContent='';return}
+      var ok=a===b||a.indexOf(b)>=0||sim(a,b)>=0.8;
+      out.className='pr '+(ok?'ok':'no');
+      out.textContent=ok?'عالی!':'شنیده شد: «'+t+'»';
+      if(ok)award(1);
+    }});
+    if(!rec)p.classList.remove('rec');
+  }
+});
+$$('.tab').forEach(function(t){t.onclick=function(){go(t.getAttribute('data-v'))}});
+try{
+  updateStats();
+  go('program');
+if(settings.proxy && settings.syncCode) initSync();
+}catch(e){
+  console.error('Init error:', e);
+  var m = $('#main'); if(m) m.innerHTML = '<div class="card"><b>خطا</b><p dir="ltr" style="font-family:monospace;font-size:12px">'+esc(e.message)+'</p><button type="button" class="btn brand" onclick="try{localStorage.removeItem(\'zy_prog\')}catch(e){};location.reload()">ریست و رفرش</button></div>';
+                                                                                }
