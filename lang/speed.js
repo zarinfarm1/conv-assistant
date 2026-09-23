@@ -180,6 +180,7 @@
   }
 
 
+  function getStats(){
     var s = window.prog.speed;
     if(!s) return {sessions:0, totalResponses:0, avgTime:0, bestTime:0};
     return {
