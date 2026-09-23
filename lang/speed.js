@@ -157,17 +157,29 @@
     }
   }
   function saveStats(rt, wasCorrect){
-    ensureStats();
-    var s = window.prog.speed;
-    s.totalResponses++;
-    s.totalTime += rt;
-    if(rt < s.bestTime) s.bestTime = rt;
-    if(wasCorrect) s.correctCount++;
-    s.history.unshift({t:rt, c:wasCorrect, at:Date.now()});
-    s.history = s.history.slice(0, 50);
-    window.saveProg();
+    try{
+      ensureStats();
+      var s = window.prog.speed;
+      s.totalResponses = (s.totalResponses || 0) + 1;
+      s.totalTime = (s.totalTime || 0) + rt;
+      if(rt < (s.bestTime || 999)) s.bestTime = rt;
+      if(wasCorrect) s.correctCount = (s.correctCount || 0) + 1;
+      s.history = s.history || [];
+      s.history.unshift({t:rt, c:wasCorrect, at:Date.now()});
+      s.history = s.history.slice(0, 50);
+      // ذخیره مستقیم localStorage (بدون وابستگی به app.js)
+      try{ localStorage.setItem('zy_prog', JSON.stringify(window.prog)); }catch(e){}
+      // فراخوانی saveProg اصلی اگه موجوده
+      if(typeof window.saveProg === 'function'){
+        try{ window.saveProg(); }catch(e){}
+      }
+      console.log('[Speed] stat saved:', rt.toFixed(1) + 's | total:', s.totalResponses);
+    }catch(e){
+      console.error('[Speed] saveStats error:', e);
+    }
   }
-  function getStats(){
+
+
     var s = window.prog.speed;
     if(!s) return {sessions:0, totalResponses:0, avgTime:0, bestTime:0};
     return {
@@ -616,8 +628,11 @@ function startSpeedSession(){
   // ============ 14. End session ============
   function endSession(){
     if(speed.timerId){ clearInterval(speed.timerId); speed.timerId = null; }
-    if(window.prog.speed) window.prog.speed.sessions = (window.prog.speed.sessions || 0) + 1;
-    window.saveProg();
+    if(!window.prog.speed) window.prog.speed = {sessions:0,totalResponses:0,totalTime:0,bestTime:999,correctCount:0,history:[]};
+    window.prog.speed.sessions = (window.prog.speed.sessions || 0) + 1;
+    try{ localStorage.setItem('zy_prog', JSON.stringify(window.prog)); }catch(e){}
+    if(typeof window.saveProg === 'function') window.saveProg();
+    console.log('[Speed] session ended. Total sessions:', window.prog.speed.sessions);
     var stats = getStats();
     var h = '<div class="speed-play">';
     h += '<div class="speed-hero" style="background:linear-gradient(135deg,#23906a,#0f766e)"><h1>🎉 عالی بود!</h1><p>یک جلسه تموم شد</p></div>';
