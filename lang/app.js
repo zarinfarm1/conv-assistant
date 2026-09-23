@@ -1724,7 +1724,7 @@ function buildLessonFromMistakes(){
     });
 }
 
-
+  function buildReport(){
   var box = $('#reportBox');
   var byType = {};
   mistakes.forEach(function(m){var k=m.type||'other';byType[k]=(byType[k]||0)+1});
