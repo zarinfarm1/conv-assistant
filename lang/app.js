@@ -43,7 +43,7 @@ var prog = {
   last: String(savedProg.last || ''),
   done: (savedProg.done && typeof savedProg.done === 'object' && !Array.isArray(savedProg.done)) ? savedProg.done : {},
   program: (savedProg.program && typeof savedProg.program === 'object' && !Array.isArray(savedProg.program)) ? savedProg.program : {},
-  grammar: (savedProg.grammar && typeof savedProg.grammar === 'object' && !Array.isArray(savedProg.grammar)) ? savedProg.grammar : {}
+  grammar: (savedProg.grammar && typeof savedProg.grammar === 'object' && !Array.isArray(savedProg.grammar)) ? savedProg.grammar : {}, speed: (savedProg.speed && typeof savedProg.speed === 'object') ? savedProg.speed : {sessions:0,totalResponses:0,totalTime:0,bestTime:999,correctCount:0,history:[]}
 };
 var lessonCache = store.get('zy_lessons',{}) || {};
 if(typeof lessonCache !== 'object' || Array.isArray(lessonCache)) lessonCache = {};
