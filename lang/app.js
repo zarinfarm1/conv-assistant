@@ -512,7 +512,7 @@ function callAI(system,messages,max){
   };
   return tryFetch();
 }
-
+function parseJSON(t){
   t = t.replace(/```json|```/g,'');
   var a = t.indexOf('{'), b = t.lastIndexOf('}');
   if(a<0 || b<0) throw new Error('bad json');
