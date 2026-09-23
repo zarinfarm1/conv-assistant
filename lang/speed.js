@@ -191,7 +191,10 @@
     };
   }
 
-  // ============ 6. Render ============
+  // ============ Helper: current effective seconds (accounts for typing mode) ============
+  function effSec(){ return speed.effectiveSec || speed.seconds; }
+
+
   function renderSpeed(){
     if(speed.phase === 'setup') return renderSetup();
     if(speed.phase === 'play') return renderPlay();
@@ -360,13 +363,13 @@ function startSpeedSession(){
     var progEl = timerEl.querySelector('.prog');
     if(!numEl || !progEl) return;
     numEl.textContent = Math.ceil(speed.remaining);
-    var pct = speed.remaining / (speed.effectiveSec || speed.seconds);
+    var pct = speed.remaining / effSec();
     var circ = 2 * Math.PI * 85;
     progEl.style.strokeDasharray = circ;
     progEl.style.strokeDashoffset = circ * (1 - pct);
     timerEl.classList.remove('warn','danger');
     if(speed.remaining <= 2) timerEl.classList.add('danger');
-    else if(speed.remaining <= speed.seconds * 0.5) timerEl.classList.add('warn');
+    else if(speed.remaining <= effSec() * 0.5) timerEl.classList.add('warn');
   }
 
   // ============ 9. Play ============
@@ -381,7 +384,7 @@ function startSpeedSession(){
     h += '<circle class="track" cx="90" cy="90" r="85"/>';
     h += '<circle class="prog" cx="90" cy="90" r="85" style="stroke-dasharray:' + circ + ';stroke-dashoffset:0"/>';
     h += '</svg>';
-    h += '<div class="num">' + (speed.effectiveSec || speed.seconds) + '</div>';
+    h += '<div class="num">' + effSec() + '</div>';
     h += '</div>';
     h += '<div class="speed-question"><div>';
     h += '<div class="q-role">' + window.esc(q.role || 'پیام') + '</div>';
@@ -488,12 +491,12 @@ function startSpeedSession(){
   // ============ 11. Timeout / Skip / Quit ============
   function onTimeout(){
     if(speed.busy) return;
-    speed.responseTime = speed.seconds;
+    speed.responseTime = effSec();
     speed.lastResult = {timeout: true, text: ''};
     speed.busy = true;
     if(window.listening && window.rec) window.rec.stop();
     window.mistakes.unshift({
-      original: '⏱ (پاسخ در ' + window.fa(speed.seconds) + ' ثانیه نداد)',
+      original: '⏱ (پاسخ در ' + window.fa(effSec()) + ' ثانیه نداد)',
       fix: speed.question.sample,
       explain: 'وقت تموم شد — سرعت پایین. نمونه: "' + speed.question.sample + '"',
       type: 'speed', level: 'speed', topic: speed.question.cat,
@@ -501,7 +504,7 @@ function startSpeedSession(){
     });
     window.mistakes = window.mistakes.slice(0, 300);
     window.store.set('zy_mistakes', window.mistakes);
-    saveStats(speed.seconds, false);
+    saveStats(effSec(), false);
     renderResult();
   }
   function onSkip(){
@@ -525,12 +528,12 @@ function startSpeedSession(){
     if(!text) return;
     if(speed.timerId){ clearInterval(speed.timerId); speed.timerId = null; }
     if(window.listening && window.rec) window.rec.stop();
-    var _elapsed = speed.startTime > 0 ? (Date.now() - speed.startTime) / 1000 : speed.seconds;
-    if(_elapsed < 0.5 || _elapsed > 120) _elapsed = speed.seconds;
+    var _elapsed = speed.startTime > 0 ? (Date.now() - speed.startTime) / 1000 : effSec();
+    if(_elapsed < 0.5 || _elapsed > 120) _elapsed = effSec();
     speed.responseTime = _elapsed;
     speed.busy = true;
     var q = speed.question;
-    var sys = 'Armin is practicing FAST English responses for workplace situations (Iranian IT support, manager Ildar is Russian).\n\nHe was asked: "' + q.q + '"\nHis answer: "' + text + '"\nResponse time: ' + speed.responseTime.toFixed(1) + 's (target: ' + speed.seconds + 's)\n\nAnalyse:\n1. Correct and appropriate?\n2. Brief enough? Ildar prefers 1-2 sentences.\n3. Suggest a NATURAL, SHORTER version.\n4. Score 0-10.\n\nReturn ONLY JSON:\n{"score":0-10,"is_correct":true,"corrected":"best version","mistakes":[{"original":"...","fix":"...","explain_fa":"توضیح"}],"tip_fa":"نکته","too_long":false}';
+    var sys = 'Armin is practicing FAST English responses for workplace situations (Iranian IT support, manager Ildar is Russian).\n\nHe was asked: "' + q.q + '"\nHis answer: "' + text + '"\nResponse time: ' + speed.responseTime.toFixed(1) + 's (target: ' + effSec() + 's)\n\nAnalyse:\n1. Correct and appropriate?\n2. Brief enough? Ildar prefers 1-2 sentences.\n3. Suggest a NATURAL, SHORTER version.\n4. Score 0-10.\n\nReturn ONLY JSON:\n{"score":0-10,"is_correct":true,"corrected":"best version","mistakes":[{"original":"...","fix":"...","explain_fa":"توضیح"}],"tip_fa":"نکته","too_long":false}';
     window.callAI(sys, [{role:'user', content:'Analyse now.'}], 700)
       .then(function(raw){
         var j; try { j = window.parseJSON(raw); } catch(e){ j = {score:7, is_correct:true, mistakes:[], corrected:text, tip_fa:'', too_long:false}; }
@@ -575,7 +578,7 @@ function startSpeedSession(){
     var done = speed.session.idx + 1;
     var total = speed.session.questions.length;
     var circ = 2 * Math.PI * 85;
-    var pctShown = r.timeout ? 0 : Math.max(0, 1 - (speed.responseTime / (speed.effectiveSec || speed.seconds)));
+    var pctShown = r.timeout ? 0 : Math.max(0, 1 - (speed.responseTime / effSec()));
     var h = '<div class="speed-play">';
     h += '<div class="speed-timer">';
     h += '<svg viewBox="0 0 180 180">';
@@ -590,14 +593,14 @@ function startSpeedSession(){
     h += '</div></div>';
     h += '<div class="speed-result">';
     if(r.timeout){
-      h += '<h3><span class="time-badge bad">⏱ ' + window.fa(speed.seconds) + ' ثانیه تموم شد</span></h3>';
+      h += '<h3><span class="time-badge bad">⏱ ' + window.fa(effSec()) + ' ثانیه تموم شد</span></h3>';
       h += '<p style="margin:8px 0 4px;font-size:.9rem;color:#5b6b80">حتی یه جواب کوتاه هم کافی بود:</p>';
       h += '<div style="background:#ffedd5;padding:12px 16px;border-radius:12px;margin-top:8px;color:#14213d"><div dir="ltr" style="font:600 1.05rem Lexend,sans-serif;color:#14213d">' + window.esc(q.sample) + '</div></div>';
       h += '<div class="tip" style="margin-top:12px">💡 ' + window.esc(q.hint) + '</div>';
     } else {
       var a = r.analysis;
       var score = a.score != null ? a.score : 7;
-      var timeClass = speed.responseTime <= 3 ? 'great' : (speed.responseTime <= speed.seconds * 0.75 ? 'ok' : 'bad');
+      var timeClass = speed.responseTime <= 3 ? 'great' : (speed.responseTime <= effSec() * 0.75 ? 'ok' : 'bad');
       h += '<h3>زمان <span class="time-badge ' + timeClass + '">' + window.fa(speed.responseTime.toFixed(1)) + ' ثانیه</span> <span class="time-badge" style="background:#ffedd5;color:#c2410c">امتیاز ' + window.fa(score) + '/10</span></h3>';
       h += '<div style="background:#f0f4f4;padding:12px 16px;border-radius:12px;margin:10px 0;color:#14213d"><div style="font-size:.8rem;color:#5b6b80;margin-bottom:4px">جواب تو:</div><div dir="ltr" style="font-family:Lexend,sans-serif;color:#14213d">' + window.esc(r.text) + '</div></div>';
       if(a.corrected && window.norm(a.corrected) !== window.norm(r.text)){
