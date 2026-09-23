@@ -10,8 +10,12 @@
     if(window.view === 'speed') return window.renderSpeed();
     return _origRender();
   };
-  // go() خودش view رو ست می‌کنه و render() رو صدا می‌زنه.
-  // render() پایین‌تر override شده که speed رو مدیریت کنه.
+  var _origGo = window.go;
+  window.go = function(v){
+    _origGo(v);
+    window.view = v;
+    if(v === 'speed') window.renderSpeed();
+  };
   // ============ 1. Inject CSS ============
   var css = [
     '.speed-setup{display:grid;gap:16px;max-width:600px;margin:0 auto}',
