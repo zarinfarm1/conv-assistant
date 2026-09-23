@@ -134,7 +134,10 @@
     return rotate(week.lessons, getIranDay(), offset);
   }
   function getTodayScenario(week, offset){
-    return rotate(week.scenarios, getIranDay(), offset);
+    if(!week.scenarios || !week.scenarios.length) return null;
+    var day = getIranDay();
+    var perDay = 2;
+    return week.scenarios[(day * perDay + (offset || 0)) % week.scenarios.length];
   }
   function getTodayGrammar(week){
     if(!week.grammar || !week.grammar.length) return null;
@@ -439,6 +442,9 @@
     main.querySelectorAll('[data-les]').forEach(function(el){
       el.addEventListener('click', function(){
         var parts = this.getAttribute('data-les').split(':');
+        if(!window.prog.program) window.prog.program = {};
+        window.prog.program.lastFrom = 'program';
+        if(window.saveProg) window.saveProg();
         window.openLesson(parts[0], +parts[1]);
       });
     });
@@ -452,6 +458,9 @@
     main.querySelectorAll('[data-sc]').forEach(function(el){
       el.addEventListener('click', function(){
         var id = this.getAttribute('data-sc');
+        if(!window.prog.program) window.prog.program = {};
+        window.prog.program.lastFrom = 'program';
+        if(window.saveProg) window.saveProg();
         var isImport = (window.importedScenarios||[]).some(function(s){ return s.id===id; });
         if(isImport) window.startImportedScenario(id);
         else window.startJobScenario(id);
