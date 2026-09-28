@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '103';
+var APP_VERSION = '104';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -1404,7 +1404,7 @@ function jobSystemPrompt(){
   var sc = job.scenario; if(!sc) return '';
   var roleDesc = ({'User':'a non-technical office worker','Manager':'Ildar, a Russian IT manager (English is second language; brief and direct)','Colleague':'a friendly colleague'})[sc.role] || 'a colleague';
   var levelHint = {easy:'VERY simple questions.',medium:'Moderate questions.',hard:'Natural questions.',real:'Fully natural.'}[sc.level] || '';
-  return 'Role-play as '+roleDesc+' with Armin (Iranian IT support).\nSCENARIO: '+sc.title+'\nCONTEXT: '+sc.opening+'\nYOUR ROLE: '+sc.role+'\nLEVEL: '+(sc.level||'medium')+' — '+levelHint+'\n\nRules: SHORT lines (1-2 sentences). If score<10, ALWAYS include "perfect_version" — a natural 10/10 rewrite of Armin's reply. If no correction needed, set "corrected" to empty string. Analyse Armin\'s LAST message.\nReturn ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"empty if no correction","perfect_version":"10/10 rewrite (required if score<10)","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"...","brevity_note":"too long|too short|good"},"scenario_complete":false}';
+  return 'Role-play as '+roleDesc+' with Armin (Iranian IT support).\nSCENARIO: '+sc.title+'\nCONTEXT: '+sc.opening+'\nYOUR ROLE: '+sc.role+'\nLEVEL: '+(sc.level||'medium')+' — '+levelHint+'\n\nRules: SHORT lines (1-2 sentences). If score<10, ALWAYS include "perfect_version" — a natural 10/10 rewrite of Armin\'s reply. If no correction needed, set "corrected" to empty string. Analyse Armin\'s LAST message.\nReturn ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"empty if no correction","perfect_version":"10/10 rewrite (required if score<10)","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"...","brevity_note":"too long|too short|good"},"scenario_complete":false}';
 }
 function renderJob(){
   var el = $('#main');
