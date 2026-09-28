@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '102';
+var APP_VERSION = '103';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -1150,7 +1150,7 @@ function freeAnalysis(t){
   h += '</div>';
   if(a.corrected && norm(a.corrected)!==norm(t.text)) h += '<div class="fix"><span>✓</span><span dir="ltr">'+esc(a.corrected)+'</span></div>';
   ms.forEach(function(m){h += '<div class="mk"><div dir="ltr"><s>'+esc(m.original)+'</s> → <b>'+esc(m.fix)+'</b></div><div>'+esc(m.explain_fa||'')+'</div></div>'});
-  if(a.tip_fa) h += '<div class="tip">💡 '+esc(a.tip_fa)+'</div>';
+
   return h+'</div>';
 }
 function drawFree(){
@@ -1590,7 +1590,7 @@ function jobAnalysis(t){
   return h+'</div>';
 }
 
-
+  function drawJobChat(){
   var c = $('#chat'); if(!c) return;
   c.innerHTML = job.turns.map(jobBubble).join('');
   window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
