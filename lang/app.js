@@ -33,7 +33,7 @@ function lev(a,b){var m=a.length,n=b.length,d=[],i,j;for(i=0;i<=m;i++){d[i]=[i];
 function sim(a,b){return 1-lev(a,b)/Math.max(a.length,b.length,1)}
 
 // ============ STATE ============
-var DEFAULT_SETTINGS={key:'',model:'gpt-4o-mini',rate:'slow',voice:'',hands:false,autoplay:true,showFa:true,proxy:'',proxyBackup:'',syncCode:'',syncAuto:true,jobAnalyze:true,jobShowFa:true};
+var DEFAULT_SETTINGS={key:'',model:'gpt-4o-mini',rate:'slow',voice:'',hands:false,autoplay:true,showFa:true,proxy:'',proxyBackup:'',proxyPreferred:'main',syncCode:'',syncAuto:true,jobAnalyze:true,jobShowFa:true};
 var settings = Object.assign({}, DEFAULT_SETTINGS, store.get('zy_settings',{}) || {});
 
 var savedProg = store.get('zy_prog',{}) || {};
@@ -493,10 +493,7 @@ speaking_goal:'خودت را معرفی کن.'};
 function callAI(system,messages,max){
   max = max || 1500;
   if(!settings.key) return Promise.reject(new Error('NOKEY'));
-  var proxies = [];
-  if(settings.proxy && settings.proxy.trim()) proxies.push(settings.proxy.trim().replace(/\/+$/,''));
-  if(settings.proxyBackup && settings.proxyBackup.trim()) proxies.push(settings.proxyBackup.trim().replace(/\/+$/,''));
-  if(!proxies.length) proxies.push('https://1xai.ir');
+  var proxies = getProxyList();
   var body = {model:settings.model, max_tokens:max, messages:[{role:'system',content:system}].concat(messages)};
   function callViaProxy(baseUrl){
     var isGAS = baseUrl.indexOf('script.google.com') >= 0;
@@ -558,6 +555,29 @@ function errText(e){
   if(e.message==='NOKEY') return 'اول کلید API را در «تنظیمات» وارد کنید.';
   if(/Failed to fetch/i.test(e.message)) return 'اتصال برقرار نشد. آدرس پروکسی را در تنظیمات وارد کنید.';
   return 'خطا: '+e.message;
+}
+
+function getActiveProxy(){
+  if(settings.proxyPreferred === 'backup' && settings.proxyBackup && settings.proxyBackup.trim()){
+    return settings.proxyBackup.trim().replace(/\/+$/,'');
+  }
+  if(settings.proxy && settings.proxy.trim()) return settings.proxy.trim().replace(/\/+$/,'');
+  if(settings.proxyBackup && settings.proxyBackup.trim()) return settings.proxyBackup.trim().replace(/\/+$/,'');
+  return 'https://1xai.ir';
+}
+function getProxyList(){
+  var main = settings.proxy ? settings.proxy.trim().replace(/\/+$/,'') : '';
+  var backup = settings.proxyBackup ? settings.proxyBackup.trim().replace(/\/+$/,'') : '';
+  var list = [];
+  if(settings.proxyPreferred === 'backup'){
+    if(backup) list.push(backup);
+    if(main) list.push(main);
+  } else {
+    if(main) list.push(main);
+    if(backup) list.push(backup);
+  }
+  if(!list.length) list.push('https://1xai.ir');
+  return list;
 }
 
 // ============ SPEECH ============
@@ -1966,6 +1986,7 @@ function renderSettings(){
   h += '<div class="card stack" style="margin-top:16px"><h3>🗑 پاک کردن</h3><button type="button" class="btn ghost" id="rs">پاک کردن همه</button></div>';
   $('#main').innerHTML = h;
   $('#m').value=settings.model;$('#r').value=settings.rate;$('#v').value=settings.voice;
+if($('#ppref')) $('#ppref').value=settings.proxyPreferred||'main';
 var save = function(){
   settings.key=$('#k').value.trim();
   settings.model=$('#m').value;
