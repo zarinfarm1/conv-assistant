@@ -1919,6 +1919,7 @@ function renderSettings(){
   h += '<div class="card stack" style="margin-top:14px"><h3>AI</h3>';
   h += '<div class="field"><label>کلید API</label><input type="password" id="k" dir="ltr" value="'+esc(settings.key)+'"></div>';
   h += '<div class="field"><label>آدرس پروکسی</label><input type="text" id="p" dir="ltr" value="'+esc(settings.proxy||'')+'"></div>';
+  h += '<div class="field"><label>آدرس پروکسی پشتیبان (اختیاری)</label><input type="text" id="pb" dir="ltr" placeholder="Google Apps Script" value="'+esc(settings.proxyBackup||'')+'"></div>';
   h += '<div class="field"><label>مدل</label><select id="m">';
   ['gpt-4o-mini','gpt-4.1-mini','gpt-3.5-turbo','deepseek-chat','claude-3-5-haiku','claude-sonnet-4-6','gemini-2.0-flash-lite','gemini-2.5-flash'].forEach(function(mm){h += '<option value="'+mm+'">'+mm+'</option>'});
   h += '</select></div>';
@@ -1932,7 +1933,8 @@ function renderSettings(){
   h += '<div class="card stack" style="margin-top:16px"><h3>🗑 پاک کردن</h3><button type="button" class="btn ghost" id="rs">پاک کردن همه</button></div>';
   $('#main').innerHTML = h;
   $('#m').value=settings.model;$('#r').value=settings.rate;$('#v').value=settings.voice;
-  var save = function(){settings.key=$('#k').value.trim();settings.model=$('#m').value;settings.rate=$('#r').value;settings.voice=$('#v').value;settings.proxy=$('#p').value.trim();settings.syncCode=$('#sc').value.trim();store.set('zy_settings',settings)};
+  var save = function(){settings.key=$('#k').value.trim();settings.model=$('#m').value;settings.rate=$('#r').value;settings.voice=$('#v').value;settings.proxy=$('#p').value.trim();settings.proxyBackup=$('#pb')?$('#pb').value.trim():'';
+settings.syncCode=$('#sc').value.trim();store.set('zy_settings',settings)};
   $('#sv').onclick = function(){save();toast('ذخیره ✅')};
   $('#ts').onclick = function(){save();callAI('Reply: ok',[{role:'user',content:'ping'}],20).then(function(){toast('اتصال ✅')}).catch(function(e){toast(errText(e),6000)})};
   $('#scActivate').onclick = function(){save();if(!settings.proxy||!settings.syncCode||settings.syncCode.length<8){toast('پروکسی و کد');return}syncEnabled=false;initSync().then(function(ok){if(ok){toast('بارگذاری...');pullFromCloud(true).then(function(){toast('فعال ✅');renderSettings()})}})};
