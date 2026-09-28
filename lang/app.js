@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '100';
+var APP_VERSION = '101';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -37,7 +37,7 @@ function lev(a,b){var m=a.length,n=b.length,d=[],i,j;for(i=0;i<=m;i++){d[i]=[i];
 function sim(a,b){return 1-lev(a,b)/Math.max(a.length,b.length,1)}
 
 // ============ STATE ============
-var DEFAULT_SETTINGS={key:'',model:'gpt-4o-mini',rate:'slow',voice:'',hands:false,autoplay:true,showFa:true,proxy:'',proxyBackup:'',proxyPreferred:'main',syncCode:'',syncAuto:true,jobAnalyze:true,jobShowFa:true};
+var DEFAULT_SETTINGS={key:'',model:'gpt-4o-mini',rate:'slow',voice:'',hands:false,autoplay:true,showFa:true,proxy:'',proxyBackup:'',proxyPreferred:'main',proxyEnabled:true,proxyBackupEnabled:true,syncCode:'',syncAuto:true,jobAnalyze:true,jobShowFa:true};
 var settings = Object.assign({}, DEFAULT_SETTINGS, store.get('zy_settings',{}) || {});
 
 var savedProg = store.get('zy_prog',{}) || {};
@@ -117,16 +117,20 @@ function computeSyncKey(code){
   }
 }
 function getActiveProxy(){
-  if(settings.proxyPreferred === 'backup' && settings.proxyBackup && settings.proxyBackup.trim()){
+  var mainOn = settings.proxyEnabled !== false;
+  var backupOn = settings.proxyBackupEnabled !== false;
+  if(settings.proxyPreferred === 'backup' && backupOn && settings.proxyBackup && settings.proxyBackup.trim()){
     return settings.proxyBackup.trim().replace(/\/+$/,'');
   }
-  if(settings.proxy && settings.proxy.trim()) return settings.proxy.trim().replace(/\/+$/,'');
-  if(settings.proxyBackup && settings.proxyBackup.trim()) return settings.proxyBackup.trim().replace(/\/+$/,'');
+  if(mainOn && settings.proxy && settings.proxy.trim()) return settings.proxy.trim().replace(/\/+$/,'');
+  if(backupOn && settings.proxyBackup && settings.proxyBackup.trim()) return settings.proxyBackup.trim().replace(/\/+$/,'');
   return 'https://1xai.ir';
 }
 function getProxyList(){
-  var main = settings.proxy ? settings.proxy.trim().replace(/\/+$/,'') : '';
-  var backup = settings.proxyBackup ? settings.proxyBackup.trim().replace(/\/+$/,'') : '';
+  var mainOn = settings.proxyEnabled !== false;
+  var backupOn = settings.proxyBackupEnabled !== false;
+  var main = (mainOn && settings.proxy) ? settings.proxy.trim().replace(/\/+$/,'') : '';
+  var backup = (backupOn && settings.proxyBackup) ? settings.proxyBackup.trim().replace(/\/+$/,'') : '';
   var list = [];
   if(settings.proxyPreferred === 'backup'){
     if(backup) list.push(backup);
@@ -1984,8 +1988,8 @@ function renderSettings(){
   h += '<div class="card" style="margin-top:10px;text-align:center;font-family:monospace;font-size:.85rem">نسخه‌ی برنامه: <b style="color:var(--brand)">v'+APP_VERSION+'</b></div>';
   h += '<div class="card stack" style="margin-top:14px"><h3>AI</h3>';
   h += '<div class="field"><label>کلید API</label><input type="password" id="k" dir="ltr" value="'+esc(settings.key)+'"></div>';
-  h += '<div class="field"><label>آدرس پروکسی</label><input type="text" id="p" dir="ltr" value="'+esc(settings.proxy||'')+'"></div>';
-  h += '<div class="field"><label>آدرس پروکسی پشتیبان (اختیاری)</label><input type="text" id="pb" dir="ltr" placeholder="Google Apps Script" value="'+esc(settings.proxyBackup||'')+'"></div>';
+  h += '<div class="field"><label>آدرس پروکسی <button type="button" id="pToggle" class="proxy-toggle-btn" style="float:inline-start;background:none;border:1px solid var(--line);padding:2px 10px;border-radius:6px;font-size:.75rem;cursor:pointer;font-family:inherit"></button></label><input type="text" id="p" dir="ltr" value="'+esc(settings.proxy||'')+'"></div>';
+  h += '<div class="field"><label>آدرس پروکسی پشتیبان (اختیاری) <button type="button" id="pbToggle" class="proxy-toggle-btn" style="float:inline-start;background:none;border:1px solid var(--line);padding:2px 10px;border-radius:6px;font-size:.75rem;cursor:pointer;font-family:inherit"></button></label><input type="text" id="pb" dir="ltr" placeholder="Google Apps Script" value="'+esc(settings.proxyBackup||'')+'"></div>';
   h += '<div class="field"><label>پروکسی فعال (اول امتحان شه)</label><select id="ppref"><option value="main">پروکسی اصلی (Cloudflare)</option><option value="backup">پروکسی پشتیبان (Google Apps Script)</option></select></div>';
   h += '<div class="field"><label>مدل</label><select id="m">';
   ['gpt-4o-mini','gpt-4.1-mini','gpt-3.5-turbo','deepseek-chat','claude-3-5-haiku','claude-sonnet-4-6','gemini-2.0-flash-lite','gemini-2.5-flash'].forEach(function(mm){h += '<option value="'+mm+'">'+mm+'</option>'});
@@ -2001,6 +2005,42 @@ function renderSettings(){
   $('#main').innerHTML = h;
   $('#m').value=settings.model;$('#r').value=settings.rate;$('#v').value=settings.voice;
   if($('#ppref')) $('#ppref').value=settings.proxyPreferred||'main';
+  // Setup proxy toggles
+  (function setupProxyToggles(){
+    var pT = $('#pToggle');
+    var pbT = $('#pbToggle');
+    function renderToggle(btn, enabled){
+      if(!btn) return;
+      btn.setAttribute('data-enabled', enabled ? 'true' : 'false');
+      if(enabled){
+        btn.innerHTML = '✅ فعال';
+        btn.style.background = 'var(--ok-soft,#d8f1e6)';
+        btn.style.color = 'var(--ok,#23906a)';
+        btn.style.borderColor = 'var(--ok,#23906a)';
+      } else {
+        btn.innerHTML = '❌ غیرفعال';
+        btn.style.background = 'var(--bad-soft,#fbe0e2)';
+        btn.style.color = 'var(--bad,#d64550)';
+        btn.style.borderColor = 'var(--bad,#d64550)';
+      }
+    }
+    if(pT){
+      renderToggle(pT, settings.proxyEnabled !== false);
+      pT.onclick = function(e){
+        e.preventDefault();
+        var cur = pT.getAttribute('data-enabled') !== 'false';
+        renderToggle(pT, !cur);
+      };
+    }
+    if(pbT){
+      renderToggle(pbT, settings.proxyBackupEnabled !== false);
+      pbT.onclick = function(e){
+        e.preventDefault();
+        var cur = pbT.getAttribute('data-enabled') !== 'false';
+        renderToggle(pbT, !cur);
+      };
+    }
+  })();
   var save = function(){
     settings.key=$('#k').value.trim();
     settings.model=$('#m').value;
@@ -2009,6 +2049,8 @@ function renderSettings(){
     settings.proxy=$('#p').value.trim();
     settings.proxyBackup=$('#pb')?$('#pb').value.trim():'';
     settings.proxyPreferred=$('#ppref')?$('#ppref').value:'main';
+    settings.proxyEnabled = $('#pToggle') ? $('#pToggle').getAttribute('data-enabled') !== 'false' : (settings.proxyEnabled !== false);
+    settings.proxyBackupEnabled = $('#pbToggle') ? $('#pbToggle').getAttribute('data-enabled') !== 'false' : (settings.proxyBackupEnabled !== false);
     settings.syncCode=$('#sc').value.trim();
     store.set('zy_settings',settings);
   };
