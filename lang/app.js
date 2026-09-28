@@ -1966,8 +1966,17 @@ function renderSettings(){
   h += '<div class="card stack" style="margin-top:16px"><h3>🗑 پاک کردن</h3><button type="button" class="btn ghost" id="rs">پاک کردن همه</button></div>';
   $('#main').innerHTML = h;
   $('#m').value=settings.model;$('#r').value=settings.rate;$('#v').value=settings.voice;
-  var save = function(){settings.key=$('#k').value.trim();settings.model=$('#m').value;settings.rate=$('#r').value;settings.voice=$('#v').value;settings.proxy=$('#p').value.trim();settings.proxyBackup=$('#pb')?$('#pb').value.trim():'';
-settings.syncCode=$('#sc').value.trim();store.set('zy_settings',settings)};
+var save = function(){
+  settings.key=$('#k').value.trim();
+  settings.model=$('#m').value;
+  settings.rate=$('#r').value;
+  settings.voice=$('#v').value;
+  settings.proxy=$('#p').value.trim();
+  settings.proxyBackup=$('#pb')?$('#pb').value.trim():'';
+  settings.proxyPreferred=$('#ppref')?$('#ppref').value:'main';
+  settings.syncCode=$('#sc').value.trim();
+  store.set('zy_settings',settings)
+};
   $('#sv').onclick = function(){save();toast('ذخیره ✅')};
   $('#ts').onclick = function(){save();callAI('Reply: ok',[{role:'user',content:'ping'}],20).then(function(){toast('اتصال ✅')}).catch(function(e){toast(errText(e),6000)})};
   $('#scActivate').onclick = function(){save();if(!settings.proxy||!settings.syncCode||settings.syncCode.length<8){toast('پروکسی و کد');return}syncEnabled=false;initSync().then(function(ok){if(ok){toast('بارگذاری...');pullFromCloud(true).then(function(){toast('فعال ✅');renderSettings()})}})};
