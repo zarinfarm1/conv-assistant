@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '101';
+var APP_VERSION = '102';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -1404,7 +1404,7 @@ function jobSystemPrompt(){
   var sc = job.scenario; if(!sc) return '';
   var roleDesc = ({'User':'a non-technical office worker','Manager':'Ildar, a Russian IT manager (English is second language; brief and direct)','Colleague':'a friendly colleague'})[sc.role] || 'a colleague';
   var levelHint = {easy:'VERY simple questions.',medium:'Moderate questions.',hard:'Natural questions.',real:'Fully natural.'}[sc.level] || '';
-  return 'Role-play as '+roleDesc+' with Armin (Iranian IT support).\nSCENARIO: '+sc.title+'\nCONTEXT: '+sc.opening+'\nYOUR ROLE: '+sc.role+'\nLEVEL: '+(sc.level||'medium')+' — '+levelHint+'\n\nRules: SHORT lines (1-2 sentences). Analyse Armin\'s LAST message.\nReturn ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"natural","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"...","brevity_note":"too long|too short|good"},"scenario_complete":false}';
+  return 'Role-play as '+roleDesc+' with Armin (Iranian IT support).\nSCENARIO: '+sc.title+'\nCONTEXT: '+sc.opening+'\nYOUR ROLE: '+sc.role+'\nLEVEL: '+(sc.level||'medium')+' — '+levelHint+'\n\nRules: SHORT lines (1-2 sentences). If score<10, ALWAYS include "perfect_version" — a natural 10/10 rewrite of Armin's reply. If no correction needed, set "corrected" to empty string. Analyse Armin\'s LAST message.\nReturn ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"empty if no correction","perfect_version":"10/10 rewrite (required if score<10)","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"...","brevity_note":"too long|too short|good"},"scenario_complete":false}';
 }
 function renderJob(){
   var el = $('#main');
@@ -1579,12 +1579,18 @@ function jobAnalysis(t){
   var h = '<div class="an"><div class="an-top">'+(a.is_correct&&!ms.length?'<span class="pill ok">عالی</span>':'<span class="pill warn">بهتر می‌شه</span>');
   if(a.score!=null) h += '<span class="sc">امتیاز <b>'+a.score+'</b>/10</span>';
   h += '</div>';
-  if(a.corrected && norm(a.corrected)!==norm(t.text)) h += '<div class="fix"><span>✓</span><span dir="ltr">'+esc(a.corrected)+'</span></div>';
+  var corrected = (a.corrected||'').trim();
+  if(corrected && corrected.toLowerCase() !== 'natural' && norm(corrected)!==norm(t.text)) h += '<div class="fix"><span>✓</span><span dir="ltr">'+esc(corrected)+'</span></div>';
   ms.forEach(function(m){h += '<div class="mk"><div dir="ltr"><s>'+esc(m.original)+'</s> → <b>'+esc(m.fix)+'</b></div><div>'+esc(m.explain_fa||'')+'</div></div>'});
+  var pv = (a.perfect_version||'').trim();
+  if(pv && a.score != null && a.score < 10 && norm(pv) !== norm(t.text) && norm(pv) !== norm(corrected)){
+    h += '<div class="better"><small>🎯 برای ۱۰ از ۱۰:</small><span dir="ltr">'+esc(pv)+'</span> <button type="button" class="mini" data-say="'+esc(pv)+'">'+ic('vol')+'</button></div>';
+  }
   if(a.tip_fa) h += '<div class="tip">💡 '+esc(a.tip_fa)+'</div>';
   return h+'</div>';
 }
-function drawJobChat(){
+
+
   var c = $('#chat'); if(!c) return;
   c.innerHTML = job.turns.map(jobBubble).join('');
   window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
