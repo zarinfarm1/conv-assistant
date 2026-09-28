@@ -1,5 +1,9 @@
 'use strict';
 
+// ============ APP VERSION ============
+var APP_VERSION = '100';
+console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
+
 // ============ GLOBAL ERROR HANDLER ============
 window.addEventListener('error',function(ev){
   try{
@@ -1977,6 +1981,7 @@ function renderSettings(){
   loadVoices();
   var syncActive = syncEnabled;
   var h = '<h1>تنظیمات</h1>';
+  h += '<div class="card" style="margin-top:10px;text-align:center;font-family:monospace;font-size:.85rem">نسخه‌ی برنامه: <b style="color:var(--brand)">v'+APP_VERSION+'</b></div>';
   h += '<div class="card stack" style="margin-top:14px"><h3>AI</h3>';
   h += '<div class="field"><label>کلید API</label><input type="password" id="k" dir="ltr" value="'+esc(settings.key)+'"></div>';
   h += '<div class="field"><label>آدرس پروکسی</label><input type="text" id="p" dir="ltr" value="'+esc(settings.proxy||'')+'"></div>';
@@ -2042,6 +2047,20 @@ document.addEventListener('click', function(e){
     if(!rec)p.classList.remove('rec');
   }
 });
+// ============ VERSION BADGE ============
+(function injectVersionBadge(){
+  try{
+    var logo = document.querySelector('.logo');
+    if(logo && !document.getElementById('versionBadge')){
+      var vb = document.createElement('span');
+      vb.id = 'versionBadge';
+      vb.textContent = 'v' + APP_VERSION;
+      vb.style.cssText = 'font-size:.7rem;font-weight:700;background:var(--brand-soft,#d5efef);color:var(--brand,#0e9a9a);padding:2px 8px;border-radius:6px;margin-inline-start:6px;font-family:Lexend,monospace';
+      logo.appendChild(vb);
+    }
+  }catch(e){}
+})();
+
 $$('.tab').forEach(function(t){t.onclick=function(){go(t.getAttribute('data-v'))}});
 try{
   updateStats();
