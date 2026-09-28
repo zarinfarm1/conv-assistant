@@ -134,6 +134,7 @@ function pushToCloud(){
     .catch(function(e){console.error('Push error:',e);toast('خطا در ذخیره: '+e.message,5000)});
 }
 
+function pullFromCloud(silent){
   if(!syncEnabled || !syncKey) return Promise.resolve(false);
   var base = settings.proxy.replace(/\/+$/,'');
   var isGAS = base.indexOf('script.google.com') >= 0;
@@ -547,6 +548,7 @@ function callAI(system,messages,max){
   return tryNext();
 }
 
+function parseJSON(t){
   t = t.replace(/```json|```/g,'');
   var a = t.indexOf('{'), b = t.lastIndexOf('}');
   if(a<0 || b<0) throw new Error('bad json');
