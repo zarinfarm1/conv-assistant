@@ -105,16 +105,19 @@ summary{cursor:pointer;font-weight:600;font-size:.9rem}
         <b>انواع عملیات:</b>
         <ol>
           <li><code>replace</code> — جایگزینی یک anchor</li>
-          <li><code>replace-between</code> — جایگزینی از شروع تا پایان (برای بلوک‌های بزرگ)</li>
+          <li><code>replace-between</code> — جایگزینی وسط دو marker (پیش‌فرض امن: خود marker‌ها سرجاشون می‌مونن)</li>
           <li><code>insert-before</code> — اضافه کردن قبل از anchor</li>
           <li><code>insert-after</code> — اضافه کردن بعد از anchor</li>
           <li><code>append</code> — اضافه کردن به آخر فایل</li>
           <li><code>regex</code> — جایگزینی با regex (پیشرفته)</li>
         </ol>
+        <b>نکته‌ی مهم درباره‌ی replace-between:</b>
+        <p style="background:var(--warn-soft);padding:8px;border-radius:6px;margin:8px 0">به‌صورت پیش‌فرض امن عمل می‌کنه: فقط محتوای بین <code>start</code> و <code>end</code> رو عوض می‌کنه. اگه می‌خوای marker‌ها هم حذف بشن، <code>"removeMarkers": true</code> رو به پچ اضافه کن.</p>
         <b>نمونه:</b>
         <pre style="background:var(--bg);padding:8px;border-radius:6px;margin-top:8px;font-size:.75rem;overflow-x:auto">{
   "patches": [
     {"op": "replace", "anchor": "old text", "content": "new text"},
+    {"op": "replace-between", "start": "function a(){", "end": "function b(){", "content": "// new\n"},
     {"op": "insert-before", "anchor": "// MARKER", "content": "// new code\n"},
     {"op": "append", "content": "// end code"}
   ]
@@ -255,9 +258,10 @@ function applyPatch(content, p){
   }
 
   if(p.op === 'replace-first'){
+    if(!p.anchor) return {ok: false, reason: 'anchor خالی'};
     var idx2 = content.indexOf(p.anchor);
     if(idx2 === -1) return {ok: false, reason: 'anchor پیدا نشد'};
-    return {ok: true, content: content.slice(0, idx2) + p.content + content.slice(idx2 + p.anchor.length)};
+    return {ok: true, content: content.slice(0, idx2) + (p.content || '') + content.slice(idx2 + p.anchor.length)};
   }
 
   if(p.op === 'replace-between'){
@@ -269,25 +273,28 @@ function applyPatch(content, p){
     var before = content.slice(0, startIdx);
     var after = content.slice(endIdx + p.end.length);
     var middle = p.content || '';
-    if(p.includeMarkers === false){
-      // محتوای جدید فقط بین start و end جایگزین می‌شه
-      return {ok: true, content: before + p.start + middle + p.end + after};
+    // رفتار پیش‌فرض جدید و امن: start و end سرجاشون می‌مونن، فقط وسط عوض می‌شه
+    if(p.removeMarkers === true){
+      // رفتار قدیمی (خطرناک): از start تا end حذف و فقط content جایگزین می‌شه
+      return {ok: true, content: before + middle + after};
     }
-    // پیش‌فرض: از start تا end حذف و content جایگزین
-    return {ok: true, content: before + middle + after};
+    // پیش‌فرض: فقط وسط start و end عوض می‌شه
+    return {ok: true, content: before + p.start + middle + p.end + after};
   }
 
   if(p.op === 'insert-before'){
+    if(!p.anchor) return {ok: false, reason: 'anchor خالی'};
     var idx3 = content.indexOf(p.anchor);
     if(idx3 === -1) return {ok: false, reason: 'anchor پیدا نشد'};
-    return {ok: true, content: content.slice(0, idx3) + p.content + content.slice(idx3)};
+    return {ok: true, content: content.slice(0, idx3) + (p.content || '') + content.slice(idx3)};
   }
 
   if(p.op === 'insert-after'){
+    if(!p.anchor) return {ok: false, reason: 'anchor خالی'};
     var idx4 = content.indexOf(p.anchor);
     if(idx4 === -1) return {ok: false, reason: 'anchor پیدا نشد'};
     var endP = idx4 + p.anchor.length;
-    return {ok: true, content: content.slice(0, endP) + p.content + content.slice(endP)};
+    return {ok: true, content: content.slice(0, endP) + (p.content || '') + content.slice(endP)};
   }
 
   if(p.op === 'regex'){
