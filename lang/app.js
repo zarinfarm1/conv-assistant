@@ -43,7 +43,8 @@ var prog = {
   last: String(savedProg.last || ''),
   done: (savedProg.done && typeof savedProg.done === 'object' && !Array.isArray(savedProg.done)) ? savedProg.done : {},
   program: (savedProg.program && typeof savedProg.program === 'object' && !Array.isArray(savedProg.program)) ? savedProg.program : {},
-  grammar: (savedProg.grammar && typeof savedProg.grammar === 'object' && !Array.isArray(savedProg.grammar)) ? savedProg.grammar : {}, speed: (savedProg.speed && typeof savedProg.speed === 'object') ? savedProg.speed : {sessions:0,totalResponses:0,totalTime:0,bestTime:999,correctCount:0,history:[]}
+  grammar: (savedProg.grammar && typeof savedProg.grammar === 'object' && !Array.isArray(savedProg.grammar)) ? savedProg.grammar : {},
+  speed: (savedProg.speed && typeof savedProg.speed === 'object') ? savedProg.speed : {sessions:0,totalResponses:0,totalTime:0,bestTime:999,correctCount:0,history:[]}
 };
 var lessonCache = store.get('zy_lessons',{}) || {};
 if(typeof lessonCache !== 'object' || Array.isArray(lessonCache)) lessonCache = {};
@@ -91,7 +92,8 @@ function award(n){
 var syncKey=null, syncTimer=null, syncEnabled=false;
 function updateSyncUI(){
   var badge=$('#syncBadge'); if(!badge) return;
-  if(!settings.proxy || !settings.syncCode){badge.style.display='none';return}
+  if(!settings.proxy && !settings.proxyBackup){badge.style.display='none';return}
+  if(!settings.syncCode){badge.style.display='none';return}
   badge.style.display='flex';
   var dot=$('#syncDot'), label=$('#syncLabel');
   if(!dot||!label) return;
@@ -110,64 +112,139 @@ function computeSyncKey(code){
     return Promise.resolve(Math.abs(h).toString(16).padStart(32,'0'));
   }
 }
+function getActiveProxy(){
+  if(settings.proxyPreferred === 'backup' && settings.proxyBackup && settings.proxyBackup.trim()){
+    return settings.proxyBackup.trim().replace(/\/+$/,'');
+  }
+  if(settings.proxy && settings.proxy.trim()) return settings.proxy.trim().replace(/\/+$/,'');
+  if(settings.proxyBackup && settings.proxyBackup.trim()) return settings.proxyBackup.trim().replace(/\/+$/,'');
+  return 'https://1xai.ir';
+}
+function getProxyList(){
+  var main = settings.proxy ? settings.proxy.trim().replace(/\/+$/,'') : '';
+  var backup = settings.proxyBackup ? settings.proxyBackup.trim().replace(/\/+$/,'') : '';
+  var list = [];
+  if(settings.proxyPreferred === 'backup'){
+    if(backup) list.push(backup);
+    if(main) list.push(main);
+  } else {
+    if(main) list.push(main);
+    if(backup) list.push(backup);
+  }
+  if(!list.length) list.push('https://1xai.ir');
+  return list;
+}
 function initSync(){
-  if(!settings.proxy || !settings.syncCode) return Promise.resolve(false);
+  if(!settings.proxy && !settings.proxyBackup) return Promise.resolve(false);
+  if(!settings.syncCode) return Promise.resolve(false);
   return computeSyncKey(settings.syncCode).then(function(k){
     syncKey=k; syncEnabled=true; updateSyncUI(); return true;
   }).catch(function(e){console.error('Sync init error:',e);return false});
 }
-function pushToCloud(){
+function pushToCloud(silent){
   if(!syncEnabled || !syncKey) return Promise.resolve();
-  var base = settings.proxy.replace(/\/+$/,'');
-  var isGAS = base.indexOf('script.google.com') >= 0;
+  var proxies = getProxyList();
   var payload = JSON.stringify({prog:prog, lessonCache:lessonCache, grammarCache:grammarCache, mistakes:mistakes, importedScenarios:importedScenarios, customLessons:customLessons, updatedAt:Date.now()});
-  var url, options;
-  if(isGAS){
-    url = base + '?path=/sync/' + syncKey;
-    options = {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:payload};
-  } else {
-    url = base + '/sync/' + syncKey;
-    options = {method:'POST', headers:{'Content-Type':'application/json'}, body:payload};
+  function tryOne(base){
+    var isGAS = base.indexOf('script.google.com') >= 0;
+    var url, options;
+    if(isGAS){
+      url = base + '?path=/sync/' + syncKey;
+      options = {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:payload};
+    } else {
+      url = base + '/sync/' + syncKey;
+      options = {method:'POST', headers:{'Content-Type':'application/json'}, body:payload};
+    }
+    return fetch(url, options).then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      var dot=$('#syncDot'); if(dot) dot.className='sync-dot on';
+      var lbl=$('#syncLabel'); if(lbl) lbl.textContent='متصل';
+    });
   }
-  return fetch(url, options)
-    .then(function(r){if(!r.ok) throw new Error('HTTP '+r.status); var dot=$('#syncDot'); if(dot) dot.className='sync-dot on';})
-    .catch(function(e){console.error('Push error:',e);toast('خطا در ذخیره: '+e.message,5000)});
+  function tryRound(roundNum){
+    var pi = 0;
+    function tryNext(){
+      if(pi >= proxies.length) return Promise.reject(new Error('All sync proxies failed'));
+      var current = proxies[pi];
+      return tryOne(current).catch(function(e){
+        if(pi + 1 < proxies.length && /Failed to fetch|NetworkError|CONNECTION_RESET|TIMED_OUT/i.test(e.message||'')){
+          console.log('[Sync] ' + current + ' failed, trying backup...');
+          pi++;
+          return tryNext();
+        }
+        throw e;
+      });
+    }
+    return tryNext().catch(function(e){
+      if(roundNum >= 3){
+        if(!silent){
+          console.error('Push failed after 3 rounds:', e);
+          toast('خطا در ذخیره: '+e.message, 5000);
+        } else {
+          console.warn('[Sync] auto-push failed after 3 rounds (silent)');
+        }
+        var dot=$('#syncDot'); if(dot) dot.className='sync-dot off';
+        var lbl=$('#syncLabel'); if(lbl) lbl.textContent='آفلاین';
+        return;
+      }
+      var delay = roundNum === 1 ? 1000 : (roundNum === 2 ? 3000 : 5000);
+      console.log('[Sync] round ' + roundNum + ' failed, retry in ' + delay + 'ms...');
+      return new Promise(function(resolve){setTimeout(resolve, delay)}).then(function(){ return tryRound(roundNum + 1); });
+    });
+  }
+  return tryRound(1);
 }
 
 function pullFromCloud(silent){
   if(!syncEnabled || !syncKey) return Promise.resolve(false);
-  var base = getActiveProxy();
-  var isGAS = base.indexOf('script.google.com') >= 0;
-  var url = isGAS ? (base + '?path=/sync/' + syncKey) : (base + '/sync/' + syncKey);
-  return fetch(url).then(function(r){
-    if(r.status===404){ return pushToCloud().then(function(){if(!silent)toast('پیشرفت محلی به ابر فرستاده شد ✅');return true}) }
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    return r.json().then(function(d){
-      if(d.prog){
-        var _oldSpeed = (prog && prog.speed) ? prog.speed : null;
-        prog = (function(){var _sp=(prog&&prog.speed)?prog.speed:null;var _p=Object.assign({xp:0,streak:0,last:'',done:{},program:{},grammar:{},speed:_sp||{sessions:0,totalResponses:0,totalTime:0,bestTime:999,correctCount:0,history:[]}}, d.prog);if(!_p.speed)_p.speed={sessions:0,totalResponses:0,totalTime:0,bestTime:999,correctCount:0,history:[]};return _p;})();
-        if(!prog.speed && _oldSpeed) prog.speed = _oldSpeed;
-        if(!prog.program || typeof prog.program !== 'object') prog.program={};
-        if(!prog.done || typeof prog.done !== 'object') prog.done={};
-        if(!prog.grammar || typeof prog.grammar !== 'object') prog.grammar={};
-        store.set('zy_prog', prog); updateStats();
-      }
-      if(d.lessonCache && typeof d.lessonCache === 'object'){lessonCache=d.lessonCache; store.set('zy_lessons',lessonCache)}
-      if(d.grammarCache && typeof d.grammarCache === 'object'){grammarCache=d.grammarCache; store.set('zy_grammar',grammarCache)}
-      if(Array.isArray(d.mistakes)){mistakes=d.mistakes; store.set('zy_mistakes',mistakes)}
-      if(Array.isArray(d.importedScenarios)){importedScenarios=d.importedScenarios; store.set('zy_imported',importedScenarios)}
-      if(Array.isArray(d.customLessons)){customLessons=d.customLessons; store.set('zy_custom_lessons',customLessons)}
-      if(!silent) toast('پیشرفت از ابر بارگذاری شد ✅');
-      render(); return true;
+  var proxies = getProxyList();
+  function tryOne(base){
+    var isGAS = base.indexOf('script.google.com') >= 0;
+    var url = isGAS ? (base + '?path=/sync/' + syncKey) : (base + '/sync/' + syncKey);
+    return fetch(url).then(function(r){
+      if(r.status===404){ return pushToCloud(true).then(function(){if(!silent)toast('پیشرفت محلی به ابر فرستاده شد ✅');return true}) }
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json().then(function(d){
+        if(d.prog){
+          var _oldSpeed = (prog && prog.speed) ? prog.speed : null;
+          prog = (function(){var _sp=(prog&&prog.speed)?prog.speed:null;var _p=Object.assign({xp:0,streak:0,last:'',done:{},program:{},grammar:{},speed:_sp||{sessions:0,totalResponses:0,totalTime:0,bestTime:999,correctCount:0,history:[]}}, d.prog);if(!_p.speed)_p.speed={sessions:0,totalResponses:0,totalTime:0,bestTime:999,correctCount:0,history:[]};return _p;})();
+          if(!prog.speed && _oldSpeed) prog.speed = _oldSpeed;
+          if(!prog.program || typeof prog.program !== 'object') prog.program={};
+          if(!prog.done || typeof prog.done !== 'object') prog.done={};
+          if(!prog.grammar || typeof prog.grammar !== 'object') prog.grammar={};
+          store.set('zy_prog', prog); updateStats();
+        }
+        if(d.lessonCache && typeof d.lessonCache === 'object'){lessonCache=d.lessonCache; store.set('zy_lessons',lessonCache)}
+        if(d.grammarCache && typeof d.grammarCache === 'object'){grammarCache=d.grammarCache; store.set('zy_grammar',grammarCache)}
+        if(Array.isArray(d.mistakes)){mistakes=d.mistakes; store.set('zy_mistakes',mistakes)}
+        if(Array.isArray(d.importedScenarios)){importedScenarios=d.importedScenarios; store.set('zy_imported',importedScenarios)}
+        if(Array.isArray(d.customLessons)){customLessons=d.customLessons; store.set('zy_custom_lessons',customLessons)}
+        if(!silent) toast('پیشرفت از ابر بارگذاری شد ✅');
+        render(); return true;
+      });
     });
-  }).catch(function(e){console.error('Pull error:',e);if(!silent)toast('خطا: '+e.message,5000);return false});
+  }
+  var pi = 0;
+  function tryNext(){
+    if(pi >= proxies.length) return Promise.reject(new Error('All sync proxies failed'));
+    var current = proxies[pi];
+    return tryOne(current).catch(function(e){
+      if(pi + 1 < proxies.length && /Failed to fetch|NetworkError|CONNECTION_RESET|TIMED_OUT/i.test(e.message||'')){
+        console.log('[Sync Pull] ' + current + ' failed, trying backup...');
+        pi++;
+        return tryNext();
+      }
+      throw e;
+    });
+  }
+  return tryNext().catch(function(e){console.error('Pull error:',e);if(!silent)toast('خطا: '+e.message,5000);return false});
 }
 
 function schedulePushToCloud(){
   if(!syncEnabled || !settings.syncAuto) return;
   clearTimeout(syncTimer);
   var dot=$('#syncDot'); if(dot) dot.className='sync-dot pending';
-  syncTimer = setTimeout(pushToCloud, 1500);
+  syncTimer = setTimeout(function(){pushToCloud(true)}, 1500);
 }
 function exportData(){
   var data={v:1,exportedAt:new Date().toISOString(),prog:prog,lessonCache:lessonCache,grammarCache:grammarCache,mistakes:mistakes,importedScenarios:importedScenarios,customLessons:customLessons};
@@ -278,7 +355,6 @@ var JOB_SCENARIOS=[
  {id:'r-invoice',cat:'biz',level:'real',title:'پیگیری اینویس',desc:'فاکتور',role:'Colleague',roleFa:'همکار',opening:"Hi Armin. Any news about invoice #1234?",hint:"چک می‌کنم.",sample:"Let me check. It was submitted last week. I'll confirm and get back to you."},
  {id:'r-hall',cat:'f2f',level:'real',title:'راهرو',desc:'گپ کوتاه',role:'Manager',roleFa:'مدیر',opening:"Hello Armin, good morning. Do you have a minute?",hint:"Greet + yes.",sample:"Good morning. Yes, of course. What do you need?"},
  {id:'r-balance',cat:'biz',level:'real',title:'موجودی حساب',desc:'چک موجودی',role:'Manager',roleFa:'مدیر',opening:"Can you check the current balance and let me know?",hint:"Acknowledge + check.",sample:"Sure. Let me check now and I'll send you the number."},
-// ===== واقعی: از مکالمات واقعی آرمین با ایلدار و همکاران استخراج شده =====
  {id:'r2-topup',cat:'biz',level:'easy',title:'خبر دادن یه کار شخصی',desc:'گزارش کوتاه به مدیر',role:'Manager',roleFa:'مدیر',opening:'Did the top-up go through?',hint:'بگو با کارت خودش نشد و خودت خریدی، بخواه چک کنه',sample:'Hi Ildar, I bought the top-up myself since it didn\'t work with your card. Could you please check if it\'s credited?'},
  {id:'r2-abramov-fixed',cat:'it',level:'easy',title:'اعلام رفع مشکل به کاربر',desc:'بعد از حل مشکل یه کاربر',role:'User',roleFa:'کاربر',opening:'Is my issue fixed?',hint:'کوتاه بگو همه‌چیز درست شد',sample:'Everything has been fixed and is working properly now.'},
  {id:'r2-jmc-check',cat:'rep',level:'easy',title:'چک وضعیت آماده‌سازی',desc:'سؤال سریع مدیر',role:'Manager',roleFa:'مدیر',opening:'Is everything good with the JMC preparation?',hint:'کوتاه بگو بله همه‌چیز خوب پیش می‌ره',sample:'Yes, everything is going well.'},
@@ -557,29 +633,6 @@ function errText(e){
   return 'خطا: '+e.message;
 }
 
-function getActiveProxy(){
-  if(settings.proxyPreferred === 'backup' && settings.proxyBackup && settings.proxyBackup.trim()){
-    return settings.proxyBackup.trim().replace(/\/+$/,'');
-  }
-  if(settings.proxy && settings.proxy.trim()) return settings.proxy.trim().replace(/\/+$/,'');
-  if(settings.proxyBackup && settings.proxyBackup.trim()) return settings.proxyBackup.trim().replace(/\/+$/,'');
-  return 'https://1xai.ir';
-}
-function getProxyList(){
-  var main = settings.proxy ? settings.proxy.trim().replace(/\/+$/,'') : '';
-  var backup = settings.proxyBackup ? settings.proxyBackup.trim().replace(/\/+$/,'') : '';
-  var list = [];
-  if(settings.proxyPreferred === 'backup'){
-    if(backup) list.push(backup);
-    if(main) list.push(main);
-  } else {
-    if(main) list.push(main);
-    if(backup) list.push(backup);
-  }
-  if(!list.length) list.push('https://1xai.ir');
-  return list;
-}
-
 // ============ SPEECH ============
 var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 var voices = [];
@@ -755,7 +808,7 @@ function renderProgram(){
     p.scenarios.forEach(function(sc){
       var s = null;
       for(var i=0;i<JOB_SCENARIOS.length;i++) if(JOB_SCENARIOS[i].id===sc.id){s=JOB_SCENARIOS[i];break}
-if(!s) for(var k=0;k<importedScenarios.length;k++) if(importedScenarios[k].id===sc.id){s=importedScenarios[k];break}
+      if(!s) for(var k=0;k<importedScenarios.length;k++) if(importedScenarios[k].id===sc.id){s=importedScenarios[k];break}
       if(!s) return;
       var done = isTaskDone('sc', s.id);
       var lvlLabel = {easy:'ساده',medium:'متوسط',hard:'سخت',real:'واقعی'}[s.level] || '';
@@ -1392,7 +1445,6 @@ function renderJob(){
     for(var i=0;i<JOB_CATS.length;i++) if(JOB_CATS[i].id===job.catId){cat=JOB_CATS[i];break}
     if(!cat){job.view='cats';return renderJob()}
     
-    // ← merge سناریوهای آماده + سفارشی
     var list = JOB_SCENARIOS.filter(function(s){return s.cat===job.catId})
              .concat(importedScenarios.filter(function(s){return s.cat===job.catId}));
     
@@ -1404,7 +1456,6 @@ function renderJob(){
       h += '<h3 style="margin-top:16px">'+lbl+'</h3><div style="display:grid;gap:10px;margin-top:8px">';
       group.forEach(function(s){
         var done = prog.done['job-'+s.id];
-        // ← تشخیص خودکار: سناریوی سفارشی یا آماده؟
         var isImported = importedScenarios.some(function(x){return x.id===s.id});
         var attr = isImported ? 'data-imp="'+s.id+'"' : 'data-sc="'+s.id+'"';
         var badge = isImported ? ' <span style="font-size:.7rem;color:var(--job);background:var(--job-soft);padding:2px 6px;border-radius:6px">سفارشی</span>' : '';
@@ -1414,7 +1465,6 @@ function renderJob(){
     });
     el.innerHTML = h;
     var jb = $('#jback'); if(jb) jb.onclick = function(){job.view='cats';renderJob()};
-    // ← دو تا event listener جدا
     $$('.card[data-sc]').forEach(function(b){b.onclick=function(){startJobScenario(b.getAttribute('data-sc'))}});
     $$('.card[data-imp]').forEach(function(b){b.onclick=function(){startImportedScenario(b.getAttribute('data-imp'))}});
     return;
@@ -1724,14 +1774,12 @@ function renderNotes(){
   };
   var rb = $('#reportBtn'); if(rb) rb.onclick = buildReport;
   var lfm = $('#lessonFromMistakesBtn'); if(lfm) lfm.onclick = buildLessonFromMistakes;
-
 }
 function buildLessonFromMistakes(){
   if(!mistakes.length){toast('هیچ اشتباهی نیست');return}
   var box = $('#drillBox');
   box.innerHTML = '<div class="card"><b>در حال تحلیل همه‌ی اشتباهات…</b><p class="sub">۳۰-۶۰ ثانیه صبر کن.</p><div class="skel"></div><div class="skel" style="width:80%"></div></div>';
   box.scrollIntoView({behavior:'smooth'});
-
   var recent = mistakes.slice(0, 60);
   var byType = {};
   recent.forEach(function(m){
@@ -1739,7 +1787,6 @@ function buildLessonFromMistakes(){
     if(!byType[t]) byType[t] = [];
     byType[t].push(m);
   });
-
   var summary = '';
   Object.keys(byType).forEach(function(t){
     var items = byType[t];
@@ -1749,14 +1796,10 @@ function buildLessonFromMistakes(){
       summary += '\n';
     });
   });
-
   var totalErrors = recent.length;
   var totalTypes = Object.keys(byType).length;
-
-  var sys = 'You are an expert EFL teacher for Persian speakers. Create ONE comprehensive lesson addressing ALL mistake types in the student history. Return ONLY valid JSON: {"id":string,"title":string,"topic":string,"level":string,"intro_fa":string,"vocab":[{"en":string,"say":string,"fa":string,"ex":string,"ex_fa":string}],"grammar":{"title":string,"explain_fa":string,"rules":[string],"examples":[{"en":string,"fa":string}]},"dialogue":[{"speaker":"A"|"B","en":string,"fa":string}],"phrases":[{"en":string,"fa":string}],"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}],"speaking_goal":string} Rules: title in Persian like درس جامع از اشتباهات; intro_fa explains ALL types covered with counts; vocab 12 items INCLUDING correct spelling of misspelled words (like HP ProBook, Milad, etc); grammar addresses ALL grammar mistakes specifically; dialogue 8-10 lines showing BRIEF NATURAL answers; phrases 10 SHORT ready-made phrases for speed/brevity; quiz 12 questions MIXED (grammar + spelling + choosing brief version); level from B1; Persian explanations; JSON only.';
-
+  var sys = 'You are an expert EFL teacher for Persian speakers. Create ONE comprehensive lesson addressing ALL mistake types in the student history. Return ONLY valid JSON: {"id":string,"title":string,"topic":string,"level":string,"intro_fa":string,"vocab":[{"en":string,"say":string,"fa":string,"ex":string,"ex_fa":string}],"grammar":{"title":string,"explain_fa":string,"rules":[string],"examples":[{"en":string,"fa":string}]},"dialogue":[{"speaker":"A"|"B","en":string,"fa":string}],"phrases":[{"en":string,"fa":string}],"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}],"speaking_goal":string} Rules: title in Persian like درس جامع از اشتباهات; intro_fa explains ALL types covered with counts; vocab 12 items INCLUDING correct spelling of misspelled words; grammar addresses ALL grammar mistakes specifically; dialogue 8-10 lines showing BRIEF NATURAL answers; phrases 10 SHORT ready-made phrases; quiz 12 questions MIXED; level from B1; Persian explanations; JSON only.';
   var userMsg = 'TOTAL ERRORS: ' + totalErrors + ' | TYPES: ' + totalTypes + '\n' + summary;
-
   callAI(sys, [{role:'user', content: userMsg}], 8000)
     .then(function(raw){
       var j = parseJSON(raw);
@@ -1780,13 +1823,11 @@ function buildLessonFromMistakes(){
     });
 }
 
-  function buildReport(){
+function buildReport(){
   var box = $('#reportBox');
   var byType = {};
   mistakes.forEach(function(m){var k=m.type||'other';byType[k]=(byType[k]||0)+1});
   var topTypes = Object.keys(byType).sort(function(a,b){return byType[b]-byType[a]}).slice(0,5).map(function(k){return {type:k,count:byType[k]}});
-
-  // ==== Speed Stats ====
   var speedStats = {sessions:0, totalResponses:0, avgTime:0, bestTime:0, accuracy:0};
   if(prog.speed){
     var ss = prog.speed;
@@ -1797,8 +1838,6 @@ function buildLessonFromMistakes(){
     speedStats.accuracy = ss.totalResponses ? Math.round((ss.correctCount||0) * 100 / ss.totalResponses) : 0;
     speedStats.recentTrend = (ss.history || []).slice(0, 10).map(function(h){return h.t;});
   }
-
-  // ==== Daily Checklist History ====
   var dailyHistory = [];
   var today = new Date();
   var completedDays = 0, totalChecklistItems = 0, totalChecklistDone = 0;
@@ -1816,22 +1855,15 @@ function buildLessonFromMistakes(){
       }
     } catch(e){}
   }
-  // آخرین ۱۴ روز رو برمی‌گردونیم
   dailyHistory = dailyHistory.slice(0, 14);
-
-  // ==== Week Progress ====
   var weeksDone = 0;
   for(var w=1;w<=8;w++) if(weekProgress(w)===100) weeksDone++;
   var wp = {}; for(var i=1;i<=8;i++) wp['week_'+i]=weekProgress(i);
-
-  // ==== Grammar ====
   var gTopicsDone=0, gTopicsTotal=0;
   GRAMMAR_CURRICULUM.forEach(function(lvl){
     gTopicsTotal+=lvl.topics.length;
     lvl.topics.forEach(function(t){if(prog.grammar&&prog.grammar[t.id])gTopicsDone++})
   });
-
-  // ==== Week-level breakdown ====
   var weekScenariosDone = {};
   var weekLessonsDone = {};
   Object.keys(prog.program||{}).forEach(function(k){
@@ -1854,24 +1886,16 @@ function buildLessonFromMistakes(){
       });
     }
   });
-
-  // ==== Build Report ====
   var report = {
     version: 2,
     generated_at: new Date().toISOString(),
     user: 'Armin',
-
-    // کلی
     total_xp: prog.xp,
     streak_days: prog.streak,
     first_seen: prog.last || null,
-
-    // پیشرفت کلی
     current_week: curWeek,
     weeks_completed: weeksDone,
     week_progress: wp,
-
-    // جواب سریع
     speed: {
       sessions_completed: speedStats.sessions,
       total_responses: speedStats.totalResponses,
@@ -1880,23 +1904,17 @@ function buildLessonFromMistakes(){
       accuracy_pct: speedStats.accuracy,
       recent_times_sec: speedStats.recentTrend
     },
-
-    // پیوستگی
     consistency: {
       days_with_activity_60d: dailyHistory.length,
       days_with_4plus_tasks_60d: completedDays,
       total_checklist_items: totalChecklistItems,
       last_14_days: dailyHistory
     },
-
-    // گرامر
     grammar: {
       topics_done: gTopicsDone,
       topics_total: gTopicsTotal,
       pct: gTopicsTotal ? Math.round(gTopicsDone*100/gTopicsTotal) : 0
     },
-
-    // اشتباهات
     mistakes: {
       total: mistakes.length,
       top_types: topTypes,
@@ -1904,8 +1922,6 @@ function buildLessonFromMistakes(){
         return {type:m.type, original:m.original, fix:m.fix, level:m.level, topic:m.topic, date:m.date};
       })
     },
-
-    // محتوا
     content: {
       program_scenarios_done_by_week: weekScenariosDone,
       program_lessons_done_by_week: weekLessonsDone,
@@ -1914,25 +1930,19 @@ function buildLessonFromMistakes(){
       custom_lessons: customLessons.length,
       imported_scenarios: importedScenarios.length
     },
-
-    // نسخه‌ها
     modules_loaded: {
       speed: !!window.__speedModuleLoaded,
       plan: !!window.__planModuleLoaded,
       office: !!window.__officeModuleLoaded
     }
   };
-
   var jsonStr = JSON.stringify(report, null, 2);
-
-  // ==== Summary card ====
   var summary = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px">';
   summary += '<div style="padding:10px;background:var(--brand-soft);border-radius:10px;text-align:center"><b style="display:block;font-size:1.3rem;color:var(--brand)">' + fa(prog.xp) + '</b><small style="color:var(--muted);font-size:.72rem">امتیاز کل</small></div>';
   summary += '<div style="padding:10px;background:var(--prog-soft);border-radius:10px;text-align:center"><b style="display:block;font-size:1.3rem;color:var(--prog)">' + fa(speedStats.totalResponses) + '</b><small style="color:var(--muted);font-size:.72rem">جواب سریع</small></div>';
   summary += '<div style="padding:10px;background:#d8f1e6;border-radius:10px;text-align:center"><b style="display:block;font-size:1.3rem;color:#23906a">' + fa(dailyHistory.length) + '</b><small style="color:var(--muted);font-size:.72rem">روز فعال (۶۰ روز)</small></div>';
   summary += '<div style="padding:10px;background:#fef3c7;border-radius:10px;text-align:center"><b style="display:block;font-size:1.3rem;color:#a86d00">' + fa(gTopicsDone) + '/' + fa(gTopicsTotal) + '</b><small style="color:var(--muted);font-size:.72rem">گرامر</small></div>';
   summary += '</div>';
-
   box.innerHTML = '<div class="card"><h2>' + ic('chart') + ' گزارش کامل پیشرفت</h2>' + summary +
     '<div class="row" style="margin:12px 0">' +
       '<button type="button" class="btn brand" id="copyReport">📋 کپی</button>' +
@@ -1940,7 +1950,6 @@ function buildLessonFromMistakes(){
       '<button type="button" class="btn ghost" id="closeReport">بستن</button>' +
     '</div>' +
     '<textarea readonly style="min-height:300px;font-size:11px" dir="ltr">' + esc(jsonStr) + '</textarea></div>';
-
   $('#closeReport').onclick = function(){box.innerHTML=''};
   $('#copyReport').onclick = function(){
     var ta = box.querySelector('textarea');
@@ -1986,21 +1995,21 @@ function renderSettings(){
   h += '<div class="card stack" style="margin-top:16px"><h3>🗑 پاک کردن</h3><button type="button" class="btn ghost" id="rs">پاک کردن همه</button></div>';
   $('#main').innerHTML = h;
   $('#m').value=settings.model;$('#r').value=settings.rate;$('#v').value=settings.voice;
-if($('#ppref')) $('#ppref').value=settings.proxyPreferred||'main';
-var save = function(){
-  settings.key=$('#k').value.trim();
-  settings.model=$('#m').value;
-  settings.rate=$('#r').value;
-  settings.voice=$('#v').value;
-  settings.proxy=$('#p').value.trim();
-  settings.proxyBackup=$('#pb')?$('#pb').value.trim():'';
-  settings.proxyPreferred=$('#ppref')?$('#ppref').value:'main';
-  settings.syncCode=$('#sc').value.trim();
-  store.set('zy_settings',settings)
-};
+  if($('#ppref')) $('#ppref').value=settings.proxyPreferred||'main';
+  var save = function(){
+    settings.key=$('#k').value.trim();
+    settings.model=$('#m').value;
+    settings.rate=$('#r').value;
+    settings.voice=$('#v').value;
+    settings.proxy=$('#p').value.trim();
+    settings.proxyBackup=$('#pb')?$('#pb').value.trim():'';
+    settings.proxyPreferred=$('#ppref')?$('#ppref').value:'main';
+    settings.syncCode=$('#sc').value.trim();
+    store.set('zy_settings',settings);
+  };
   $('#sv').onclick = function(){save();toast('ذخیره ✅')};
   $('#ts').onclick = function(){save();callAI('Reply: ok',[{role:'user',content:'ping'}],20).then(function(){toast('اتصال ✅')}).catch(function(e){toast(errText(e),6000)})};
-  $('#scActivate').onclick = function(){save();if(!settings.proxy||!settings.syncCode||settings.syncCode.length<8){toast('پروکسی و کد');return}syncEnabled=false;initSync().then(function(ok){if(ok){toast('بارگذاری...');pullFromCloud(true).then(function(){toast('فعال ✅');renderSettings()})}})};
+  $('#scActivate').onclick = function(){save();if(!settings.proxy&&!settings.proxyBackup){toast('اول پروکسی رو وارد کن');return}if(!settings.syncCode||settings.syncCode.length<8){toast('کد حداقل ۸ کاراکتر');return}syncEnabled=false;initSync().then(function(ok){if(ok){toast('بارگذاری...');pullFromCloud(true).then(function(){toast('فعال ✅');renderSettings()})}})};
   $('#scPull').onclick = function(){save();if(!syncEnabled)initSync().then(function(ok){if(ok)pullFromCloud().then(renderSettings)});else pullFromCloud().then(renderSettings)};
   $('#scPush').onclick = function(){save();if(!syncEnabled)initSync().then(function(ok){if(ok)pushToCloud().then(function(){toast('ارسال ✅')})});else pushToCloud().then(function(){toast('ارسال ✅')})};
   $('#exBtn').onclick = function(){try{$('#exText').value=exportData();$('#exBox').style.display='block';$('#imBox').style.display='none'}catch(e){toast('خطا')}};
@@ -2037,8 +2046,8 @@ $$('.tab').forEach(function(t){t.onclick=function(){go(t.getAttribute('data-v'))
 try{
   updateStats();
   go('program');
-if(settings.proxy && settings.syncCode) initSync();
+  if((settings.proxy || settings.proxyBackup) && settings.syncCode) initSync();
 }catch(e){
   console.error('Init error:', e);
   var m = $('#main'); if(m) m.innerHTML = '<div class="card"><b>خطا</b><p dir="ltr" style="font-family:monospace;font-size:12px">'+esc(e.message)+'</p><button type="button" class="btn brand" onclick="try{localStorage.removeItem(\'zy_prog\')}catch(e){};location.reload()">ریست و رفرش</button></div>';
-                                                                                }
+}
