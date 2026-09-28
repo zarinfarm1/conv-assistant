@@ -136,7 +136,7 @@ function pushToCloud(){
 
 function pullFromCloud(silent){
   if(!syncEnabled || !syncKey) return Promise.resolve(false);
-  var base = settings.proxy.replace(/\/+$/,'');
+  var base = getActiveProxy();
   var isGAS = base.indexOf('script.google.com') >= 0;
   var url = isGAS ? (base + '?path=/sync/' + syncKey) : (base + '/sync/' + syncKey);
   return fetch(url).then(function(r){
