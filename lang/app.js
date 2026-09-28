@@ -124,10 +124,13 @@ function pushToCloud(){
     .then(function(r){if(!r.ok) throw new Error('HTTP '+r.status); var dot=$('#syncDot'); if(dot) dot.className='sync-dot on';})
     .catch(function(e){console.error('Push error:',e);toast('خطا در ذخیره: '+e.message,5000)});
 }
+
 function pullFromCloud(silent){
   if(!syncEnabled || !syncKey) return Promise.resolve(false);
   var base = settings.proxy.replace(/\/+$/,'');
-  return fetch(base+'/sync/'+syncKey).then(function(r){
+  var isGAS = base.indexOf('script.google.com') >= 0;
+  var url = isGAS ? (base + '?path=/sync/' + syncKey) : (base + '/sync/' + syncKey);
+  return fetch(url).then(function(r){
     if(r.status===404){ return pushToCloud().then(function(){if(!silent)toast('پیشرفت محلی به ابر فرستاده شد ✅');return true}) }
     if(!r.ok) throw new Error('HTTP '+r.status);
     return r.json().then(function(d){
@@ -150,6 +153,7 @@ function pullFromCloud(silent){
     });
   }).catch(function(e){console.error('Pull error:',e);if(!silent)toast('خطا: '+e.message,5000);return false});
 }
+
 function schedulePushToCloud(){
   if(!syncEnabled || !settings.syncAuto) return;
   clearTimeout(syncTimer);
