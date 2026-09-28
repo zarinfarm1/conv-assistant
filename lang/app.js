@@ -33,7 +33,7 @@ function lev(a,b){var m=a.length,n=b.length,d=[],i,j;for(i=0;i<=m;i++){d[i]=[i];
 function sim(a,b){return 1-lev(a,b)/Math.max(a.length,b.length,1)}
 
 // ============ STATE ============
-var DEFAULT_SETTINGS={key:'',model:'gpt-4o-mini',rate:'slow',voice:'',hands:false,autoplay:true,showFa:true,proxy:'',syncCode:'',syncAuto:true,jobAnalyze:true,jobShowFa:true};
+var DEFAULT_SETTINGS={key:'',model:'gpt-4o-mini',rate:'slow',voice:'',hands:false,autoplay:true,showFa:true,proxy:'',proxyBackup:'',syncCode:'',syncAuto:true,jobAnalyze:true,jobShowFa:true};
 var settings = Object.assign({}, DEFAULT_SETTINGS, store.get('zy_settings',{}) || {});
 
 var savedProg = store.get('zy_prog',{}) || {};
@@ -119,13 +119,21 @@ function initSync(){
 function pushToCloud(){
   if(!syncEnabled || !syncKey) return Promise.resolve();
   var base = settings.proxy.replace(/\/+$/,'');
-  var payload = {prog:prog, lessonCache:lessonCache, grammarCache:grammarCache, mistakes:mistakes, importedScenarios:importedScenarios, customLessons:customLessons, updatedAt:Date.now()};
-  return fetch(base+'/sync/'+syncKey, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+  var isGAS = base.indexOf('script.google.com') >= 0;
+  var payload = JSON.stringify({prog:prog, lessonCache:lessonCache, grammarCache:grammarCache, mistakes:mistakes, importedScenarios:importedScenarios, customLessons:customLessons, updatedAt:Date.now()});
+  var url, options;
+  if(isGAS){
+    url = base + '?path=/sync/' + syncKey;
+    options = {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:payload};
+  } else {
+    url = base + '/sync/' + syncKey;
+    options = {method:'POST', headers:{'Content-Type':'application/json'}, body:payload};
+  }
+  return fetch(url, options)
     .then(function(r){if(!r.ok) throw new Error('HTTP '+r.status); var dot=$('#syncDot'); if(dot) dot.className='sync-dot on';})
     .catch(function(e){console.error('Push error:',e);toast('خطا در ذخیره: '+e.message,5000)});
 }
 
-function pullFromCloud(silent){
   if(!syncEnabled || !syncKey) return Promise.resolve(false);
   var base = settings.proxy.replace(/\/+$/,'');
   var isGAS = base.indexOf('script.google.com') >= 0;
@@ -484,39 +492,61 @@ speaking_goal:'خودت را معرفی کن.'};
 function callAI(system,messages,max){
   max = max || 1500;
   if(!settings.key) return Promise.reject(new Error('NOKEY'));
-  var baseUrl = (settings.proxy && settings.proxy.trim()) ? settings.proxy.trim().replace(/\/+$/,'') : 'https://1xai.ir';
+  var proxies = [];
+  if(settings.proxy && settings.proxy.trim()) proxies.push(settings.proxy.trim().replace(/\/+$/,''));
+  if(settings.proxyBackup && settings.proxyBackup.trim()) proxies.push(settings.proxyBackup.trim().replace(/\/+$/,''));
+  if(!proxies.length) proxies.push('https://1xai.ir');
   var body = {model:settings.model, max_tokens:max, messages:[{role:'system',content:system}].concat(messages)};
-  var attempt = 0;
-  var maxAttempts = 3;
-  var tryFetch = function(){
-    attempt++;
-    return fetch(baseUrl+'/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+settings.key},
-      body:JSON.stringify(body)
-    }).then(function(r){
-      if(r.status >= 500 && attempt < maxAttempts){
-        console.log('[Retry] server error ' + r.status + ', attempt ' + attempt);
-        return new Promise(function(resolve){ setTimeout(resolve, 800); }).then(tryFetch);
-      }
-      if(!r.ok) return r.json().catch(function(){return{}}).then(function(d){
-        var m = (d.error && d.error.message) || (d.error) || '';
-        throw new Error(r.status + (m?' — '+m:''));
+  function callViaProxy(baseUrl){
+    var isGAS = baseUrl.indexOf('script.google.com') >= 0;
+    var fetchUrl, fetchOptions;
+    if(isGAS){
+      fetchUrl = baseUrl + '?path=/v1/chat/completions&key=' + encodeURIComponent(settings.key);
+      fetchOptions = {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(body)};
+    } else {
+      fetchUrl = baseUrl + '/v1/chat/completions';
+      fetchOptions = {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+settings.key}, body:JSON.stringify(body)};
+    }
+    var attempt = 0, maxAttempts = 2;
+    var tryFetch = function(){
+      attempt++;
+      return fetch(fetchUrl, fetchOptions).then(function(r){
+        if(r.status >= 500 && attempt < maxAttempts){
+          return new Promise(function(resolve){setTimeout(resolve,600)}).then(tryFetch);
+        }
+        if(!r.ok) return r.json().catch(function(){return{}}).then(function(d){
+          var m = (d.error && d.error.message) || (d.error) || '';
+          throw new Error(r.status + (m?' — '+m:''));
+        });
+        return r.json();
+      }).then(function(d){
+        return ((d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content)||'').trim();
+      }).catch(function(e){
+        if(attempt < maxAttempts && /Failed to fetch|NetworkError|500|CONNECTION_RESET|TIMED_OUT/i.test(e.message||'')){
+          return new Promise(function(resolve){setTimeout(resolve,600)}).then(tryFetch);
+        }
+        throw e;
       });
-      return r.json();
-    }).then(function(d){
-      return ((d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content)||'').trim();
-    }).catch(function(e){
-      if(attempt < maxAttempts && /Failed to fetch|NetworkError|500/.test(e.message||'')){
-        console.log('[Retry] network error, attempt ' + attempt);
-        return new Promise(function(resolve){ setTimeout(resolve, 800); }).then(tryFetch);
+    };
+    return tryFetch();
+  }
+  var pi = 0;
+  var tryNext = function(){
+    if(pi >= proxies.length) return Promise.reject(new Error('All proxies failed'));
+    var currentProxy = proxies[pi];
+    return callViaProxy(currentProxy).catch(function(e){
+      if(pi + 1 < proxies.length && /Failed to fetch|NetworkError|CONNECTION_RESET|TIMED_OUT/i.test(e.message||'')){
+        console.log('[Fallback] ' + currentProxy + ' failed, trying backup...');
+        if(typeof toast === 'function') toast('پروکسی اصلی وصل نشد، دارم از پشتیبان استفاده می‌کنم...', 2500);
+        pi++;
+        return tryNext();
       }
       throw e;
     });
   };
-  return tryFetch();
+  return tryNext();
 }
-function parseJSON(t){
+
   t = t.replace(/```json|```/g,'');
   var a = t.indexOf('{'), b = t.lastIndexOf('}');
   if(a<0 || b<0) throw new Error('bad json');
