@@ -1952,6 +1952,7 @@ function renderSettings(){
   h += '<div class="field"><label>کلید API</label><input type="password" id="k" dir="ltr" value="'+esc(settings.key)+'"></div>';
   h += '<div class="field"><label>آدرس پروکسی</label><input type="text" id="p" dir="ltr" value="'+esc(settings.proxy||'')+'"></div>';
   h += '<div class="field"><label>آدرس پروکسی پشتیبان (اختیاری)</label><input type="text" id="pb" dir="ltr" placeholder="Google Apps Script" value="'+esc(settings.proxyBackup||'')+'"></div>';
+  h += '<div class="field"><label>پروکسی فعال (اول امتحان شه)</label><select id="ppref"><option value="main">پروکسی اصلی (Cloudflare)</option><option value="backup">پروکسی پشتیبان (Google Apps Script)</option></select></div>';
   h += '<div class="field"><label>مدل</label><select id="m">';
   ['gpt-4o-mini','gpt-4.1-mini','gpt-3.5-turbo','deepseek-chat','claude-3-5-haiku','claude-sonnet-4-6','gemini-2.0-flash-lite','gemini-2.5-flash'].forEach(function(mm){h += '<option value="'+mm+'">'+mm+'</option>'});
   h += '</select></div>';
