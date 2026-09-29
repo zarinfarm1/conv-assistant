@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '105';
+var APP_VERSION = '106';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -1404,7 +1404,7 @@ function jobSystemPrompt(){
   var sc = job.scenario; if(!sc) return '';
   var roleDesc = ({'User':'a non-technical office worker','Manager':'Ildar, a Russian IT manager (English is second language; brief and direct)','Colleague':'a friendly colleague'})[sc.role] || 'a colleague';
   var levelHint = {easy:'VERY simple questions.',medium:'Moderate questions.',hard:'Natural questions.',real:'Fully natural.'}[sc.level] || '';
-  return 'Role-play as '+roleDesc+' with Armin (Iranian IT support).\nSCENARIO: '+sc.title+'\nCONTEXT: '+sc.opening+'\nYOUR ROLE: '+sc.role+'\nLEVEL: '+(sc.level||'medium')+' — '+levelHint+'\n\nRules: SHORT lines (1-2 sentences). If score<10, ALWAYS include "perfect_version" — a natural 10/10 rewrite of Armin\'s reply. If no correction needed, set "corrected" to empty string. CRITICAL: The "analysis" field must analyse ARMIN\'s LAST message ONLY (the most recent human message in chat), NEVER your own reply. Put ARMIN\'s text in "corrected" and "perfect_version" — not your own reply.\nReturn ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"empty if no correction","perfect_version":"10/10 rewrite (required if score<10)","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"...","brevity_note":"too long|too short|good"},"scenario_complete":false}';
+  return 'Role-play as '+roleDesc+' with Armin (Iranian IT support).\nSCENARIO: '+sc.title+'\nCONTEXT: '+sc.opening+'\nYOUR ROLE: '+sc.role+'\nLEVEL: '+(sc.level||'medium')+' — '+levelHint+'\n\nRules: SHORT lines (1-2 sentences). If score<10, ALWAYS include "perfect_version" — a natural 10/10 rewrite of Armin\'s reply. If no correction needed, set "corrected" to empty string. TWO SEPARATE TASKS. TASK 1 ("reply"): your next role-play line as the character — this is YOUR line. TASK 2 ("analysis"): analyse the human\'s last message, which appears in the conversation with the marker [ARMIN MSG - ANALYZE THIS]. NEVER analyse your own reply. "corrected" and "perfect_version" MUST be about ARMIN\'s text, not yours.\nReturn ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"empty if no correction","perfect_version":"10/10 rewrite (required if score<10)","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"...","brevity_note":"too long|too short|good"},"scenario_complete":false}';
 }
 function renderJob(){
   var el = $('#main');
@@ -1575,14 +1575,22 @@ function jobBubble(t){
 function jobAnalysis(t){
   if(t.pending) return '<div class="an"><span class="dots"><i></i><i></i><i></i></span> در حال تحلیل…</div>';
   var a = t.an; if(!a) return '';
+  var aiReply = '';
+  var foundT = false;
+  for(var ti = 0; ti < job.turns.length; ti++){
+    if(job.turns[ti] === t){ foundT = true; continue; }
+    if(foundT && job.turns[ti].role === 'ai'){ aiReply = job.turns[ti].text || ''; break; }
+  }
   var ms = a.mistakes||[];
   var h = '<div class="an"><div class="an-top">'+(a.is_correct&&!ms.length?'<span class="pill ok">عالی</span>':'<span class="pill warn">بهتر می‌شه</span>');
   if(a.score!=null) h += '<span class="sc">امتیاز <b>'+a.score+'</b>/10</span>';
   h += '</div>';
   var corrected = (a.corrected||'').trim();
+  if(corrected && aiReply && sim(norm(corrected), norm(aiReply)) > 0.7) corrected = '';
   if(corrected && corrected.toLowerCase() !== 'natural' && norm(corrected)!==norm(t.text)) h += '<div class="fix"><span>✓</span><span dir="ltr">'+esc(corrected)+'</span></div>';
   ms.forEach(function(m){h += '<div class="mk"><div dir="ltr"><s>'+esc(m.original)+'</s> → <b>'+esc(m.fix)+'</b></div><div>'+esc(m.explain_fa||'')+'</div></div>'});
   var pv = (a.perfect_version||'').trim();
+  if(pv && aiReply && sim(norm(pv), norm(aiReply)) > 0.7) pv = '';
   if(pv && a.score != null && a.score < 10 && norm(pv) !== norm(t.text) && norm(pv) !== norm(corrected)){
     h += '<div class="better"><small>🎯 برای ۱۰ از ۱۰:</small><span dir="ltr">'+esc(pv)+'</span> <button type="button" class="mini" data-say="'+esc(pv)+'">'+ic('vol')+'</button></div>';
   }
@@ -1603,7 +1611,7 @@ function sendJob(text, conf, voice){
   job.turns.push(ut); job.count++;
   job.busy = true; drawJobChat();
   var history = job.turns.filter(function(t){return (t.role==='me'&&!t.pending)||t.role==='ai'}).map(function(t){return {role:t.role==='ai'?'assistant':'user',content:t.text}});
-  history.push({role:'user',content:text});
+  history.push({role:'user',content:'[ARMIN MSG - ANALYZE THIS]: ' + text});
   callAI('Return ONLY valid JSON.\n\n'+jobSystemPrompt(), history.slice(-12), 1400)
     .then(function(raw){
       var j; try{j = parseJSON(raw)}catch(e){j = {reply:raw, reply_fa:'', analysis:{is_correct:true,mistakes:[]}}}
