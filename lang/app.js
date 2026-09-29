@@ -37,7 +37,7 @@ function lev(a,b){var m=a.length,n=b.length,d=[],i,j;for(i=0;i<=m;i++){d[i]=[i];
 function sim(a,b){return 1-lev(a,b)/Math.max(a.length,b.length,1)}
 
 // ============ STATE ============
-var DEFAULT_SETTINGS={key:'',model:'gpt-4o-mini',rate:'slow',voice:'',hands:false,autoplay:true,showFa:true,proxy:'',proxyBackup:'',proxyPreferred:'main',proxyEnabled:true,proxyBackupEnabled:true,syncCode:'',syncAuto:true,jobAnalyze:true,jobShowFa:true};
+var DEFAULT_SETTINGS={key:'',model:'gpt-4o-mini',rate:'slow',voice:'',hands:false,autoplay:true,showFa:true,proxy:'',proxyBackup:'',proxyPreferred:'main',proxyEnabled:true,proxyBackupEnabled:true,syncCode:'',syncAuto:true,jobAnalyze:true,jobShowFa:true,userProfile:'آرمین هستم، پشتیبانی IT در یک شرکت بین‌المللی (۷۰٪ ایرانی، ۳۰٪ روسی). مدیرم ایلدار یه روس هست که انگلیسی رو با لهجه و خیلی مستقیم و کوتاه صحبت می‌کنه. هدفم: انگلیسی رو روان صحبت کنم، مخصوصاً در موقعیت‌های کاری مثل گزارش روزانه، پشتیبانی کاربران، مکالمات تلفنی و حضوری، درخواست تأیید از مدیر. مشکل اصلی من: انگلیسی رو خوب می‌فهمم ولی موقع حرف زدن گیر می‌کنم. گرامر پایه‌ام ضعیفه. زمان‌های فعل رو اشتباه استفاده می‌کنم. لطفاً مثل یه استاد صبور و مهربون با من کار کن، اشتباهم رو با احترام تصحیح کن، و همیشه یه نسخه‌ی بهتر و کوتاه‌تر پیشنهاد بده.'};
 var settings = Object.assign({}, DEFAULT_SETTINGS, store.get('zy_settings',{}) || {});
 
 var savedProg = store.get('zy_prog',{}) || {};
@@ -573,6 +573,12 @@ quiz:[
  {q:'I ___ from Iran.',options:['is','are','am','be'],answer:2,why_fa:'با I فعل am می‌آید.'}],
 speaking_goal:'خودت را معرفی کن.'};
 
+function getUserContext(){
+  var p = (settings.userProfile||'').trim();
+  if(!p) return '';
+  return '\n\n=== ABOUT THE LEARNER (READ CAREFULLY) ===\n' + p + '\n=== END LEARNER PROFILE ===\n\nSpeak to Armin like a warm, patient human teacher — never robotic. Remember his specific weaknesses and his real workplace context.\n';
+}
+
 // ============ API ============
 function callAI(system,messages,max){
   max = max || 1500;
@@ -910,7 +916,7 @@ function openGrammarTopic(id){
 }
 function genGrammarTopic(id, gt){
   var msg = 'Topic: '+gt.topic.title+' ('+gt.topic.titleFa+')\nLevel: '+gt.level.level+'\nWhy hard: '+gt.topic.why+'\n\nCreate the FULL lesson now.';
-  callAI(GRAMMAR_SYS, [{role:'user',content:msg}], 8000)
+  callAI(GRAMMAR_SYS + getUserContext(), [{role:'user',content:msg}], 8000)
     .then(function(raw){
       var j = parseJSON(raw);
       grammarCache[id] = j;
@@ -1166,7 +1172,7 @@ function sendFree(text, conf, voice){
   free.turns.push(ut); free.count++;
   free.busy = true; drawFree();
   var sit = free.situation;
-  var sys = 'You are helping Armin (Iranian IT support) practice English. Situation: '+sit.fa+'. He must reply in English. CRITICAL: The "mistakes" and "corrected" fields must analyse ARMIN\'s reply ONLY — not your own "next" follow-up. Return ONLY valid JSON: {"score":0-10,"is_correct":true,"corrected":"natural version","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"نکته","next":"a follow-up line the other person would say"}';
+  var sys = 'You are helping Armin practice English.' + getUserContext() + 'Situation: '+sit.fa+'. He must reply in English. CRITICAL: The "mistakes" and "corrected" fields must analyse ARMIN\'s reply ONLY — not your own "next" follow-up. Return ONLY valid JSON: {"score":0-10,"is_correct":true,"corrected":"natural version","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"نکته","next":"a follow-up line the other person would say"}';
   callAI(sys, [{role:'user',content:'Armin replied: "'+text+'"'}], 800)
     .then(function(raw){
       var j; try{j=parseJSON(raw)}catch(e){j={is_correct:true,mistakes:[],score:7}}
@@ -1268,7 +1274,7 @@ function buildCustomLesson(topic, count, level, extraNote){
   var box = $('#customBox');
   box.innerHTML = '<div class="card"><b>در حال ساخت…</b><div class="skel"></div><div class="skel" style="width:80%"></div></div>';
   var sys = 'You are an EFL curriculum designer. Create FOCUSED lesson. Return ONLY valid JSON: {"id":string,"title":string,"topic":string,"intro_fa":string,"vocab":[{"en":string,"say":string,"fa":string,"ex":string,"ex_fa":string}],"grammar":{"title":string,"explain_fa":string,"rules":[string],"examples":[{"en":string,"fa":string}]},"dialogue":[{"speaker":"A"|"B","en":string,"fa":string}],"phrases":[{"en":string,"fa":string}],"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}],"speaking_goal":string,"practice_tips_fa":[string]}\nRules: 10 vocab. LONG grammar. Exactly '+count+' quiz. All Persian explanations.';
-  callAI(sys, [{role:'user',content:'Topic: '+topic+'\nLevel: '+level+(extraNote?'\nNote: '+extraNote:'')}], 5000)
+  callAI(sys + getUserContext(), [{role:'user',content:'Topic: '+topic+'\nLevel: '+level+(extraNote?'\nNote: '+extraNote:'')}], 5000)
     .then(function(raw){
       var j = parseJSON(raw);
       j.id = 'cust-'+Date.now();
@@ -1314,7 +1320,7 @@ function openLesson(level,idx){
 function genLesson(){
   var C = lessonCtx; if(!C) return;
   C.loading = true; C.err = null; render();
-  callAI(LESSON_SYS, [{role:'user',content:'CEFR: '+C.level+'\nUnit: "'+C.unit[0]+'" ('+C.unit[1]+')\nFocus: '+C.unit[2]}], 5000)
+  callAI(LESSON_SYS + getUserContext(), [{role:'user',content:'CEFR: '+C.level+'\nUnit: "'+C.unit[0]+'" ('+C.unit[1]+')\nFocus: '+C.unit[2]}], 5000)
     .then(function(raw){
       var j = parseJSON(raw);
       if(!j.vocab || !j.quiz) throw new Error('incomplete');
@@ -1404,7 +1410,7 @@ function jobSystemPrompt(){
   var sc = job.scenario; if(!sc) return '';
   var roleDesc = ({'User':'a non-technical office worker','Manager':'Ildar, a Russian IT manager (English is second language; brief and direct)','Colleague':'a friendly colleague'})[sc.role] || 'a colleague';
   var levelHint = {easy:'VERY simple questions.',medium:'Moderate questions.',hard:'Natural questions.',real:'Fully natural.'}[sc.level] || '';
-  return 'You are Armin\'s English TEACHER, and you also ROLE-PLAY as '+roleDesc+'.\nSCENARIO: '+sc.title+'\nCONTEXT: '+sc.opening+'\nYOUR ROLE: '+sc.role+'\nLEVEL: '+(sc.level||'medium')+' — '+levelHint+'\n\nRules: SHORT lines (1-2 sentences). If score<10, ALWAYS include "perfect_version" — a natural 10/10 rewrite of Armin\'s reply. If no correction needed, set "corrected" to empty string. TWO JOBS. (1) "reply" = your NEXT line AS the character (1-2 sentences). (2) "analysis" = a WARM ENGLISH TEACHER analysing ONLY Armin\'s last message (marked [ARMIN]) — NEVER your own reply. Keep "corrected" the SAME length or shorter than Armin\'s message.\nReturn ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"empty if no correction","perfect_version":"10/10 rewrite (required if score<10)","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"...","brevity_note":"too long|too short|good"},"scenario_complete":false}';
+  return 'You are Armin\'s personal English TEACHER, and you also ROLE-PLAY as '+roleDesc+'.' + getUserContext() + 'SCENARIO: '\nSCENARIO: '+sc.title+'\nCONTEXT: '+sc.opening+'\nYOUR ROLE: '+sc.role+'\nLEVEL: '+(sc.level||'medium')+' — '+levelHint+'\n\nRules: SHORT lines (1-2 sentences). If score<10, ALWAYS include "perfect_version" — a natural 10/10 rewrite of Armin\'s reply. If no correction needed, set "corrected" to empty string. TWO SEPARATE TASKS. TASK 1 ("reply"): your next role-play line as the character — this is YOUR line. TASK 2 ("analysis"): analyse the human\'s last message, which appears in the conversation with the marker [ARMIN MSG - ANALYZE THIS]. NEVER analyse your own reply. "corrected" and "perfect_version" MUST be about ARMIN\'s text, not yours.\nReturn ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"empty if no correction","perfect_version":"10/10 rewrite (required if score<10)","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"...","brevity_note":"too long|too short|good"},"scenario_complete":false}';
 }
 function renderJob(){
   var el = $('#main');
@@ -1650,7 +1656,7 @@ function toggleJobMic(){
 // ============ TALK ============
 function talkSystem(){
   var style = ({A1:'Simple words, 1-2 sentences.',A2:'Simple clear, 2-3 sentences.',B1:'Natural, 2-3 sentences.',B2:'Natural with idioms, 2-4 sentences.',C1:'Sophisticated, 2-4 sentences.',C2:'Native-level.'})[talk.level];
-  return 'You are "Sam", English tutor for a Persian speaker at CEFR '+talk.level+'.\nTopic: '+talk.topic+'.\nReply: '+style+' React then ask ONE question.\nCRITICAL: The "analysis" field must analyse THE LEARNER\'s LAST message ONLY, NEVER your own reply. "corrected" and "better_version" must contain the learner\'s text — not your own reply.\nReturn ONLY valid JSON: {"reply":string,"reply_fa":string,"corrected":string,"is_correct":boolean,"mistakes":[{"type":string,"original":string,"fix":string,"explain_fa":string}],"better_version":string,"scores":{"grammar":0-10,"vocabulary":0-10,"fluency":0-10}|null,"new_words":[{"en":string,"fa":string}],"tip_fa":string}';
+  return 'You are "Sam", Armin\'s personal English tutor at CEFR '+talk.level+'.' + getUserContext() + 'TOPIC: '\nTopic: '+talk.topic+'.\nReply: '+style+' React then ask ONE question.\nCRITICAL: The "analysis" field must analyse THE LEARNER\'s LAST message ONLY, NEVER your own reply. "corrected" and "better_version" must contain the learner\'s text — not your own reply.\nReturn ONLY valid JSON: {"reply":string,"reply_fa":string,"corrected":string,"is_correct":boolean,"mistakes":[{"type":string,"original":string,"fix":string,"explain_fa":string}],"better_version":string,"scores":{"grammar":0-10,"vocabulary":0-10,"fluency":0-10}|null,"new_words":[{"en":string,"fa":string}],"tip_fa":string}';
 }
 function startTalk(o){
   talk = {started:true,level:o.level,topic:o.topic,focus:o.focus||'',unitId:o.unitId||null,history:[],turns:[],busy:false,count:0,report:null,reporting:false};
@@ -2001,6 +2007,7 @@ function renderSettings(){
   var h = '<h1>تنظیمات</h1>';
   h += '<div class="card" style="margin-top:10px;text-align:center;font-family:monospace;font-size:.85rem">نسخه‌ی برنامه: <b style="color:var(--brand)">v'+APP_VERSION+'</b></div>';
   h += '<div class="card stack" style="margin-top:14px"><h3>AI</h3>';
+  h += '<div class="field"><label>🧑‍🎓 پروفایل من — AI این متن رو همیشه می‌خونه تا بدونه کی هستی و چطور کمکت کنه</label><textarea id="userProfile" style="min-height:170px;font-family:Vazirmatn,sans-serif;font-size:.85rem;line-height:1.8;direction:rtl;text-align:right">'+esc(settings.userProfile||'')+'</textarea><span class="sub" style="font-size:.78rem">هر وقت خواستی می‌تونی ویرایش کنی — مثلاً وقتی شرایطت عوض شد.</span></div>';
   h += '<div class="field"><label>کلید API</label><input type="password" id="k" dir="ltr" value="'+esc(settings.key)+'"></div>';
   h += '<div class="field"><label>آدرس پروکسی <button type="button" id="pToggle" class="proxy-toggle-btn" style="float:inline-start;background:none;border:1px solid var(--line);padding:2px 10px;border-radius:6px;font-size:.75rem;cursor:pointer;font-family:inherit"></button></label><input type="text" id="p" dir="ltr" value="'+esc(settings.proxy||'')+'"></div>';
   h += '<div class="field"><label>آدرس پروکسی پشتیبان (اختیاری) <button type="button" id="pbToggle" class="proxy-toggle-btn" style="float:inline-start;background:none;border:1px solid var(--line);padding:2px 10px;border-radius:6px;font-size:.75rem;cursor:pointer;font-family:inherit"></button></label><input type="text" id="pb" dir="ltr" placeholder="Google Apps Script" value="'+esc(settings.proxyBackup||'')+'"></div>';
@@ -2066,6 +2073,7 @@ function renderSettings(){
     settings.proxyEnabled = $('#pToggle') ? $('#pToggle').getAttribute('data-enabled') !== 'false' : (settings.proxyEnabled !== false);
     settings.proxyBackupEnabled = $('#pbToggle') ? $('#pbToggle').getAttribute('data-enabled') !== 'false' : (settings.proxyBackupEnabled !== false);
     settings.syncCode=$('#sc').value.trim();
+    settings.userProfile = $('#userProfile') ? $('#userProfile').value : (settings.userProfile || '');
     store.set('zy_settings',settings);
   };
   $('#sv').onclick = function(){save();toast('ذخیره ✅')};
