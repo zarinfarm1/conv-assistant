@@ -1406,11 +1406,11 @@ function bindQuiz(root, quiz, done){
 }
 
 // ============ JOB MODE ============
-function jobSystemPrompt(){function jobSystemPrompt(){
+function jobSystemPrompt(){
   var sc = job.scenario; if(!sc) return '';
   var roleDesc = ({'User':'a non-technical office worker','Manager':'Ildar, a Russian IT manager (English is second language; brief and direct)','Colleague':'a friendly colleague'})[sc.role] || 'a colleague';
   var levelHint = {easy:'VERY simple questions.',medium:'Moderate questions.',hard:'Natural questions.',real:'Fully natural.'}[sc.level] || '';
-  return 'You are Armin\'s personal English TEACHER, and you also ROLE-PLAY as '+roleDesc+'.' + getUserContext() + '\nSCENARIO: '+sc.title+'\nCONTEXT: '+sc.opening+'\nYOUR ROLE: '+sc.role+'\nLEVEL: '+(sc.level||'medium')+' — '+levelHint+'\n\nRules: SHORT lines (1-2 sentences). If score<10, ALWAYS include "perfect_version" — a natural 10/10 rewrite of Armin\'s reply. If no correction needed, set "corrected" to empty string. TWO SEPARATE TASKS. TASK 1 ("reply"): your next role-play line as the character — this is YOUR line. TASK 2 ("analysis"): analyse the human\'s last message, which appears in the conversation with the marker [ARMIN]. NEVER analyse your own reply. "corrected" and "perfect_version" MUST be about ARMIN\'s text, not yours.\nReturn ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"empty if no correction","perfect_version":"10/10 rewrite (required if score<10)","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"...","brevity_note":"too long|too short|good"},"scenario_complete":false}';"scenario_complete":false}';
+  return 'You are Armin\'s personal English TEACHER, and you also ROLE-PLAY as '+roleDesc+'.' + getUserContext() + '\nSCENARIO: '+sc.title+'\nCONTEXT: '+sc.opening+'\nYOUR ROLE: '+sc.role+'\nLEVEL: '+(sc.level||'medium')+' — '+levelHint+'\n\nRules: SHORT lines (1-2 sentences). If score<10, ALWAYS include "perfect_version" — a natural 10/10 rewrite of Armin\'s reply. If no correction needed, set "corrected" to empty string. TWO SEPARATE TASKS. TASK 1 ("reply"): your next role-play line as the character — this is YOUR line. TASK 2 ("analysis"): analyse the human\'s last message, which appears in the conversation with the marker [ARMIN]. NEVER analyse your own reply. "corrected" and "perfect_version" MUST be about ARMIN\'s text, not yours.\nReturn ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"empty if no correction","perfect_version":"10/10 rewrite (required if score<10)","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"...","brevity_note":"too long|too short|good"},"scenario_complete":false}';
 }
 function renderJob(){
   var el = $('#main');
@@ -1654,9 +1654,9 @@ function toggleJobMic(){
 }
 
 // ============ TALK ============
-function talkSystem(){function talkSystem(){
+function talkSystem(){
   var style = ({A1:'Simple words, 1-2 sentences.',A2:'Simple clear, 2-3 sentences.',B1:'Natural, 2-3 sentences.',B2:'Natural with idioms, 2-4 sentences.',C1:'Sophisticated, 2-4 sentences.',C2:'Native-level.'})[talk.level];
-  return 'You are "Sam", Armin\'s personal English tutor at CEFR '+talk.level+'.' + getUserContext() + '\nTopic: '+talk.topic+'.\nReply: '+style+' React then ask ONE question.\nCRITICAL: The "analysis" field must analyse THE LEARNER\'s LAST message ONLY, NEVER your own reply. "corrected" and "better_version" must contain the learner\'s text — not your own reply.\nReturn ONLY valid JSON: {"reply":string,"reply_fa":string,"corrected":string,"is_correct":boolean,"mistakes":[{"type":string,"original":string,"fix":string,"explain_fa":string}],"better_version":string,"scores":{"grammar":0-10,"vocabulary":0-10,"fluency":0-10}|null,"new_words":[{"en":string,"fa":string}],"tip_fa":string}';"tip_fa":string}';
+  return 'You are "Sam", Armin\'s personal English tutor at CEFR '+talk.level+'.' + getUserContext() + '\nTopic: '+talk.topic+'.\nReply: '+style+' React then ask ONE question.\nCRITICAL: The "analysis" field must analyse THE LEARNER\'s LAST message ONLY, NEVER your own reply. "corrected" and "better_version" must contain the learner\'s text — not your own reply.\nReturn ONLY valid JSON: {"reply":string,"reply_fa":string,"corrected":string,"is_correct":boolean,"mistakes":[{"type":string,"original":string,"fix":string,"explain_fa":string}],"better_version":string,"scores":{"grammar":0-10,"vocabulary":0-10,"fluency":0-10}|null,"new_words":[{"en":string,"fa":string}],"tip_fa":string}';
 }
 function startTalk(o){
   talk = {started:true,level:o.level,topic:o.topic,focus:o.focus||'',unitId:o.unitId||null,history:[],turns:[],busy:false,count:0,report:null,reporting:false};
