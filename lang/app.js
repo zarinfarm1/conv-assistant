@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '104';
+var APP_VERSION = '105';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -1166,7 +1166,7 @@ function sendFree(text, conf, voice){
   free.turns.push(ut); free.count++;
   free.busy = true; drawFree();
   var sit = free.situation;
-  var sys = 'You are helping Armin (Iranian IT support) practice English. Situation: '+sit.fa+'. He must reply in English. Analyse his reply in Persian. Return ONLY valid JSON: {"score":0-10,"is_correct":true,"corrected":"natural version","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"نکته","next":"a follow-up line the other person would say"}';
+  var sys = 'You are helping Armin (Iranian IT support) practice English. Situation: '+sit.fa+'. He must reply in English. CRITICAL: The "mistakes" and "corrected" fields must analyse ARMIN\'s reply ONLY — not your own "next" follow-up. Return ONLY valid JSON: {"score":0-10,"is_correct":true,"corrected":"natural version","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"نکته","next":"a follow-up line the other person would say"}';
   callAI(sys, [{role:'user',content:'Armin replied: "'+text+'"'}], 800)
     .then(function(raw){
       var j; try{j=parseJSON(raw)}catch(e){j={is_correct:true,mistakes:[],score:7}}
@@ -1404,7 +1404,7 @@ function jobSystemPrompt(){
   var sc = job.scenario; if(!sc) return '';
   var roleDesc = ({'User':'a non-technical office worker','Manager':'Ildar, a Russian IT manager (English is second language; brief and direct)','Colleague':'a friendly colleague'})[sc.role] || 'a colleague';
   var levelHint = {easy:'VERY simple questions.',medium:'Moderate questions.',hard:'Natural questions.',real:'Fully natural.'}[sc.level] || '';
-  return 'Role-play as '+roleDesc+' with Armin (Iranian IT support).\nSCENARIO: '+sc.title+'\nCONTEXT: '+sc.opening+'\nYOUR ROLE: '+sc.role+'\nLEVEL: '+(sc.level||'medium')+' — '+levelHint+'\n\nRules: SHORT lines (1-2 sentences). If score<10, ALWAYS include "perfect_version" — a natural 10/10 rewrite of Armin\'s reply. If no correction needed, set "corrected" to empty string. Analyse Armin\'s LAST message.\nReturn ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"empty if no correction","perfect_version":"10/10 rewrite (required if score<10)","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"...","brevity_note":"too long|too short|good"},"scenario_complete":false}';
+  return 'Role-play as '+roleDesc+' with Armin (Iranian IT support).\nSCENARIO: '+sc.title+'\nCONTEXT: '+sc.opening+'\nYOUR ROLE: '+sc.role+'\nLEVEL: '+(sc.level||'medium')+' — '+levelHint+'\n\nRules: SHORT lines (1-2 sentences). If score<10, ALWAYS include "perfect_version" — a natural 10/10 rewrite of Armin\'s reply. If no correction needed, set "corrected" to empty string. CRITICAL: The "analysis" field must analyse ARMIN\'s LAST message ONLY (the most recent human message in chat), NEVER your own reply. Put ARMIN\'s text in "corrected" and "perfect_version" — not your own reply.\nReturn ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"empty if no correction","perfect_version":"10/10 rewrite (required if score<10)","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"...","brevity_note":"too long|too short|good"},"scenario_complete":false}';
 }
 function renderJob(){
   var el = $('#main');
@@ -1642,7 +1642,7 @@ function toggleJobMic(){
 // ============ TALK ============
 function talkSystem(){
   var style = ({A1:'Simple words, 1-2 sentences.',A2:'Simple clear, 2-3 sentences.',B1:'Natural, 2-3 sentences.',B2:'Natural with idioms, 2-4 sentences.',C1:'Sophisticated, 2-4 sentences.',C2:'Native-level.'})[talk.level];
-  return 'You are "Sam", English tutor for a Persian speaker at CEFR '+talk.level+'.\nTopic: '+talk.topic+'.\nReply: '+style+' React then ask ONE question.\nAnalyse the learner\'s LAST message. Explanations in Persian.\nReturn ONLY valid JSON: {"reply":string,"reply_fa":string,"corrected":string,"is_correct":boolean,"mistakes":[{"type":string,"original":string,"fix":string,"explain_fa":string}],"better_version":string,"scores":{"grammar":0-10,"vocabulary":0-10,"fluency":0-10}|null,"new_words":[{"en":string,"fa":string}],"tip_fa":string}';
+  return 'You are "Sam", English tutor for a Persian speaker at CEFR '+talk.level+'.\nTopic: '+talk.topic+'.\nReply: '+style+' React then ask ONE question.\nCRITICAL: The "analysis" field must analyse THE LEARNER\'s LAST message ONLY, NEVER your own reply. "corrected" and "better_version" must contain the learner\'s text — not your own reply.\nReturn ONLY valid JSON: {"reply":string,"reply_fa":string,"corrected":string,"is_correct":boolean,"mistakes":[{"type":string,"original":string,"fix":string,"explain_fa":string}],"better_version":string,"scores":{"grammar":0-10,"vocabulary":0-10,"fluency":0-10}|null,"new_words":[{"en":string,"fa":string}],"tip_fa":string}';
 }
 function startTalk(o){
   talk = {started:true,level:o.level,topic:o.topic,focus:o.focus||'',unitId:o.unitId||null,history:[],turns:[],busy:false,count:0,report:null,reporting:false};
