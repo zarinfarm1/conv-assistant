@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '112';
+var APP_VERSION = '113';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -1660,13 +1660,14 @@ function sendJob(text, conf, voice){
       store.set('zy_mistakes', mistakes);
       if(j.reply){
     // safety net: اگه AI به جای مشتری، دستور IT داد، تصحیح کن
+    var _sc = job.scenario;
     var itInstructionRe = /\b(check|plug|press|restart|turn on|turn off|try to|try pressing|please try|can you|could you)\b/i;
-    if(sc && (sc.role === 'User' || sc.role === 'Colleague') && itInstructionRe.test(j.reply)){
-      console.warn('[RoleFix] AI gave IT instruction while playing', sc.role, ':', j.reply);
-      j.reply = (sc.role === 'User')
+    if(_sc && (_sc.role === 'User' || _sc.role === 'Colleague') && itInstructionRe.test(j.reply)){
+      console.warn('[RoleFix] AI gave IT instruction while playing', _sc.role, ':', j.reply);
+      j.reply = (_sc.role === 'User')
         ? 'Hmm, I\'m not sure what to do. Can you help me?'
         : 'I\'m not sure about that. Could you explain?';
-      j.reply_fa = (sc.role === 'User')
+      j.reply_fa = (_sc.role === 'User')
         ? 'هوم، مطمئن نیستم چیکار کنم. می‌تونی کمکم کنی؟'
         : 'در موردش مطمئن نیستم. می‌تونی توضیح بدی؟';
     }
