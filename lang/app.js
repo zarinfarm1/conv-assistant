@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '109';
+var APP_VERSION = '110';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -66,7 +66,7 @@ var view='program', pathLevel='A1', lessonCtx=null;
 var curWeek=1;
 var talk={started:false,level:'A1',topic:'',focus:'',unitId:null,history:[],turns:[],busy:false,count:0,report:null,reporting:false};
 var job={view:'cats',catId:null,scenario:null,history:[],turns:[],busy:false,count:0,done:false,showHint:false,lastSentText:''};
-var free={mode:null,situation:null,turns:[],busy:false,count:0,done:false,showHint:false,lastSentText:''};
+var free={mode:null,situation:null,turns:[],busy:false,count:0,done:false,showHint:false};
 var gram={level:null,topic:null,lesson:null,step:'learn',loading:false,err:null};
 var listening=false, rec=null;
 
@@ -1109,7 +1109,7 @@ function renderFree(){
   h += '<div class="situation-card"><div class="sc-cat">📌 '+esc(sit.cat)+' · سطح: '+esc(sit.level)+'</div><div class="sc-fa">'+esc(sit.fa)+'</div>'+(free.showHint?'<div class="sc-hint">💡 '+esc(sit.hint)+'</div>':'')+'</div>';
   h += '<div class="row" style="margin-bottom:12px"><button type="button" class="btn ghost small" id="fhint">'+(free.showHint?'پنهان':'💡 راهنما')+'</button><button type="button" class="btn ghost small" id="fsample">📝 نمونه</button><button type="button" class="btn ghost small" id="fnext">🎲 جدید</button></div>';
   h += '<div class="chat" id="fchat">'+free.turns.map(freeBubble).join('')+'</div>';
-  h += '<div class="composer"><div class="hint">به انگلیسی جواب بده.</div><div class="cbox"><button type="button" class="mic free-mic '+(listening?'rec':'')+'" id="fmic">'+ic('mic')+'</button><input type="text" id="fmsg" dir="ltr" placeholder="Type reply…" autocomplete="off"><button type="button" id="fretryBtn" title="ارسال دوباره پیام آخر" style="width:42px;height:42px;border-radius:50%;background:var(--accent-soft);color:var(--accent);border:1.5px solid var(--accent);font-size:20px;font-weight:700;cursor:pointer;flex:none;padding:0">↻</button><button type="button" class="send" id="fsend">'+ic('send')+'</button></div></div>';
+  h += '<div class="composer"><div class="hint">به انگلیسی جواب بده.</div><div class="cbox"><button type="button" class="mic free-mic '+(listening?'rec':'')+'" id="fmic">'+ic('mic')+'</button><input type="text" id="fmsg" dir="ltr" placeholder="Type reply…" autocomplete="off"><button type="button" class="send" id="fsend">'+ic('send')+'</button></div></div>';
   $('#main').innerHTML = h;
   $('#fexit').onclick = function(){free.mode=null;free.turns=[];free.situation=null;render()};
   $('#fhint').onclick = function(){free.showHint=!free.showHint;render()};
@@ -1117,7 +1117,6 @@ function renderFree(){
   $('#fnext').onclick = function(){startFree(free.mode)};
   $('#fmic').onclick = toggleFreeMic;
   $('#fsend').onclick = function(){sendFree($('#fmsg').value,null,false)};
-  var frb = $('#fretryBtn'); if(frb) frb.onclick = retryLastFree;
   $('#fmsg').onkeydown = function(e){if(e.key==='Enter'){e.preventDefault();sendFree($('#fmsg').value,null,false)}};
   drawFree();
 }
@@ -1168,7 +1167,6 @@ function drawFree(){
 function sendFree(text, conf, voice){
   text = (text||'').trim();
   if(!text || free.busy) return;
-  free.lastSentText = text;
   var m = $('#fmsg'); if(m) m.value='';
   var ut = {role:'me', text:text, pending:true};
   free.turns.push(ut); free.count++;
@@ -1195,18 +1193,6 @@ function sendFree(text, conf, voice){
     })
     .catch(function(e){free.busy = false; ut.pending = false; ut.err = true; drawFree(); toast(errText(e), 6000)});
 }
-function retryLastFree(){
-  if(free.busy) return;
-  var text = free.lastSentText;
-  if(!text){ toast('پیامی برای ارسال دوباره نیست'); return; }
-  var lastIdx = -1;
-  for(var i = free.turns.length - 1; i >= 0; i--){
-    if(free.turns[i].role === 'me'){ lastIdx = i; break; }
-  }
-  if(lastIdx >= 0) free.turns = free.turns.slice(0, lastIdx);
-  sendFree(text, null, false);
-}
-
 function toggleFreeMic(){
   if(view!=='free' || free.busy) return;
   var b = $('#fmic');
@@ -1424,7 +1410,7 @@ function jobSystemPrompt(){
   var sc = job.scenario; if(!sc) return '';
   var roleDesc = ({'User':'a non-technical office worker','Manager':'Ildar, a Russian IT manager (English is second language; brief and direct)','Colleague':'a friendly colleague'})[sc.role] || 'a colleague';
   var levelHint = {easy:'VERY simple questions.',medium:'Moderate questions.',hard:'Natural questions.',real:'Fully natural.'}[sc.level] || '';
-  return 'You are Armin\'s personal English TEACHER, and you also ROLE-PLAY as '+roleDesc+'.' + getUserContext() + '\nSCENARIO: '+sc.title+'\nCONTEXT: '+sc.opening+'\nYOUR ROLE: '+sc.role+'\nLEVEL: '+(sc.level||'medium')+' — '+levelHint+'\n\nRules: SHORT lines (1-2 sentences). If score<10, ALWAYS include "perfect_version" — a natural 10/10 rewrite of Armin\'s reply. If no correction needed, set "corrected" to empty string. TWO SEPARATE TASKS. TASK 1 ("reply"): your next role-play line as the character — this is YOUR line. TASK 2 ("analysis"): analyse the human\'s last message, which appears in the conversation with the marker [ARMIN]. NEVER analyse your own reply. "corrected" and "perfect_version" MUST be about ARMIN\'s text, not yours.\nReturn ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"empty if no correction","perfect_version":"10/10 rewrite (required if score<10)","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"...","brevity_note":"too long|too short|good"},"scenario_complete":false}';
+  return 'ROLE SYSTEM — READ CAREFULLY:\n- All messages in history that start with "ARM:" are from ARMIN (the human).\n- All messages that start with "AI:" are from YOU (the character: '+sc.role+').\n- NEVER write Armin\'s next message. Only write YOUR next line as '+sc.role+'.\n\nYou are Armin\'s personal English TEACHER, and you ALSO ROLE-PLAY as '+roleDesc+'.' + getUserContext() + '\nSCENARIO: '+sc.title+'\nCONTEXT: '+sc.opening+'\nYOUR ROLE: '+sc.role+'\nLEVEL: '+(sc.level||'medium')+' — '+levelHint+'\n\nTASK 1 — Write YOUR next role-play line ("reply"). This is what '+sc.role+' would say next. It must NEVER be what Armin would say.\nTASK 2 — Analyse ARMIN\'s LAST message ("analysis"). Find the LATEST message in history starting with "ARM:". That is the one to analyse.\n- "corrected" = improved version of THAT ARM message (empty if already good).\n- "perfect_version" = ideal 10/10 version of THAT ARM message.\n- Both must be close in length to Armin\'s original. If Armin wrote 5 words, perfect_version is ~5 words.\n- NEVER put your own role-play line in "corrected" or "perfect_version".\n\nRules: SHORT lines (1-2 sentences). If score<10, ALWAYS include "perfect_version".\nReturn ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"empty if no correction","perfect_version":"10/10 rewrite (required if score<10)","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"...","brevity_note":"too long|too short|good"},"scenario_complete":false}';
 }
 function renderJob(){
   var el = $('#main');
@@ -1608,10 +1594,12 @@ function jobAnalysis(t){
   h += '</div>';
   var corrected = (a.corrected||'').trim();
   if(corrected && aiReply && sim(norm(corrected), norm(aiReply)) > 0.7) corrected = '';
+  if(corrected && norm(t.text) && sim(norm(corrected), norm(t.text)) < 0.15) corrected = '';
   if(corrected && corrected.toLowerCase() !== 'natural' && norm(corrected)!==norm(t.text)) h += '<div class="fix"><span>✓</span><span dir="ltr">'+esc(corrected)+'</span></div>';
   ms.forEach(function(m){h += '<div class="mk"><div dir="ltr"><s>'+esc(m.original)+'</s> → <b>'+esc(m.fix)+'</b></div><div>'+esc(m.explain_fa||'')+'</div></div>'});
   var pv = (a.perfect_version||'').trim();
   if(pv && aiReply && sim(norm(pv), norm(aiReply)) > 0.7) pv = '';
+  if(pv && norm(t.text) && sim(norm(pv), norm(t.text)) < 0.15) pv = '';
   if(pv && a.score != null && a.score < 10 && norm(pv) !== norm(t.text) && norm(pv) !== norm(corrected)){
     h += '<div class="better"><small>🎯 برای ۱۰ از ۱۰:</small><span dir="ltr">'+esc(pv)+'</span> <button type="button" class="mini" data-say="'+esc(pv)+'">'+ic('vol')+'</button></div>';
   }
@@ -1632,8 +1620,13 @@ function sendJob(text, conf, voice){
   var ut = {role:'me', text:text, pending:true};
   job.turns.push(ut); job.count++;
   job.busy = true; drawJobChat();
-  var history = job.turns.filter(function(t){return (t.role==='me'&&!t.pending)||t.role==='ai'}).map(function(t){return {role:t.role==='ai'?'assistant':'user',content:t.text}});
-  history.push({role:'user',content:'[ARMIN]: ' + text});
+  var history = job.turns.filter(function(t){return (t.role==='me'&&!t.pending)||t.role==='ai'}).map(function(t){
+    return {
+      role: t.role==='ai' ? 'assistant' : 'user',
+      content: (t.role==='ai' ? 'AI: ' : 'ARM: ') + t.text
+    };
+  });
+  history.push({role:'user', content: 'ARM: ' + text});
   callAI('Return ONLY valid JSON.\n\n'+jobSystemPrompt(), history.slice(-12), 1400)
     .then(function(raw){
       var j; try{j = parseJSON(raw)}catch(e){j = {reply:raw, reply_fa:'', analysis:{is_correct:true,mistakes:[]}}}
@@ -1662,10 +1655,9 @@ function sendJob(text, conf, voice){
     .catch(function(e){job.busy = false;ut.pending = false;ut.err = true;drawJobChat();toast(errText(e), 6000)});
 }
 function retryLastJob(){
-  if(job.busy) return;
+  if(job.busy || job.done) return;
   var text = job.lastSentText;
   if(!text){ toast('پیامی برای ارسال دوباره نیست'); return; }
-  // آخرین پیام user و هر چی بعدش اومده رو حذف کن
   var lastIdx = -1;
   for(var i = job.turns.length - 1; i >= 0; i--){
     if(job.turns[i].role === 'me'){ lastIdx = i; break; }
