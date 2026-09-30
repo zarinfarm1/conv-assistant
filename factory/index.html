@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>کارخانه تولید قوطی فلزی — دمو</title>
+  <script type="module" crossorigin src="/conv-assistant/factory/assets/index-B0bwBA7h.js"></script>
+  <link rel="stylesheet" crossorigin href="/conv-assistant/factory/assets/index-Dnory26Z.css">
+</head>
+<body>
+  <canvas id="three-canvas"></canvas>
+
+  <div id="loading">
+    <div class="loading-card">
+      <div class="loading-title">کارخانه تولید قوطی فلزی</div>
+      <div id="loading-hint">در حال آماده‌سازی کارخانه…</div>
+      <div class="loading-track"><div id="loading-bar"></div></div>
+    </div>
+  </div>
+
+	<div id="instructions">
+	  <div class="instruction-card">
+		<h1>دموی کارخانه</h1>
+		<p>پیش‌نمایش هوایی کارخانه در حال پخش است.<br>برای پخش موسیقی، هر جای صفحه کلیک کنید.</p>
+		<button id="start-btn">ورود به کارخانه</button>
+		<small>WASD حرکت · Shift دویدن · ماوس چرخش دید</small>
+	  </div>
+	</div>
+
+  <button id="sound-toggle" title="قطع/وصل صدا">🔊</button>
+
+  <div id="room-badge">
+    <span id="room-dot"></span>
+    <div>
+      <strong id="room-txt">حیاط کارخانه</strong>
+      <small id="room-sub">به کارخانه خوش آمدید</small>
+    </div>
+  </div>
+
+  <div id="minimap-wrap">
+    <div class="lbl">نقشه</div>
+    <canvas id="minimap" width="220" height="180"></canvas>
+  </div>
+
+  <div id="move-hint">
+    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>حرکت</span>
+    <span class="sep"></span>
+    <kbd>درگ</kbd><span>چرخش</span>
+  </div>
+
+</body>
+</html>
