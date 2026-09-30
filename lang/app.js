@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '108';
+var APP_VERSION = '109';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -65,8 +65,8 @@ store.set('zy_prog', prog);
 var view='program', pathLevel='A1', lessonCtx=null;
 var curWeek=1;
 var talk={started:false,level:'A1',topic:'',focus:'',unitId:null,history:[],turns:[],busy:false,count:0,report:null,reporting:false};
-var job={view:'cats',catId:null,scenario:null,history:[],turns:[],busy:false,count:0,done:false,showHint:false};
-var free={mode:null,situation:null,turns:[],busy:false,count:0,done:false,showHint:false};
+var job={view:'cats',catId:null,scenario:null,history:[],turns:[],busy:false,count:0,done:false,showHint:false,lastSentText:''};
+var free={mode:null,situation:null,turns:[],busy:false,count:0,done:false,showHint:false,lastSentText:''};
 var gram={level:null,topic:null,lesson:null,step:'learn',loading:false,err:null};
 var listening=false, rec=null;
 
@@ -1109,7 +1109,7 @@ function renderFree(){
   h += '<div class="situation-card"><div class="sc-cat">📌 '+esc(sit.cat)+' · سطح: '+esc(sit.level)+'</div><div class="sc-fa">'+esc(sit.fa)+'</div>'+(free.showHint?'<div class="sc-hint">💡 '+esc(sit.hint)+'</div>':'')+'</div>';
   h += '<div class="row" style="margin-bottom:12px"><button type="button" class="btn ghost small" id="fhint">'+(free.showHint?'پنهان':'💡 راهنما')+'</button><button type="button" class="btn ghost small" id="fsample">📝 نمونه</button><button type="button" class="btn ghost small" id="fnext">🎲 جدید</button></div>';
   h += '<div class="chat" id="fchat">'+free.turns.map(freeBubble).join('')+'</div>';
-  h += '<div class="composer"><div class="hint">به انگلیسی جواب بده.</div><div class="cbox"><button type="button" class="mic free-mic '+(listening?'rec':'')+'" id="fmic">'+ic('mic')+'</button><input type="text" id="fmsg" dir="ltr" placeholder="Type reply…" autocomplete="off"><button type="button" class="send" id="fsend">'+ic('send')+'</button></div></div>';
+  h += '<div class="composer"><div class="hint">به انگلیسی جواب بده.</div><div class="cbox"><button type="button" class="mic free-mic '+(listening?'rec':'')+'" id="fmic">'+ic('mic')+'</button><input type="text" id="fmsg" dir="ltr" placeholder="Type reply…" autocomplete="off"><button type="button" id="fretryBtn" title="ارسال دوباره پیام آخر" style="width:42px;height:42px;border-radius:50%;background:var(--accent-soft);color:var(--accent);border:1.5px solid var(--accent);font-size:20px;font-weight:700;cursor:pointer;flex:none;padding:0">↻</button><button type="button" class="send" id="fsend">'+ic('send')+'</button></div></div>';
   $('#main').innerHTML = h;
   $('#fexit').onclick = function(){free.mode=null;free.turns=[];free.situation=null;render()};
   $('#fhint').onclick = function(){free.showHint=!free.showHint;render()};
@@ -1117,6 +1117,7 @@ function renderFree(){
   $('#fnext').onclick = function(){startFree(free.mode)};
   $('#fmic').onclick = toggleFreeMic;
   $('#fsend').onclick = function(){sendFree($('#fmsg').value,null,false)};
+  var frb = $('#fretryBtn'); if(frb) frb.onclick = retryLastFree;
   $('#fmsg').onkeydown = function(e){if(e.key==='Enter'){e.preventDefault();sendFree($('#fmsg').value,null,false)}};
   drawFree();
 }
@@ -1167,6 +1168,7 @@ function drawFree(){
 function sendFree(text, conf, voice){
   text = (text||'').trim();
   if(!text || free.busy) return;
+  free.lastSentText = text;
   var m = $('#fmsg'); if(m) m.value='';
   var ut = {role:'me', text:text, pending:true};
   free.turns.push(ut); free.count++;
@@ -1193,6 +1195,18 @@ function sendFree(text, conf, voice){
     })
     .catch(function(e){free.busy = false; ut.pending = false; ut.err = true; drawFree(); toast(errText(e), 6000)});
 }
+function retryLastFree(){
+  if(free.busy) return;
+  var text = free.lastSentText;
+  if(!text){ toast('پیامی برای ارسال دوباره نیست'); return; }
+  var lastIdx = -1;
+  for(var i = free.turns.length - 1; i >= 0; i--){
+    if(free.turns[i].role === 'me'){ lastIdx = i; break; }
+  }
+  if(lastIdx >= 0) free.turns = free.turns.slice(0, lastIdx);
+  sendFree(text, null, false);
+}
+
 function toggleFreeMic(){
   if(view!=='free' || free.busy) return;
   var b = $('#fmic');
@@ -1555,7 +1569,7 @@ function renderJobPlay(){
   h += '<div class="row"><button type="button" class="btn ghost small" id="jHint">💡</button>'+(sc.sample?'<button type="button" class="btn ghost small" id="jSample">📝</button>':'')+'<button type="button" class="btn ghost small" id="jRestart">🔄</button></div></div>';
   h += '<div class="hint-box'+(job.showHint?' show':'')+'" id="hintBox"><div class="lbl">💡 راهنما</div>'+esc(sc.hint||'')+'</div>';
   h += '<div class="chat" id="chat">'+job.turns.map(jobBubble).join('')+'</div>';
-  h += '<div class="composer"><div class="hint">به انگلیسی جواب بده.</div><div class="cbox"><button type="button" class="mic job-mic '+(listening?'rec':'')+'" id="mic">'+ic('mic')+'</button><input type="text" id="msg" dir="ltr" placeholder="Type reply…" autocomplete="off"><button type="button" class="send" id="sendB">'+ic('send')+'</button></div></div>';
+  h += '<div class="composer"><div class="hint">به انگلیسی جواب بده.</div><div class="cbox"><button type="button" class="mic job-mic '+(listening?'rec':'')+'" id="mic">'+ic('mic')+'</button><input type="text" id="msg" dir="ltr" placeholder="Type reply…" autocomplete="off"><button type="button" id="retryBtn" title="ارسال دوباره پیام آخر" style="width:42px;height:42px;border-radius:50%;background:var(--accent-soft);color:var(--accent);border:1.5px solid var(--accent);font-size:20px;font-weight:700;cursor:pointer;flex:none;padding:0">↻</button><button type="button" class="send" id="sendB">'+ic('send')+'</button></div></div>';
   $('#main').innerHTML = h;
   $('#jback2').onclick = function(){job.view='list';renderJob()};
   $('#jRestart').onclick = function(){startJobScenario(sc.id)};
@@ -1563,6 +1577,7 @@ function renderJobPlay(){
   var js = $('#jSample'); if(js) js.onclick = function(){if(!sc.sample)return;job.turns.push({role:'sample',text:sc.sample});drawJobChat();toast('📝 حالا خودت امتحان کن!',4000)};
   $('#mic').onclick = toggleJobMic;
   $('#sendB').onclick = function(){sendJob($('#msg').value,null,false)};
+  var rb = $('#retryBtn'); if(rb) rb.onclick = retryLastJob;
   $('#msg').onkeydown = function(e){if(e.key==='Enter'){e.preventDefault();sendJob($('#msg').value,null,false)}};
   drawJobChat();
 }
@@ -1612,6 +1627,7 @@ function jobAnalysis(t){
 function sendJob(text, conf, voice){
   text = (text||'').trim();
   if(!text || job.busy || job.done) return;
+  job.lastSentText = text;
   var m = $('#msg'); if(m) m.value='';
   var ut = {role:'me', text:text, pending:true};
   job.turns.push(ut); job.count++;
@@ -1645,6 +1661,20 @@ function sendJob(text, conf, voice){
     })
     .catch(function(e){job.busy = false;ut.pending = false;ut.err = true;drawJobChat();toast(errText(e), 6000)});
 }
+function retryLastJob(){
+  if(job.busy) return;
+  var text = job.lastSentText;
+  if(!text){ toast('پیامی برای ارسال دوباره نیست'); return; }
+  // آخرین پیام user و هر چی بعدش اومده رو حذف کن
+  var lastIdx = -1;
+  for(var i = job.turns.length - 1; i >= 0; i--){
+    if(job.turns[i].role === 'me'){ lastIdx = i; break; }
+  }
+  if(lastIdx >= 0) job.turns = job.turns.slice(0, lastIdx);
+  else job.turns = [job.turns[0]];
+  sendJob(text, null, false);
+}
+
 function toggleJobMic(){
   if(view!=='job' || job.busy || job.done) return;
   var b = $('#mic');
