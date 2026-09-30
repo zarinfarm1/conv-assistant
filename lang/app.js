@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '111';
+var APP_VERSION = '112';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -1410,7 +1410,7 @@ function jobSystemPrompt(){
   var sc = job.scenario; if(!sc) return '';
   var roleDesc = ({'User':'a non-technical office worker','Manager':'Ildar, a Russian IT manager (English is second language; brief and direct)','Colleague':'a friendly colleague'})[sc.role] || 'a colleague';
   var levelHint = {easy:'VERY simple questions.',medium:'Moderate questions.',hard:'Natural questions.',real:'Fully natural.'}[sc.level] || '';
-  return 'ROLE SYSTEM — READ CAREFULLY:\n- All messages in history that start with "ARM:" are from ARMIN (the human).\n- All messages that start with "AI:" are from YOU (the character: '+sc.role+').\n- NEVER write Armin\'s next message. Only write YOUR next line as '+sc.role+'.\n\nYou are Armin\'s personal English TEACHER, and you ALSO ROLE-PLAY as '+roleDesc+'.' + getUserContext() + '\nSCENARIO: '+sc.title+'\nCONTEXT: '+sc.opening+'\nYOUR ROLE: '+sc.role+'\nLEVEL: '+(sc.level||'medium')+' — '+levelHint+'\n\nTASK 1 — Write YOUR next role-play line ("reply"). This is what '+sc.role+' would say next. It must NEVER be what Armin would say.\n\nTASK 2 — Analyse ARMIN\'s very LAST message ("analysis"). Identify the ARM: message that is CLOSEST TO THE BOTTOM of the conversation (the most recent ARM message). This is the ONLY message you must analyse. Do NOT analyse an earlier ARM message.\n- Even if this ARM message is very short, broken, unclear, or seems strange, you MUST still analyse it and give a score. Do NOT skip it and do NOT fall back to analysing an earlier message.\n- "corrected" = improved version of THIS SPECIFIC latest message (empty if already good).\n- "perfect_version" = ideal 10/10 version of THIS SPECIFIC latest message.\n- Both must be close in length to Armin\'s original. If Armin wrote 5 words, perfect_version is ~5 words.\n- NEVER put your own role-play line in "corrected" or "perfect_version".\n- NEVER copy text from an earlier ARM message into "corrected".\n\nRules: SHORT lines (1-2 sentences). If score<10, ALWAYS include "perfect_version".\nReturn ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"empty if no correction","perfect_version":"10/10 rewrite (required if score<10)","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"...","brevity_note":"too long|too short|good"},"scenario_complete":false}';
+  return 'ROLE SYSTEM — READ CAREFULLY:\n\nYOUR CHARACTER FOR THIS CONVERSATION:\nYou are playing the role of "'+sc.role+'" ('+roleDesc+').\nYou are NOT the IT support. You are NOT the teacher in the "reply" field.\nThe person who fixes things, gives instructions, and asks diagnostic questions is ARMIN — that is NOT you.\n\nABOUT THE MESSAGES:\n- Messages starting with "ARM:" are from ARMIN (the human).\n- Messages starting with "AI:" are from YOU (as '+sc.role+').\n\nFOR THE "reply" FIELD — STAY IN CHARACTER AS '+sc.role+':\n- If you are a User/Customer: describe the problem, answer Armin\'s questions with yes/no/details, express frustration or thanks. NEVER ask Armin to check/plug/press/restart anything. NEVER say "Can you check…" or "Please try…" — that is Armin\'s job.\n- If you are a Manager: give brief orders or ask for status. NEVER give technical advice.\n- If you are a Colleague: be friendly, ask for help, share info.\n- NEVER switch into "teacher mode" inside "reply".\n\nFOR THE "analysis" FIELD — ONLY THIS:\n- Analyse ARMIN\'s very LAST message: the most recent message starting with "ARM:".\n- Even if it is very short, broken, or strange, you MUST analyse it. Do NOT skip it, do NOT analyse an earlier ARM message.\n- "corrected" = improved version of THAT specific message (empty if already good).\n- "perfect_version" = ideal 10/10 version of THAT specific message.\n- Both must be close in length to Armin\'s original.\n- NEVER put your own role-play line inside "corrected" or "perfect_version".\n- NEVER copy text from an earlier ARM message.\n\nSCENARIO: '+sc.title+'\nCONTEXT: '+sc.opening+'\nYOUR ROLE: '+sc.role+'\nLEVEL: '+(sc.level||'medium')+' — '+levelHint+'\n' + getUserContext() + '\nRules: SHORT lines (1-2 sentences). If score<10, ALWAYS include "perfect_version".\nReturn ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"empty if no correction","perfect_version":"10/10 rewrite (required if score<10)","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"...","brevity_note":"too long|too short|good"},"scenario_complete":false}';
 }
 function renderJob(){
   var el = $('#main');
@@ -1658,7 +1658,20 @@ function sendJob(text, conf, voice){
       });
       mistakes = mistakes.slice(0,300);
       store.set('zy_mistakes', mistakes);
-      if(j.reply) job.turns.push({role:'ai',text:j.reply,fa:j.reply_fa||''});
+      if(j.reply){
+    // safety net: اگه AI به جای مشتری، دستور IT داد، تصحیح کن
+    var itInstructionRe = /\b(check|plug|press|restart|turn on|turn off|try to|try pressing|please try|can you|could you)\b/i;
+    if(sc && (sc.role === 'User' || sc.role === 'Colleague') && itInstructionRe.test(j.reply)){
+      console.warn('[RoleFix] AI gave IT instruction while playing', sc.role, ':', j.reply);
+      j.reply = (sc.role === 'User')
+        ? 'Hmm, I\'m not sure what to do. Can you help me?'
+        : 'I\'m not sure about that. Could you explain?';
+      j.reply_fa = (sc.role === 'User')
+        ? 'هوم، مطمئن نیستم چیکار کنم. می‌تونی کمکم کنی؟'
+        : 'در موردش مطمئن نیستم. می‌تونی توضیح بدی؟';
+    }
+    job.turns.push({role:'ai',text:j.reply,fa:j.reply_fa||''});
+  }
       job.busy = false;
       if(j.scenario_complete){
         job.done = true;
