@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+  <title>خانه سه‌بعدی | نمونه سایت</title>
+  <meta name="description" content="یک وب‌سایت نمونه که به‌جای صفحه، اتاق دارد. در خانه قدم بزنید و هر اتاق را ببینید." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script type="module" crossorigin src="/conv-assistant/house/assets/index-C-QaX8WV.js"></script>
+  <link rel="stylesheet" crossorigin href="/conv-assistant/house/assets/index-CQQ4Nh_x.css">
+</head>
+
+<body>
+  <div id="app">
+    <canvas id="three-canvas"></canvas>
+
+    <!-- بارگذاری -->
+    <div id="loading">
+      <div class="mark">استودیو معماری</div>
+      <h1>در حال ساخت خانه شما…</h1>
+      <div class="bar"><i id="loading-bar"></i></div>
+      <div class="hint" id="loading-hint">آماده‌سازی صحنه سه‌بعدی</div>
+    </div>
+
+    <div id="crosshair"></div>
+
+    <!-- نشان اتاق فعلی -->
+    <div id="hud-top">
+      <div id="room-badge">
+        <span class="dot" id="room-dot"></span>
+        <span class="txt" id="room-txt">حیاط</span>
+        <span class="sub" id="room-sub">به سمت در ورودی بروید</span>
+      </div>
+    </div>
+
+    <!-- طبقه -->
+    <div id="floor-toggle">
+      <button type="button" id="floor-0" class="active">طبقه ۱</button>
+      <button type="button" id="floor-1">طبقه ۲</button>
+    </div>
+
+    <!-- منو -->
+    <button type="button" id="menu-toggle" aria-label="منوی اتاق‌ها">
+      <span class="bars"><i></i><i></i><i></i></span>
+    </button>
+    <div id="menu-panel"></div>
+
+    <!-- پنل محتوا -->
+    <aside id="content-panel">
+      <div class="accent"></div>
+      <button type="button" class="close-btn" id="content-close" aria-label="بستن">✕</button>
+      <div class="scroll" id="content-scroll"></div>
+    </aside>
+
+    <!-- نقشه -->
+    <div id="minimap-wrap">
+      <div class="lbl">نقشهٔ خانه</div>
+      <canvas id="minimap" width="152" height="216"></canvas>
+    </div>
+
+    <!-- راهنمای حرکت -->
+    <div id="move-hint">
+      <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>حرکت</span>
+      <span class="sep"></span>
+      <kbd>درگ</kbd><span>چرخش دید</span>
+    </div>
+
+    <!-- راهنمای تعامل -->
+    <div id="interact-hint"><kbd>E</kbd><span>آزادکردن ماوس برای خواندن صفحه</span></div>
+
+    <!-- گزارش خودآزمون -->
+    <div id="selftest"></div>
+
+    <!-- کنترل لمسی -->
+    <div id="touch-look"></div>
+    <div id="joystick"><i id="joystick-knob"></i></div>
+
+    <!-- شروع -->
+    <div id="instructions">
+      <div class="card">
+        <div class="eyebrow">تجربهٔ تعاملی</div>
+        <h2>به خانهٔ نمونه خوش آمدید</h2>
+        <p class="lead">یک وب‌سایت که به‌جای صفحه، اتاق دارد. از در جلویی وارد شوید و هر اتاق را ببینید.</p>
+        <div class="keys">
+          <div class="row"><span class="kbds"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span class="desc">راه رفتن</span></div>
+          <div class="row"><span class="kbds"><kbd>ماوس</kbd></span><span class="desc">نگاه کردن (کلیک یا درگ)</span></div>
+          <div class="row"><span class="kbds"><kbd>Shift</kbd></span><span class="desc">دویدن</span></div>
+          <div class="row"><span class="kbds"><kbd>E</kbd></span><span class="desc">تعامل با پنل محتوا</span></div>
+          <div class="row"><span class="kbds"><kbd>M</kbd></span><span class="desc">منوی اتاق‌ها</span></div>
+        </div>
+        <button type="button" class="cta" id="start-btn">ورود به خانه</button>
+      </div>
+    </div>
+  </div>
+
+  <script crossorigin="anonymous" src="//unpkg.com/same-runtime/dist/index.global.js"></script>
+</body>
+
+</html>
