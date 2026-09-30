@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '110';
+var APP_VERSION = '111';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -1410,7 +1410,7 @@ function jobSystemPrompt(){
   var sc = job.scenario; if(!sc) return '';
   var roleDesc = ({'User':'a non-technical office worker','Manager':'Ildar, a Russian IT manager (English is second language; brief and direct)','Colleague':'a friendly colleague'})[sc.role] || 'a colleague';
   var levelHint = {easy:'VERY simple questions.',medium:'Moderate questions.',hard:'Natural questions.',real:'Fully natural.'}[sc.level] || '';
-  return 'ROLE SYSTEM — READ CAREFULLY:\n- All messages in history that start with "ARM:" are from ARMIN (the human).\n- All messages that start with "AI:" are from YOU (the character: '+sc.role+').\n- NEVER write Armin\'s next message. Only write YOUR next line as '+sc.role+'.\n\nYou are Armin\'s personal English TEACHER, and you ALSO ROLE-PLAY as '+roleDesc+'.' + getUserContext() + '\nSCENARIO: '+sc.title+'\nCONTEXT: '+sc.opening+'\nYOUR ROLE: '+sc.role+'\nLEVEL: '+(sc.level||'medium')+' — '+levelHint+'\n\nTASK 1 — Write YOUR next role-play line ("reply"). This is what '+sc.role+' would say next. It must NEVER be what Armin would say.\nTASK 2 — Analyse ARMIN\'s LAST message ("analysis"). Find the LATEST message in history starting with "ARM:". That is the one to analyse.\n- "corrected" = improved version of THAT ARM message (empty if already good).\n- "perfect_version" = ideal 10/10 version of THAT ARM message.\n- Both must be close in length to Armin\'s original. If Armin wrote 5 words, perfect_version is ~5 words.\n- NEVER put your own role-play line in "corrected" or "perfect_version".\n\nRules: SHORT lines (1-2 sentences). If score<10, ALWAYS include "perfect_version".\nReturn ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"empty if no correction","perfect_version":"10/10 rewrite (required if score<10)","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"...","brevity_note":"too long|too short|good"},"scenario_complete":false}';
+  return 'ROLE SYSTEM — READ CAREFULLY:\n- All messages in history that start with "ARM:" are from ARMIN (the human).\n- All messages that start with "AI:" are from YOU (the character: '+sc.role+').\n- NEVER write Armin\'s next message. Only write YOUR next line as '+sc.role+'.\n\nYou are Armin\'s personal English TEACHER, and you ALSO ROLE-PLAY as '+roleDesc+'.' + getUserContext() + '\nSCENARIO: '+sc.title+'\nCONTEXT: '+sc.opening+'\nYOUR ROLE: '+sc.role+'\nLEVEL: '+(sc.level||'medium')+' — '+levelHint+'\n\nTASK 1 — Write YOUR next role-play line ("reply"). This is what '+sc.role+' would say next. It must NEVER be what Armin would say.\n\nTASK 2 — Analyse ARMIN\'s very LAST message ("analysis"). Identify the ARM: message that is CLOSEST TO THE BOTTOM of the conversation (the most recent ARM message). This is the ONLY message you must analyse. Do NOT analyse an earlier ARM message.\n- Even if this ARM message is very short, broken, unclear, or seems strange, you MUST still analyse it and give a score. Do NOT skip it and do NOT fall back to analysing an earlier message.\n- "corrected" = improved version of THIS SPECIFIC latest message (empty if already good).\n- "perfect_version" = ideal 10/10 version of THIS SPECIFIC latest message.\n- Both must be close in length to Armin\'s original. If Armin wrote 5 words, perfect_version is ~5 words.\n- NEVER put your own role-play line in "corrected" or "perfect_version".\n- NEVER copy text from an earlier ARM message into "corrected".\n\nRules: SHORT lines (1-2 sentences). If score<10, ALWAYS include "perfect_version".\nReturn ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"empty if no correction","perfect_version":"10/10 rewrite (required if score<10)","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"...","brevity_note":"too long|too short|good"},"scenario_complete":false}';
 }
 function renderJob(){
   var el = $('#main');
@@ -1579,6 +1579,23 @@ function jobBubble(t){
   }
   return '<div class="b job-me"><div class="bt" dir="ltr">'+esc(t.text)+'</div></div>'+(t.err?'<div class="an">ارسال نشد.</div>':jobAnalysis(t));
 }
+function jobWrongMsgMatch(currentTurn, aiText){
+  if(!currentTurn || !currentTurn.text || !aiText) return false;
+  var currentSim = sim(norm(aiText), norm(currentTurn.text));
+  var tIdx = -1;
+  for(var k = 0; k < job.turns.length; k++){
+    if(job.turns[k] === currentTurn){ tIdx = k; break; }
+  }
+  if(tIdx < 0) return false;
+  for(var k2 = 0; k2 < tIdx; k2++){
+    var prev = job.turns[k2];
+    if(prev.role !== 'me' || !prev.text) continue;
+    var prevSim = sim(norm(aiText), norm(prev.text));
+    if(prevSim > currentSim + 0.15 && prevSim > 0.45) return true;
+  }
+  return false;
+}
+
 function jobAnalysis(t){
   if(t.pending) return '<div class="an"><span class="dots"><i></i><i></i><i></i></span> در حال تحلیل…</div>';
   var a = t.an; if(!a) return '';
@@ -1595,11 +1612,13 @@ function jobAnalysis(t){
   var corrected = (a.corrected||'').trim();
   if(corrected && aiReply && sim(norm(corrected), norm(aiReply)) > 0.7) corrected = '';
   if(corrected && norm(t.text) && sim(norm(corrected), norm(t.text)) < 0.15) corrected = '';
+  if(corrected && jobWrongMsgMatch(t, corrected)) corrected = '';
   if(corrected && corrected.toLowerCase() !== 'natural' && norm(corrected)!==norm(t.text)) h += '<div class="fix"><span>✓</span><span dir="ltr">'+esc(corrected)+'</span></div>';
   ms.forEach(function(m){h += '<div class="mk"><div dir="ltr"><s>'+esc(m.original)+'</s> → <b>'+esc(m.fix)+'</b></div><div>'+esc(m.explain_fa||'')+'</div></div>'});
   var pv = (a.perfect_version||'').trim();
   if(pv && aiReply && sim(norm(pv), norm(aiReply)) > 0.7) pv = '';
   if(pv && norm(t.text) && sim(norm(pv), norm(t.text)) < 0.15) pv = '';
+  if(pv && jobWrongMsgMatch(t, pv)) pv = '';
   if(pv && a.score != null && a.score < 10 && norm(pv) !== norm(t.text) && norm(pv) !== norm(corrected)){
     h += '<div class="better"><small>🎯 برای ۱۰ از ۱۰:</small><span dir="ltr">'+esc(pv)+'</span> <button type="button" class="mini" data-say="'+esc(pv)+'">'+ic('vol')+'</button></div>';
   }
