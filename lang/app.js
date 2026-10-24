@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '113';
+var APP_VERSION = '114';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -895,7 +895,7 @@ function renderGrammar(){
   $$('[data-gramtopic]').forEach(function(b){b.onclick = function(){openGrammarTopic(b.getAttribute('data-gramtopic'))}});
 }
 
-var GRAMMAR_SYS='You are the world\'s best English grammar teacher for Persian speakers. Create an EXTREMELY detailed lesson.\nReturn ONLY valid JSON:\n{"title":string,"titleFa":string,"intro_fa":string,"duration_read_min":number,"duration_practice_min":number,"rules":[{"num":number,"title":string,"explain_fa":string,"structure":string,"examples":[{"en":string,"fa":string}],"persian_warning":string}],"common_mistakes":[{"wrong":string,"right":string,"why_fa":string}],"when_to_use":[{"situation_fa":string,"example_en":string}],"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}],"fill_blanks":[{"sentence":string,"answer":string,"hint_fa":string}],"correction":[{"wrong":string,"right":string,"why_fa":string}],"speaking_practice":[{"en":string,"fa":string}],"cheat_sheet_fa":string,"extra_tips_fa":[string]}\nRules: 8-12 rules. 25 quiz. 15 fill-blanks. 10 correction. 5 speaking. Everything in Persian where needed. Return ONLY JSON.';
+var GRAMMAR_SYS='You are the world\'s best English grammar teacher for Persian speakers. Create an EXTREMELY detailed lesson.\nReturn ONLY valid JSON:\n{"title":string,"titleFa":string,"intro_fa":string,"duration_read_min":number,"duration_practice_min":number,"rules":[{"num":number,"title":string,"explain_fa":string,"structure":string,"examples":[{"en":string,"fa":string}],"persian_warning":string}],"common_mistakes":[{"wrong":string,"right":string,"why_fa":string}],"when_to_use":[{"situation_fa":string,"example_en":string}],"quiz":[{"q":string,"options":[string,string,string,string],"answer":number,"why_fa":string}],"fill_blanks":[{"sentence":string,"answer":string,"hint_fa":string}],"correction":[{"wrong":string,"right":string,"why_fa":string}],"speaking_practice":[{"en":string,"fa":string}],"cheat_sheet_fa":string,"extra_tips_fa":[string]}\nRules: 6-8 rules. 10 quiz. 5 fill-blanks. 5 correction. 3 speaking. Everything in Persian where needed. Return ONLY JSON.';
 
 function openGrammarTopic(id){
   var gt = findGrammarTopic(id);
@@ -916,7 +916,7 @@ function openGrammarTopic(id){
 }
 function genGrammarTopic(id, gt){
   var msg = 'Topic: '+gt.topic.title+' ('+gt.topic.titleFa+')\nLevel: '+gt.level.level+'\nWhy hard: '+gt.topic.why+'\n\nCreate the FULL lesson now.';
-  callAI(GRAMMAR_SYS + getUserContext(), [{role:'user',content:msg}], 8000)
+  callAI(GRAMMAR_SYS + getUserContext(), [{role:'user',content:msg}], 8192)
     .then(function(raw){
       var j = parseJSON(raw);
       grammarCache[id] = j;
