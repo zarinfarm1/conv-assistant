@@ -581,11 +581,22 @@ function getUserContext(){
 }
 
 // ============ API ============
-function callAI(system,messages,max){
+function callAI(system, messages, max, opts){
   max = max || 1500;
+  opts = opts || {};
   if(!settings.key) return Promise.reject(new Error('NOKEY'));
   var proxies = getProxyList();
-  var body = {model:settings.model, max_tokens:max, messages:[{role:'system',content:system}].concat(messages)};
+
+  var body = {
+    model: settings.model,
+    max_tokens: max,
+    messages: [{role:'system', content:system}].concat(messages)
+  };
+
+  // ✅ فقط برای مدل‌هایی که ازش پشتیبانی می‌کنن
+  if (opts.json && /^(gpt-|deepseek-)/i.test(settings.model)) {
+    body.response_format = { type: 'json_object' };
+  };
   function callViaProxy(baseUrl){
     var isGAS = baseUrl.indexOf('script.google.com') >= 0;
     var fetchUrl, fetchOptions;
@@ -856,32 +867,42 @@ function renderSprint() {
   drawSprintChat();
 }
 
-function startSprintExtra(idx) {
-  var sc = SPRINT_EXTRA_SCENARIOS[idx];
-  sprint = { started: true, day: null, extra: sc, history: [], turns: [], busy: false, lastSentText: '' };
-  go('sprint');
-  // Ildar starts
-  sprint.turns.push({ role: 'ai', text: sc.opening, fa: '' });
-  drawSprintChat();
-  if (settings.autoplay) speak(sc.opening);
-}
-
 function startSprintDay(dayNum) {
   var d = SPRINT_DATA.find(function(x) { return x.day === dayNum; });
   sprint = { started: true, day: d, history: [], turns: [], busy: false, lastSentText: '' };
   go('sprint');
-  // Ildar starts
   sprint.busy = true;
   drawSprintChat();
-  callAI(sprintSystemPrompt(), [{role:'user', content: '[START]'}], 1000)
+
+  callAI(sprintSystemPrompt(), [{role:'user', content:'[START]'}], 1000, { json: true })
     .then(function(raw) {
-      var j = parseJSON(raw);
+      var j;
+      try { j = parseJSON(raw); }
+      catch(e) {
+        console.warn('[Sprint START] non-JSON, using raw:', raw);
+        j = { reply: String(raw).replace(/```[a-z]*\n?/g,'').replace(/```/g,'').trim(), reply_fa: '' };
+      }
       sprint.turns.push({ role: 'ai', text: j.reply, fa: j.reply_fa });
       sprint.busy = false;
       drawSprintChat();
       if (settings.autoplay) speak(j.reply);
     })
-    .catch(function(e) { sprint.busy = false; toast(errText(e), 6000); drawSprintChat(); });
+    .catch(function(e) {
+      sprint.busy = false;
+      drawSprintChat();
+      var c = $('#sprintChat');
+      if (c && sprint.turns.length === 0) {
+        c.innerHTML = '<div class="card" style="text-align:center"><p style="color:var(--bad)">'
+          + esc(errText(e))
+          + '</p><button type="button" class="btn brand" id="retryStartBtn">شروع دوباره</button></div>';
+        var rb = $('#retryStartBtn');
+        if (rb) rb.onclick = function() {
+          sprint.turns = []; sprint.busy = true;
+          drawSprintChat();
+          startSprintDay(dayNum);
+        };
+      }
+    });
 }
 
 function sendSprint(text, conf, voice) {
@@ -894,19 +915,29 @@ function sendSprint(text, conf, voice) {
   sprint.busy = true;
   drawSprintChat();
 
-  // ✅ فیکس: پیام فعلی هم باید توی history باشه
-  var history = sprint.turns.filter(function(t) {
-    return !t.err;  // پیام‌های خطاخورده رو نادیده بگیر
-  }).map(function(t) {
-    return { role: t.role === 'ai' ? 'assistant' : 'user', content: t.text };
-  });
+  // ✅ فیکس: پیام فعلی هم در history هست (pending رو فیلتر نکن)
+  var history = sprint.turns
+    .filter(function(t) { return !t.err && t.text; })
+    .map(function(t) {
+      return { role: t.role === 'ai' ? 'assistant' : 'user', content: t.text };
+    });
 
   var sysPrompt = sprint.extra ? sprintExtraSystemPrompt(sprint.extra) : sprintSystemPrompt();
-  callAI(sysPrompt, history, 1200)
+  callAI(sysPrompt, history, 1500, { json: true })   // ← حتماً {json:true}
     .then(function(raw) {
-      var j = parseJSON(raw);
+      var j;
+      try { j = parseJSON(raw); }
+      catch(e) {
+        // ✅ FALLBACK: اگه JSON نشد، خود متن رو جواب بگیر، برنامه رو نکش
+        console.warn('[Sprint] non-JSON response, using raw as reply:', raw);
+        j = {
+          reply: String(raw).replace(/```[a-z]*\n?/g,'').replace(/```/g,'').trim(),
+          reply_fa: '',
+          analysis: { score: 7, is_correct: true, corrected: '', mistakes: [], tip_fa: '' }
+        };
+      }
       ut.pending = false;
-      ut.an = j.analysis || { score: 7, is_correct: true, mistakes: [] };
+      ut.an = j.analysis || { score: 7, is_correct: true, corrected: '', mistakes: [] };
       sprint.turns.push({ role: 'ai', text: j.reply, fa: j.reply_fa });
       sprint.busy = false;
       drawSprintChat();
