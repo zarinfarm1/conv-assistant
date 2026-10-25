@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '115';
+var APP_VERSION = '116';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -735,6 +735,39 @@ var SPRINT_DATA = [
   { day: 10, title: 'نجات دهنده (The Save)', formula: 'My spoken English is not perfect, but I am working on it.', fa: 'انگلیسی گفتاری من کامل نیست، ولی دارم روش کار می‌کنم.', phrases: ['Sorry, my English is not perfect.', 'Could you speak a little slower?', 'Let me try to explain again.'], prompt: "You are Ildar. Act like you don't understand Armin's accent. Make him use the 'save' formula." }
 ];
 
+var SPRINT_EXTRA_SCENARIOS = [
+  // تجهیزات
+  { cat: 'تجهیزات', title: 'درخواست لپ‌تاپ جدید', opening: 'Armin, I need you to prepare 3 new HP laptops for the new team. Do we have them in stock?', hint: 'تعداد موجودی رو بگو و اگه کمه پیشنهاد خرید بده.' },
+  { cat: 'تجهیزات', title: 'خرابی مانیتور', opening: 'The monitor in the meeting room is broken again. Can you check it?', hint: 'تأیید کن که چک می‌کنی و بگو کی می‌رسی.' },
+  { cat: 'تجهیزات', title: 'خرید تجهیزات', opening: 'We need to order 5 new keyboards. Can you handle that?', hint: 'تأیید کن و بپرس چه مدلی و از کجا.' },
+  
+  // پیگیری موضوعی
+  { cat: 'پیگیری', title: 'پیگیری فاکتور آریانت', opening: 'Any update on the Arianet invoices?', hint: 'بگو وضعیت چیه و قدم بعدی چیه.' },
+  { cat: 'پیگیری', title: 'پیدا کردن قرارداد', opening: 'Did you get the signed contract from Milad?', hint: 'بگو گرفتی یا نه و کی تحویل می‌دی.' },
+  { cat: 'پیگیری', title: 'چک کردن وضعیت یه کار', opening: 'Is the network issue on the 3rd floor resolved?', hint: 'بگو حل شد یا در حال بررسیشه.' },
+  { cat: 'پیگیری', title: 'پیگیری از همکار', opening: 'Did you talk to Artem about his Office re-install?', hint: 'بگو هماهنگ کردی یا نه.' },
+  
+  // گپ روزمره و صبحگاهی
+  { cat: 'گپ روزمره', title: 'سلام صبحگاهی', opening: 'Good morning, Armin. How is it going?', hint: 'سلام کن، بگو خوبی و یه سوال کوتاه بپرس.' },
+  { cat: 'گپ روزمره', title: 'درباره آخر هفته', opening: 'Did you have a good weekend?', hint: 'جواب کوتاه بده و از آخر هفته اون بپرس.' },
+  { cat: 'گپ روزمره', title: 'آب و هوا', opening: 'It is very cold in Moscow today. How is the weather in Ahvaz?', hint: 'درباره آب‌وهوای اینجا بگو.' },
+  
+  // دستورات و وظایف
+  { cat: 'وظایف', title: 'تحویل تجهیزات', opening: 'Please give this laptop to Azat Garaev. He is in Shadegan wing.', hint: 'تأیید کن و بگو انجام می‌دی.' },
+  { cat: 'وظایف', title: 'لیست کاربران', opening: 'Prepare a list of all users in the domain by tomorrow.', hint: 'تأیید کن و بپرس فرمت خاصی می‌خواد یا نه.' },
+  { cat: 'وظایف', title: 'تشخیص مشکل شبکه', opening: 'The internet is down in the whole building. What is the problem?', hint: 'بگو داری چک می‌کنی و اولویت اولته.' }
+];
+
+function sprintExtraSystemPrompt(sc) {
+  return 'You are Ildar, Armin\'s Russian IT manager. You speak short, direct English.\n' +
+    'SCENARIO: ' + sc.title + '\n' +
+    'OPENING LINE: ' + sc.opening + '\n' +
+    'RULES:\n' +
+    '1. Reply in 1-2 short sentences as Ildar, reacting to Armin\'s response.\n' +
+    '2. Evaluate Armin\'s reply. Was it professional? Was it brief?\n' +
+    '3. Return ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"natural version","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"نکته"}}';
+}
+
 function sprintSystemPrompt() {
   var d = sprint.day;
   return 'You are Ildar, Armin\'s Russian IT manager. You speak short, direct English.\n' +
@@ -761,21 +794,48 @@ function renderSprint() {
       h += '</button>';
     });
     h += '</div>';
+
+    // اضافه کردن بانک سناریو
+    h += '<h2 style="margin-top:30px; color:var(--job)">💼 بانک سناریوهای ایلدار</h2>';
+    h += '<p class="sub">سناریوهای واقعی که ممکنه ایلدار تو ملاقات حضوری مطرح کنه. یکی رو انتخاب کن و جواب بده.</p>';
+    
+    var currentCat = '';
+    SPRINT_EXTRA_SCENARIOS.forEach(function(sc, idx) {
+      if (sc.cat !== currentCat) {
+        h += '<h3 style="margin-top:16px; font-size:.9rem;">' + sc.cat + '</h3>';
+        currentCat = sc.cat;
+      }
+      h += '<button type="button" class="task" data-extra="' + idx + '" style="margin-bottom:8px;">';
+      h += '<div class="tick">▶</div><div class="body"><div class="tt">' + sc.title + '</div><div class="td" dir="ltr">' + sc.opening + '</div></div><span class="badge jb">تمرین</span>';
+      h += '</button>';
+    });
+
     el.innerHTML = h;
     $$('.unit').forEach(function(b) { b.onclick = function() { startSprintDay(+b.getAttribute('data-day')); }; });
+    $$('.task[data-extra]').forEach(function(b) { b.onclick = function() { startSprintExtra(+b.getAttribute('data-extra')); }; });
     return;
   }
 
   // Play mode
   var d = sprint.day;
+  var isExtra = !!sprint.extra;
   var h = '<button type="button" class="link" id="sprintBack">← بازگشت</button>';
-  h += '<div class="thead"><div><b>روز ' + fa(d.day) + ': ' + d.title + '</b><div class="sub" style="font-size:.85rem">فرمول هدف: <span dir="ltr">' + d.formula + '</span></div></div></div>';
-  h += '<div class="card" style="margin-bottom:12px;background:var(--brand-soft);border-color:var(--brand)">';
-  h += '<div style="font-weight:700;font-size:.85rem;color:var(--brand);margin-bottom:6px">عبارت‌های کلیدی:</div>';
-  d.phrases.forEach(function(p) {
-    h += '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed var(--line);padding:6px 0;"><span dir="ltr" style="font-family:Lexend;font-size:.95rem">' + p + '</span><button type="button" class="mini" data-say="' + p + '">🔊</button></div>';
-  });
-  h += '</div>';
+  
+  if (isExtra) {
+    h += '<div class="thead"><div><span class="pill job">' + sprint.extra.cat + '</span> <b>' + sprint.extra.title + '</b></div></div>';
+    h += '<div class="card" style="margin-bottom:12px;background:var(--job-soft);border-color:var(--job)">';
+    h += '<div style="font-weight:700;font-size:.85rem;color:var(--job);margin-bottom:6px">💡 راهنما:</div>';
+    h += '<div style="font-size:.9rem;color:var(--ink)">' + sprint.extra.hint + '</div>';
+    h += '</div>';
+  } else {
+    h += '<div class="thead"><div><b>روز ' + fa(d.day) + ': ' + d.title + '</b><div class="sub" style="font-size:.85rem">فرمول هدف: <span dir="ltr">' + d.formula + '</span></div></div></div>';
+    h += '<div class="card" style="margin-bottom:12px;background:var(--brand-soft);border-color:var(--brand)">';
+    h += '<div style="font-weight:700;font-size:.85rem;color:var(--brand);margin-bottom:6px">عبارت‌های کلیدی:</div>';
+    d.phrases.forEach(function(p) {
+      h += '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed var(--line);padding:6px 0;"><span dir="ltr" style="font-family:Lexend;font-size:.95rem">' + p + '</span><button type="button" class="mini" data-say="' + p + '">🔊</button></div>';
+    });
+    h += '</div>';
+  }
   h += '<div class="chat" id="sprintChat">' + sprint.turns.map(jobBubble).join('') + '</div>';
   h += '<div class="composer"><div class="hint">به انگلیسی جواب بده.</div><div class="cbox"><button type="button" class="mic job-mic ' + (listening ? 'rec' : '') + '" id="sprintMic">' + ic('mic') + '</button><input type="text" id="sprintMsg" dir="ltr" placeholder="Type reply…"><button type="button" id="sprintRetry" title="ارسال دوباره" style="width:42px;height:42px;border-radius:50%;background:var(--accent-soft);color:var(--accent);border:1.5px solid var(--accent);font-size:20px;font-weight:700;cursor:pointer;flex:none;padding:0">↻</button><button type="button" class="send" id="sprintSend">' + ic('send') + '</button></div></div>';
 
@@ -786,6 +846,16 @@ function renderSprint() {
   $('#sprintMsg').onkeydown = function(e) { if (e.key === 'Enter') { e.preventDefault(); sendSprint($('#sprintMsg').value, null, false); } };
   $('#sprintRetry').onclick = retrySprint;
   drawSprintChat();
+}
+
+function startSprintExtra(idx) {
+  var sc = SPRINT_EXTRA_SCENARIOS[idx];
+  sprint = { started: true, day: null, extra: sc, history: [], turns: [], busy: false, lastSentText: '' };
+  go('sprint');
+  // Ildar starts
+  sprint.turns.push({ role: 'ai', text: sc.opening, fa: '' });
+  drawSprintChat();
+  if (settings.autoplay) speak(sc.opening);
 }
 
 function startSprintDay(dayNum) {
@@ -820,7 +890,8 @@ function sendSprint(text, conf, voice) {
     return { role: t.role === 'ai' ? 'assistant' : 'user', content: t.text };
   });
 
-  callAI(sprintSystemPrompt(), history, 1000)
+  var sysPrompt = sprint.extra ? sprintExtraSystemPrompt(sprint.extra) : sprintSystemPrompt();
+  callAI(sysPrompt, history, 1000)
     .then(function(raw) {
       var j = parseJSON(raw);
       ut.pending = false;
