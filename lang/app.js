@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '114';
+var APP_VERSION = '115';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -69,6 +69,7 @@ var job={view:'cats',catId:null,scenario:null,history:[],turns:[],busy:false,cou
 var free={mode:null,situation:null,turns:[],busy:false,count:0,done:false,showHint:false};
 var gram={level:null,topic:null,lesson:null,step:'learn',loading:false,err:null};
 var listening=false, rec=null;
+var sprint={started:false, day:null, history:[], turns:[], busy:false, lastSentText:''};
 
 function saveProg(){
   if(!prog.program || typeof prog.program !== 'object') prog.program = {};
@@ -702,6 +703,7 @@ function go(v){
 function render(){
   try{
     if(view==='program') return renderProgram();
+    if(view==='sprint') return renderSprint();
     if(view==='grammar') return renderGrammar();
     if(view==='gramtopic') return renderGrammarTopic();
     if(view==='free') return renderFree();
@@ -717,6 +719,145 @@ function render(){
     var m = $('#main');
     if(m) m.innerHTML = '<div class="card"><b>خطا در نمایش</b><p style="margin:10px 0;font-family:monospace;font-size:12px" dir="ltr">'+esc(e.message)+'</p><button class="btn brand" onclick="location.reload()" type="button">رفرش</button></div>';
   }
+}
+
+// ============ 10-DAY SPRINT MODE ============
+var SPRINT_DATA = [
+  { day: 1, title: 'گزارش روزانه (The Formula)', formula: 'Yesterday I [verb-ed]. Today I am [verb-ing]. No blockers.', fa: 'دیروز [فلان کار] کردم. امروز دارم [فلان کار] می‌کنم. مشکلی نیست.', phrases: ['Yesterday I finished the printer issue.', 'Today I am setting up two laptops.', 'No blockers right now.'], prompt: "You are Ildar. It's morning. Ask Armin for a quick update on what he did yesterday and what he is doing today." },
+  { day: 2, title: 'خرید زمان (Buying Time)', formula: 'Let me check. / Give me a minute. / I will get back to you.', fa: 'بذار چک کنم. / یه دقیقه وقت بده. / بهت خبر می‌دم.', phrases: ['Let me check my notes.', 'Give me 10 minutes.', 'I will get back to you.'], prompt: "You are Ildar. Ask Armin a question about an invoice, but you are in a hurry. He needs to buy time to check." },
+  { day: 3, title: 'نفهمیدم (Clarification)', formula: 'Sorry, could you repeat that? / Do you mean [X]?', fa: 'ببخشید، می‌تونی تکرار کنی؟ / منظورت [فلان] هست؟', phrases: ['Sorry, could you repeat that?', 'Do you mean the HP printer?', 'Let me make sure I understand.'], prompt: "You are Ildar. Ask a very fast, mumbled question about 'the thing from yesterday'. Armin needs to ask you to repeat." },
+  { day: 4, title: 'پشتیبانی IT (The Fix)', formula: 'Did you try restarting? / Is it plugged in?', fa: 'سعی کردی ری‌استارت کنی؟ / به برق وصله؟', phrases: ['Did you try restarting it?', 'Is the cable plugged in?', 'Let me remote in and check.'], prompt: "You are an angry user. Your printer is completely dead. Make Armin ask you basic troubleshooting questions." },
+  { day: 5, title: 'درخواست تایید (Approval)', formula: 'Do you approve? / Should I proceed?', fa: 'تایید می‌کنی؟ / ادامه بدم؟', phrases: ['A user requested a new laptop. Do you approve?', 'Should I proceed with the setup?', 'Is it okay to order more?' ], prompt: "You are Ildar. Armin is going to ask you for approval on something. Say 'Yes, go ahead' or 'No, wait'." },
+  { day: 6, title: 'نمی‌دانم (I don\'t know)', formula: 'I am not sure. I will check and tell you.', fa: 'مطمئن نیستم. چک می‌کنم و بهت می‌گم.', phrases: ['I am not sure.', 'I will check and tell you.', 'I don\'t have that information yet.'], prompt: "You are Ildar. Ask Armin a very specific, technical question he definitely doesn't know the answer to." },
+  { day: 7, title: 'تأخیر (The Delay)', formula: 'Sorry for the delay. It took longer than expected.', fa: 'ببخشید دیر شد. بیشتر از انتظار طول کشید.', phrases: ['Sorry for the delay.', 'It took longer than expected.', 'I will have it ready by tomorrow.'], prompt: "You are Ildar. Act slightly annoyed. Ask Armin why the laptop setup is delayed." },
+  { day: 8, title: 'تأیید دستور (Confirming)', formula: 'Understood. So, you want me to [X]?', fa: 'متوجه شدم. پس می‌خوای من [فلان کار] رو بکنم؟', phrases: ['Understood.', 'So, you want me to give it to Milad?', 'Got it. I will do it now.'], prompt: "You are Ildar. Give Armin a complex, multi-step instruction really fast." },
+  { day: 9, title: 'گپ کوتاه (Small Talk)', formula: 'Good morning. How was your weekend?', fa: 'صبح بخیر. آخر هفته چطور بود؟', phrases: ['Good morning, Ildar.', 'How was your weekend?', 'Have a good day.'], prompt: "You are Ildar. You meet Armin in the hallway. Greet him and make a short comment about the weather." },
+  { day: 10, title: 'نجات دهنده (The Save)', formula: 'My spoken English is not perfect, but I am working on it.', fa: 'انگلیسی گفتاری من کامل نیست، ولی دارم روش کار می‌کنم.', phrases: ['Sorry, my English is not perfect.', 'Could you speak a little slower?', 'Let me try to explain again.'], prompt: "You are Ildar. Act like you don't understand Armin's accent. Make him use the 'save' formula." }
+];
+
+function sprintSystemPrompt() {
+  var d = sprint.day;
+  return 'You are Ildar, Armin\'s Russian IT manager. You speak short, direct English.\n' +
+    'Today\'s scenario: ' + d.title + '\n' +
+    'Target formula Armin is practicing: ' + d.formula + '\n' +
+    d.prompt + '\n\n' +
+    'RULES:\n' +
+    '1. Reply in 1-2 short sentences as Ildar.\n' +
+    '2. Evaluate Armin\'s reply. Did he use the target formula? Did he freeze?\n' +
+    '3. Return ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"used_formula":true/false,"tip_fa":"نکته"}}';
+}
+
+function renderSprint() {
+  var el = $('#main');
+  if (!sprint.started) {
+    var h = '<h1>🏃‍♂️ اسپرینت ۱۰ روزه ایلدار</h1>';
+    h += '<p class="sub">فرمول‌های نجات‌بخش برای ملاقات حضوری. هر روز فقط ۱ فرمول.</p>';
+    h += '<div class="units" style="margin-top:20px;">';
+    SPRINT_DATA.forEach(function(d) {
+      h += '<button type="button" class="unit" data-day="' + d.day + '" style="flex-direction:column;align-items:flex-start;padding:16px;">';
+      h += '<div style="display:flex;justify-content:space-between;width:100%;margin-bottom:8px;"><span class="n" style="width:30px;height:30px;font-size:.8rem;">' + fa(d.day) + '</span><span class="badge lv">' + d.title + '</span></div>';
+      h += '<div class="t" style="font-size:.9rem;color:var(--brand)" dir="ltr">' + d.formula + '</div>';
+      h += '<div class="f">' + d.fa + '</div>';
+      h += '</button>';
+    });
+    h += '</div>';
+    el.innerHTML = h;
+    $$('.unit').forEach(function(b) { b.onclick = function() { startSprintDay(+b.getAttribute('data-day')); }; });
+    return;
+  }
+
+  // Play mode
+  var d = sprint.day;
+  var h = '<button type="button" class="link" id="sprintBack">← بازگشت</button>';
+  h += '<div class="thead"><div><b>روز ' + fa(d.day) + ': ' + d.title + '</b><div class="sub" style="font-size:.85rem">فرمول هدف: <span dir="ltr">' + d.formula + '</span></div></div></div>';
+  h += '<div class="card" style="margin-bottom:12px;background:var(--brand-soft);border-color:var(--brand)">';
+  h += '<div style="font-weight:700;font-size:.85rem;color:var(--brand);margin-bottom:6px">عبارت‌های کلیدی:</div>';
+  d.phrases.forEach(function(p) {
+    h += '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed var(--line);padding:6px 0;"><span dir="ltr" style="font-family:Lexend;font-size:.95rem">' + p + '</span><button type="button" class="mini" data-say="' + p + '">🔊</button></div>';
+  });
+  h += '</div>';
+  h += '<div class="chat" id="sprintChat">' + sprint.turns.map(jobBubble).join('') + '</div>';
+  h += '<div class="composer"><div class="hint">به انگلیسی جواب بده.</div><div class="cbox"><button type="button" class="mic job-mic ' + (listening ? 'rec' : '') + '" id="sprintMic">' + ic('mic') + '</button><input type="text" id="sprintMsg" dir="ltr" placeholder="Type reply…"><button type="button" id="sprintRetry" title="ارسال دوباره" style="width:42px;height:42px;border-radius:50%;background:var(--accent-soft);color:var(--accent);border:1.5px solid var(--accent);font-size:20px;font-weight:700;cursor:pointer;flex:none;padding:0">↻</button><button type="button" class="send" id="sprintSend">' + ic('send') + '</button></div></div>';
+
+  el.innerHTML = h;
+  $('#sprintBack').onclick = function() { sprint.started = false; renderSprint(); };
+  $('#sprintMic').onclick = toggleSprintMic;
+  $('#sprintSend').onclick = function() { sendSprint($('#sprintMsg').value, null, false); };
+  $('#sprintMsg').onkeydown = function(e) { if (e.key === 'Enter') { e.preventDefault(); sendSprint($('#sprintMsg').value, null, false); } };
+  $('#sprintRetry').onclick = retrySprint;
+  drawSprintChat();
+}
+
+function startSprintDay(dayNum) {
+  var d = SPRINT_DATA.find(function(x) { return x.day === dayNum; });
+  sprint = { started: true, day: d, history: [], turns: [], busy: false, lastSentText: '' };
+  go('sprint');
+  // Ildar starts
+  sprint.busy = true;
+  drawSprintChat();
+  callAI(sprintSystemPrompt(), [{role:'user', content: '[START]'}], 1000)
+    .then(function(raw) {
+      var j = parseJSON(raw);
+      sprint.turns.push({ role: 'ai', text: j.reply, fa: j.reply_fa });
+      sprint.busy = false;
+      drawSprintChat();
+      if (settings.autoplay) speak(j.reply);
+    })
+    .catch(function(e) { sprint.busy = false; toast(errText(e), 6000); drawSprintChat(); });
+}
+
+function sendSprint(text, conf, voice) {
+  text = (text || '').trim();
+  if (!text || sprint.busy) return;
+  sprint.lastSentText = text;
+  $('#sprintMsg').value = '';
+  var ut = { role: 'me', text: text, pending: true };
+  sprint.turns.push(ut);
+  sprint.busy = true;
+  drawSprintChat();
+
+  var history = sprint.turns.filter(function(t) { return t.role === 'ai' || (t.role === 'me' && !t.pending); }).map(function(t) {
+    return { role: t.role === 'ai' ? 'assistant' : 'user', content: t.text };
+  });
+
+  callAI(sprintSystemPrompt(), history, 1000)
+    .then(function(raw) {
+      var j = parseJSON(raw);
+      ut.pending = false;
+      ut.an = j.analysis || {score: 7};
+      sprint.turns.push({ role: 'ai', text: j.reply, fa: j.reply_fa });
+      sprint.busy = false;
+      drawSprintChat();
+      if (settings.autoplay) speak(j.reply);
+    })
+    .catch(function(e) { sprint.busy = false; ut.pending = false; ut.err = true; drawSprintChat(); toast(errText(e), 6000); });
+}
+
+function retrySprint() {
+  if (sprint.busy) return;
+  var text = sprint.lastSentText;
+  if (!text) { toast('پیامی برای ارسال دوباره نیست'); return; }
+  var lastIdx = -1;
+  for (var i = sprint.turns.length - 1; i >= 0; i--) {
+    if (sprint.turns[i].role === 'me') { lastIdx = i; break; }
+  }
+  if (lastIdx >= 0) sprint.turns = sprint.turns.slice(0, lastIdx);
+  sendSprint(text, null, false);
+}
+
+function drawSprintChat() {
+  var c = $('#sprintChat');
+  if (!c) return;
+  c.innerHTML = sprint.turns.map(jobBubble).join('') + (sprint.busy && !sprint.turns.some(function(t) { return t.pending; }) ? '<div class="b ai"><span class="dots"><i></i><i></i><i></i></span></div>' : '');
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+}
+
+function toggleSprintMic() {
+  if (sprint.busy) return;
+  var b = $('#sprintMic');
+  if (listening) { rec && rec.stop(); return; }
+  rec = listen({ interim: function(t) { var m = $('#sprintMsg'); if (m) m.value = t; }, done: function(t, c) { listening = false; var bb = $('#sprintMic'); if (bb) bb.classList.remove('rec'); if (t) sendSprint(t, c, true); } });
+  if (rec) { listening = true; b && b.classList.add('rec'); }
 }
 
 // ============ PROGRAM RENDER ============
@@ -2178,6 +2319,18 @@ document.addEventListener('click', function(e){
       logo.appendChild(vb);
     }
   }catch(e){}
+})();
+
+(function injectSprintTab(){
+  var tabsNav = document.querySelector('.tabs');
+  if(!tabsNav || tabsNav.querySelector('[data-v="sprint"]')) return;
+  var b = document.createElement('button');
+  b.className = 'tab';
+  b.setAttribute('data-v', 'sprint');
+  b.setAttribute('type', 'button');
+  b.innerHTML = '🏃‍♂️ اسپرینت ۱۰ روزه';
+  b.onclick = function(){ go('sprint'); };
+  tabsNav.insertBefore(b, tabsNav.firstChild);
 })();
 
 $$('.tab').forEach(function(t){t.onclick=function(){go(t.getAttribute('data-v'))}});
