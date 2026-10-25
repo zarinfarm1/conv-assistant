@@ -763,9 +763,12 @@ function sprintExtraSystemPrompt(sc) {
     'SCENARIO: ' + sc.title + '\n' +
     'OPENING LINE: ' + sc.opening + '\n' +
     'RULES:\n' +
-    '1. Reply in 1-2 short sentences as Ildar, reacting to Armin\'s response.\n' +
-    '2. Evaluate Armin\'s reply. Was it professional? Was it brief?\n' +
-    '3. Return ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"natural version","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"نکته"}}';
+    '1. If the user message is exactly [START]: reply with the OPENING LINE. Return analysis with score=0, is_correct=true, corrected="", mistakes=[].\n' +
+    '2. Otherwise: reply in 1-2 short sentences as Ildar, reacting to Armin\'s LAST message.\n' +
+    '3. Evaluate ONLY Armin\'s LAST message — never earlier ones, never your own reply.\n' +
+    '4. "corrected": natural better version of HIS message. Empty if already good.\n' +
+    '5. "mistakes": grammar/vocabulary errors from HIS message.\n' +
+    '6. Return ONLY valid JSON: {"reply":"...","reply_fa":"...","analysis":{"score":0-10,"is_correct":true,"corrected":"...","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"..."}}';
 }
 
 function sprintSystemPrompt() {
@@ -773,11 +776,16 @@ function sprintSystemPrompt() {
   return 'You are Ildar, Armin\'s Russian IT manager. You speak short, direct English.\n' +
     'Today\'s scenario: ' + d.title + '\n' +
     'Target formula Armin is practicing: ' + d.formula + '\n' +
+    'Target phrases: ' + d.phrases.join(' | ') + '\n' +
     d.prompt + '\n\n' +
-    'RULES:\n' +
-    '1. Reply in 1-2 short sentences as Ildar.\n' +
-    '2. Evaluate Armin\'s reply. Did he use the target formula? Did he freeze?\n' +
-    '3. Return ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"used_formula":true/false,"tip_fa":"نکته"}}';
+    'CRITICAL RULES:\n' +
+    '1. If the user message is exactly [START]: open the conversation as Ildar with 1-2 short sentences. Return analysis with score=0, is_correct=true, corrected="", mistakes=[], tip_fa="".\n' +
+    '2. Otherwise: reply in 1-2 short sentences as Ildar, reacting to Armin\'s VERY LAST message.\n' +
+    '3. Evaluate ONLY Armin\'s LAST message — never earlier ones, never your own reply.\n' +
+    '4. "is_correct": true if his last reply is grammatically fine and appropriate; false otherwise.\n' +
+    '5. "corrected": natural, better version of HIS message. Empty string if already good.\n' +
+    '6. "mistakes": array of grammar/vocabulary errors from HIS message (original, fix, explain_fa).\n' +
+    '7. Return ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"...","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"نکته"}}';
 }
 
 function renderSprint() {
@@ -886,22 +894,31 @@ function sendSprint(text, conf, voice) {
   sprint.busy = true;
   drawSprintChat();
 
-  var history = sprint.turns.filter(function(t) { return t.role === 'ai' || (t.role === 'me' && !t.pending); }).map(function(t) {
+  // ✅ فیکس: پیام فعلی هم باید توی history باشه
+  var history = sprint.turns.filter(function(t) {
+    return !t.err;  // پیام‌های خطاخورده رو نادیده بگیر
+  }).map(function(t) {
     return { role: t.role === 'ai' ? 'assistant' : 'user', content: t.text };
   });
 
   var sysPrompt = sprint.extra ? sprintExtraSystemPrompt(sprint.extra) : sprintSystemPrompt();
-  callAI(sysPrompt, history, 1000)
+  callAI(sysPrompt, history, 1200)
     .then(function(raw) {
       var j = parseJSON(raw);
       ut.pending = false;
-      ut.an = j.analysis || {score: 7};
+      ut.an = j.analysis || { score: 7, is_correct: true, mistakes: [] };
       sprint.turns.push({ role: 'ai', text: j.reply, fa: j.reply_fa });
       sprint.busy = false;
       drawSprintChat();
       if (settings.autoplay) speak(j.reply);
     })
-    .catch(function(e) { sprint.busy = false; ut.pending = false; ut.err = true; drawSprintChat(); toast(errText(e), 6000); });
+    .catch(function(e) {
+      sprint.busy = false;
+      ut.pending = false;
+      ut.err = true;
+      drawSprintChat();
+      toast(errText(e), 6000);
+    });
 }
 
 function retrySprint() {
