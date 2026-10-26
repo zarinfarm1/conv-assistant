@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '117';
+var APP_VERSION = '118';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -767,12 +767,13 @@ function sprintExtraSystemPrompt(sc) {
     'SCENARIO: ' + sc.title + '\n' +
     'OPENING LINE: ' + sc.opening + '\n' +
     'RULES:\n' +
-    '1. If the user message is exactly [START]: reply with the OPENING LINE. Return analysis with score=0, is_correct=true, corrected="", mistakes=[].\n' +
+    '1. If the user message is exactly [START]: reply with the OPENING LINE. Return analysis with score=0, is_correct=true, corrected="", perfect_version="", mistakes=[].\n' +
     '2. Otherwise: reply in 1-2 short sentences as Ildar, reacting to Armin\'s LAST message.\n' +
     '3. Evaluate ONLY Armin\'s LAST message — never earlier ones, never your own reply.\n' +
     '4. "corrected": natural better version of HIS message. Empty if already good.\n' +
-    '5. "mistakes": grammar/vocabulary errors from HIS message.\n' +
-    '6. Return ONLY valid JSON: {"reply":"...","reply_fa":"...","analysis":{"score":0-10,"is_correct":true,"corrected":"...","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"..."}}';
+    '5. "perfect_version": ideal 10/10 rewrite of HIS message. REQUIRED when score<10. Empty only if score=10 or [START].\n' +
+    '6. "mistakes": grammar/vocabulary errors from HIS message.\n' +
+    '7. Return ONLY valid JSON: {"reply":"...","reply_fa":"...","analysis":{"score":0-10,"is_correct":true,"corrected":"...","perfect_version":"...","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"..."}}';
 }
 
 function sprintSystemPrompt() {
@@ -783,13 +784,14 @@ function sprintSystemPrompt() {
     'Target phrases: ' + d.phrases.join(' | ') + '\n' +
     d.prompt + '\n\n' +
     'CRITICAL RULES:\n' +
-    '1. If the user message is exactly [START]: open the conversation as Ildar with 1-2 short sentences. Return analysis with score=0, is_correct=true, corrected="", mistakes=[], tip_fa="".\n' +
+    '1. If the user message is exactly [START]: open the conversation as Ildar with 1-2 short sentences. Return analysis with score=0, is_correct=true, corrected="", perfect_version="", mistakes=[], tip_fa="".\n' +
     '2. Otherwise: reply in 1-2 short sentences as Ildar, reacting to Armin\'s VERY LAST message.\n' +
     '3. Evaluate ONLY Armin\'s LAST message — never earlier ones, never your own reply.\n' +
     '4. "is_correct": true if his last reply is grammatically fine and appropriate; false otherwise.\n' +
     '5. "corrected": natural, better version of HIS message. Empty string if already good.\n' +
-    '6. "mistakes": array of grammar/vocabulary errors from HIS message (original, fix, explain_fa).\n' +
-    '7. Return ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"...","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"نکته"}}';
+    '6. "perfect_version": ideal 10/10 rewrite of HIS message. REQUIRED when score<10. Empty only if score=10 or [START].\n' +
+    '7. "mistakes": array of grammar/vocabulary errors from HIS message (original, fix, explain_fa).\n' +
+    '8. Return ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"...","perfect_version":"...","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"نکته"}}';
 }
 
 function renderSprint() {
@@ -923,7 +925,7 @@ function sendSprint(text, conf, voice) {
           content: JSON.stringify({
             reply: t.text,
             reply_fa: t.fa || '',
-            analysis: { score: 0, is_correct: true, corrected: '', mistakes: [], tip_fa: '' }
+            analysis: { score: 0, is_correct: true, corrected: '', perfect_version: '', mistakes: [], tip_fa: '' }
           })
         };
       }
@@ -931,7 +933,7 @@ function sendSprint(text, conf, voice) {
     });
 
   var sysPrompt = sprint.extra ? sprintExtraSystemPrompt(sprint.extra) : sprintSystemPrompt();
-  callAI(sysPrompt, history, 1200, { json: true })
+  callAI(sysPrompt, history, 1500, { json: true })
     .then(function(raw) {
       var j;
       try { j = parseJSON(raw); }
@@ -940,11 +942,11 @@ function sendSprint(text, conf, voice) {
         j = {
           reply: String(raw).replace(/```[a-z]*\n?/g, '').replace(/```/g, '').trim(),
           reply_fa: '',
-          analysis: { score: 7, is_correct: true, corrected: '', mistakes: [], tip_fa: '' }
+          analysis: { score: 7, is_correct: true, corrected: '', perfect_version: '', mistakes: [], tip_fa: '' }
         };
       }
       ut.pending = false;
-      ut.an = j.analysis || { score: 7, is_correct: true, corrected: '', mistakes: [] };
+      ut.an = j.analysis || { score: 7, is_correct: true, corrected: '', perfect_version: '', mistakes: [] };
       sprint.turns.push({ role: 'ai', text: j.reply, fa: j.reply_fa });
       sprint.busy = false;
       drawSprintChat();
