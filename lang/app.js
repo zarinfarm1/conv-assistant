@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '116';
+var APP_VERSION = '117';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -581,11 +581,15 @@ function getUserContext(){
 }
 
 // ============ API ============
-function callAI(system,messages,max){
+function callAI(system,messages,max,opts){
   max = max || 1500;
+  opts = opts || {};
   if(!settings.key) return Promise.reject(new Error('NOKEY'));
   var proxies = getProxyList();
   var body = {model:settings.model, max_tokens:max, messages:[{role:'system',content:system}].concat(messages)};
+  if(opts.json && /^(gpt-|deepseek-)/i.test(settings.model)){
+    body.response_format = {type:'json_object'};
+  }
   function callViaProxy(baseUrl){
     var isGAS = baseUrl.indexOf('script.google.com') >= 0;
     var fetchUrl, fetchOptions;
@@ -873,15 +877,29 @@ function startSprintDay(dayNum) {
   // Ildar starts
   sprint.busy = true;
   drawSprintChat();
-  callAI(sprintSystemPrompt(), [{role:'user', content: '[START]'}], 1000)
+  callAI(sprintSystemPrompt(), [{role:'user', content: '[START]'}], 1000, { json: true })
     .then(function(raw) {
-      var j = parseJSON(raw);
+      var j;
+      try { j = parseJSON(raw); }
+      catch (e) {
+        console.warn('[Sprint START] non-JSON:', raw);
+        j = { reply: String(raw).replace(/```[a-z]*\n?/g, '').replace(/```/g, '').trim(), reply_fa: '' };
+      }
       sprint.turns.push({ role: 'ai', text: j.reply, fa: j.reply_fa });
       sprint.busy = false;
       drawSprintChat();
       if (settings.autoplay) speak(j.reply);
     })
-    .catch(function(e) { sprint.busy = false; toast(errText(e), 6000); drawSprintChat(); });
+    .catch(function(e) {
+      sprint.busy = false;
+      drawSprintChat();
+      var c = $('#sprintChat');
+      if (c && sprint.turns.length === 0) {
+        c.innerHTML = '<div class="card" style="text-align:center"><p style="color:var(--bad)">' + esc(errText(e)) + '</p><button type="button" class="btn brand" id="retryStartBtn">شروع دوباره</button></div>';
+        var rb = $('#retryStartBtn');
+        if (rb) rb.onclick = function() { sprint.turns = []; sprint.busy = true; drawSprintChat(); startSprintDay(dayNum); };
+      }
+    });
 }
 
 function sendSprint(text, conf, voice) {
@@ -894,19 +912,39 @@ function sendSprint(text, conf, voice) {
   sprint.busy = true;
   drawSprintChat();
 
-  // ✅ فیکس: پیام فعلی هم باید توی history باشه
-  var history = sprint.turns.filter(function(t) {
-    return !t.err;  // پیام‌های خطاخورده رو نادیده بگیر
-  }).map(function(t) {
-    return { role: t.role === 'ai' ? 'assistant' : 'user', content: t.text };
-  });
+  // 🔑 فیکس اصلی: پیام‌های assistant قبلی رو دوباره JSON-بندی کن
+  // تا AI ببینه «قبلاً JSON دادم» و از پیام دوم به بعد هم JSON بده
+  var history = sprint.turns
+    .filter(function(t) { return (t.role === 'ai' || t.role === 'me') && !t.err; })
+    .map(function(t) {
+      if (t.role === 'ai') {
+        return {
+          role: 'assistant',
+          content: JSON.stringify({
+            reply: t.text,
+            reply_fa: t.fa || '',
+            analysis: { score: 0, is_correct: true, corrected: '', mistakes: [], tip_fa: '' }
+          })
+        };
+      }
+      return { role: 'user', content: t.text };
+    });
 
   var sysPrompt = sprint.extra ? sprintExtraSystemPrompt(sprint.extra) : sprintSystemPrompt();
-  callAI(sysPrompt, history, 1200)
+  callAI(sysPrompt, history, 1200, { json: true })
     .then(function(raw) {
-      var j = parseJSON(raw);
+      var j;
+      try { j = parseJSON(raw); }
+      catch (e) {
+        console.warn('[Sprint] non-JSON, fallback to raw:', raw);
+        j = {
+          reply: String(raw).replace(/```[a-z]*\n?/g, '').replace(/```/g, '').trim(),
+          reply_fa: '',
+          analysis: { score: 7, is_correct: true, corrected: '', mistakes: [], tip_fa: '' }
+        };
+      }
       ut.pending = false;
-      ut.an = j.analysis || { score: 7, is_correct: true, mistakes: [] };
+      ut.an = j.analysis || { score: 7, is_correct: true, corrected: '', mistakes: [] };
       sprint.turns.push({ role: 'ai', text: j.reply, fa: j.reply_fa });
       sprint.busy = false;
       drawSprintChat();
@@ -1868,14 +1906,23 @@ function sendJob(text, conf, voice){
   var ut = {role:'me', text:text, pending:true};
   job.turns.push(ut); job.count++;
   job.busy = true; drawJobChat();
-  var history = job.turns.filter(function(t){return (t.role==='me'&&!t.pending)||t.role==='ai'}).map(function(t){
-    return {
-      role: t.role==='ai' ? 'assistant' : 'user',
-      content: (t.role==='ai' ? 'AI: ' : 'ARM: ') + t.text
-    };
-  });
-  history.push({role:'user', content: 'ARM: ' + text});
-  callAI('Return ONLY valid JSON.\n\n'+jobSystemPrompt(), history.slice(-12), 1400)
+  var history = job.turns
+    .filter(function(t){ return (t.role === 'me' || t.role === 'ai') && !t.err; })
+    .map(function(t){
+      if (t.role === 'ai') {
+        return {
+          role: 'assistant',
+          content: JSON.stringify({
+            reply: t.text,
+            reply_fa: t.fa || '',
+            analysis: {score:0, is_correct:true, corrected:'', perfect_version:'', mistakes:[], tip_fa:'', brevity_note:'good'},
+            scenario_complete: false
+          })
+        };
+      }
+      return { role: 'user', content: 'ARM: ' + t.text };
+    });
+  callAI('Return ONLY valid JSON.\n\n'+jobSystemPrompt(), history.slice(-12), 1400, { json: true })
     .then(function(raw){
       var j; try{j = parseJSON(raw)}catch(e){j = {reply:raw, reply_fa:'', analysis:{is_correct:true,mistakes:[]}}}
       ut.pending = false; ut.an = j.analysis || {is_correct:true};
