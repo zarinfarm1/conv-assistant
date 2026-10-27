@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '118';
+var APP_VERSION = '119';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -770,10 +770,11 @@ function sprintExtraSystemPrompt(sc) {
     '1. If the user message is exactly [START]: reply with the OPENING LINE. Return analysis with score=0, is_correct=true, corrected="", perfect_version="", mistakes=[].\n' +
     '2. Otherwise: reply in 1-2 short sentences as Ildar, reacting to Armin\'s LAST message.\n' +
     '3. Evaluate ONLY Armin\'s LAST message — never earlier ones, never your own reply.\n' +
-    '4. "corrected": natural better version of HIS message. Empty if already good.\n' +
-    '5. "perfect_version": ideal 10/10 rewrite of HIS message. REQUIRED when score<10. Empty only if score=10 or [START].\n' +
-    '6. "mistakes": grammar/vocabulary errors from HIS message.\n' +
-    '7. Return ONLY valid JSON: {"reply":"...","reply_fa":"...","analysis":{"score":0-10,"is_correct":true,"corrected":"...","perfect_version":"...","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"..."}}';
+    '4. "score": MUST be an integer from 1 to 10. NEVER return 0 for a normal message.\n' +
+    '5. "corrected": natural better version of HIS message. Empty if already good.\n' +
+    '6. "perfect_version": ideal 10/10 rewrite of HIS message. REQUIRED when score<10. Empty only if score=10 or [START].\n' +
+    '7. "mistakes": grammar/vocabulary errors from HIS message.\n' +
+    '8. Return ONLY valid JSON: {"reply":"...","reply_fa":"...","analysis":{"score":1-10,"is_correct":true,"corrected":"...","perfect_version":"...","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"..."}}';
 }
 
 function sprintSystemPrompt() {
@@ -787,11 +788,12 @@ function sprintSystemPrompt() {
     '1. If the user message is exactly [START]: open the conversation as Ildar with 1-2 short sentences. Return analysis with score=0, is_correct=true, corrected="", perfect_version="", mistakes=[], tip_fa="".\n' +
     '2. Otherwise: reply in 1-2 short sentences as Ildar, reacting to Armin\'s VERY LAST message.\n' +
     '3. Evaluate ONLY Armin\'s LAST message — never earlier ones, never your own reply.\n' +
-    '4. "is_correct": true if his last reply is grammatically fine and appropriate; false otherwise.\n' +
-    '5. "corrected": natural, better version of HIS message. Empty string if already good.\n' +
-    '6. "perfect_version": ideal 10/10 rewrite of HIS message. REQUIRED when score<10. Empty only if score=10 or [START].\n' +
-    '7. "mistakes": array of grammar/vocabulary errors from HIS message (original, fix, explain_fa).\n' +
-    '8. Return ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":0-10,"is_correct":true,"corrected":"...","perfect_version":"...","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"نکته"}}';
+    '4. "score": MUST be an integer from 1 to 10. NEVER return 0 for a normal message.\n' +
+    '5. "is_correct": true if his last reply is grammatically fine and appropriate; false otherwise.\n' +
+    '6. "corrected": natural, better version of HIS message. Empty string if already good.\n' +
+    '7. "perfect_version": ideal 10/10 rewrite of HIS message. REQUIRED when score<10. Empty only if score=10 or [START].\n' +
+    '8. "mistakes": array of grammar/vocabulary errors from HIS message (original, fix, explain_fa).\n' +
+    '9. Return ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":1-10,"is_correct":true,"corrected":"...","perfect_version":"...","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"نکته"}}';
 }
 
 function renderSprint() {
@@ -925,7 +927,7 @@ function sendSprint(text, conf, voice) {
           content: JSON.stringify({
             reply: t.text,
             reply_fa: t.fa || '',
-            analysis: { score: 0, is_correct: true, corrected: '', perfect_version: '', mistakes: [], tip_fa: '' }
+            analysis: { score: 8, is_correct: true, corrected: '', perfect_version: '', mistakes: [], tip_fa: '' }
           })
         };
       }
@@ -933,7 +935,7 @@ function sendSprint(text, conf, voice) {
     });
 
   var sysPrompt = sprint.extra ? sprintExtraSystemPrompt(sprint.extra) : sprintSystemPrompt();
-  callAI(sysPrompt, history, 1500, { json: true })
+  callAI(sysPrompt, history, 2000, { json: true })
     .then(function(raw) {
       var j;
       try { j = parseJSON(raw); }
@@ -1420,8 +1422,11 @@ function freeAnalysis(t){
   if(t.pending) return '<div class="an"><span class="dots"><i></i><i></i><i></i></span> در حال تحلیل…</div>';
   var a = t.an; if(!a) return '';
   var ms = a.mistakes||[];
+  var displayScore = a.score;
+  // 🛡️ Safety net: اگر AI به اشتباه score=0 داد و پیام [START] نیست، مخفی‌اش کن
+  if (displayScore === 0 && t.text && t.text.indexOf('[START]') === -1) displayScore = null;
   var h = '<div class="an"><div class="an-top">'+(a.is_correct&&!ms.length?'<span class="pill ok">عالی</span>':'<span class="pill warn">بهتر می‌شه</span>');
-  if(a.score!=null) h += '<span class="sc">امتیاز <b>'+a.score+'</b>/10</span>';
+  if(displayScore != null) h += '<span class="sc">امتیاز <b>'+displayScore+'</b>/10</span>';
   h += '</div>';
   if(a.corrected && norm(a.corrected)!==norm(t.text)) h += '<div class="fix"><span>✓</span><span dir="ltr">'+esc(a.corrected)+'</span></div>';
   ms.forEach(function(m){h += '<div class="mk"><div dir="ltr"><s>'+esc(m.original)+'</s> → <b>'+esc(m.fix)+'</b></div><div>'+esc(m.explain_fa||'')+'</div></div>'});
@@ -1875,8 +1880,11 @@ function jobAnalysis(t){
     if(foundT && job.turns[ti].role === 'ai'){ aiReply = job.turns[ti].text || ''; break; }
   }
   var ms = a.mistakes||[];
+  var displayScore = a.score;
+  // 🛡️ Safety net: اگر AI به اشتباه score=0 داد و پیام [START] نیست، مخفی‌اش کن
+  if (displayScore === 0 && t.text && t.text.indexOf('[START]') === -1) displayScore = null;
   var h = '<div class="an"><div class="an-top">'+(a.is_correct&&!ms.length?'<span class="pill ok">عالی</span>':'<span class="pill warn">بهتر می‌شه</span>');
-  if(a.score!=null) h += '<span class="sc">امتیاز <b>'+a.score+'</b>/10</span>';
+  if(displayScore != null) h += '<span class="sc">امتیاز <b>'+displayScore+'</b>/10</span>';
   h += '</div>';
   var corrected = (a.corrected||'').trim();
   if(corrected && aiReply && sim(norm(corrected), norm(aiReply)) > 0.7) corrected = '';
@@ -1917,7 +1925,7 @@ function sendJob(text, conf, voice){
           content: JSON.stringify({
             reply: t.text,
             reply_fa: t.fa || '',
-            analysis: {score:0, is_correct:true, corrected:'', perfect_version:'', mistakes:[], tip_fa:'', brevity_note:'good'},
+            analysis: {score:8, is_correct:true, corrected:'', perfect_version:'', mistakes:[], tip_fa:'', brevity_note:'good'},
             scenario_complete: false
           })
         };
