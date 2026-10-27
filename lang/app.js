@@ -840,6 +840,23 @@ function sprintSystemPrompt() {
     '9. Return ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":1-10,"is_correct":true,"corrected":"...","perfect_version":"...","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"نکته"}}';
 }
 
+function fullDaySystemPrompt() {
+  var sc = sprint.fullDayScenario;
+  return 'You are Ildar, Armin\'s Russian IT manager. You are busy, direct, and sometimes impatient.\n' +
+    'SIMULATION: A FULL WORKDAY. CURRENT SCENARIO: ' + sc.title + '\n' +
+    'CONTEXT: ' + sc.context + '\n' +
+    'CURRENT TIME: ' + (sprint.currentTime || '08:00 AM') + '\n\n' +
+    'CRITICAL RULES:\n' +
+    '1. You are Ildar. You are the BOSS. Do not talk about yourself in the third person.\n' +
+    '2. FAST-PACED TIME PROGRESSION: The whole day should finish in about 10-12 exchanges. After reacting to Armin, jump the time forward (e.g., "Good. It is 11:30 AM now. Next...", "Okay, 2 PM. I have a new problem..."). Do not waste time.\n' +
+    '3. STRICT BOSS PERSONA: If Armin is slow, gives a bad answer, or uses broken English, act a bit impatient (e.g., "Armin, focus. I need this done." or "Come on, be brief.").\n' +
+    '4. END OF DAY: If it is late afternoon/evening in the context, wrap up the day (e.g., "Okay, it is 5 PM. Send me the final report and go home."). Set "scenario_complete": true in this case.\n' +
+    '5. Return the updated time in "current_time" (e.g., "11:30 AM").\n' +
+    '6. Evaluate ONLY Armin\'s LAST message. "score" must be 1-10 (NEVER 0).\n' +
+    '7. "corrected" and "perfect_version" (required if score<10).\n' +
+    '8. Return ONLY valid JSON: {"reply":"your line","reply_fa":"...","current_time":"11:30 AM","scenario_complete":false,"analysis":{"score":1-10,"is_correct":true,"corrected":"...","perfect_version":"...","mistakes":[],"tip_fa":"..."}}';
+}
+
 function renderSprint() {
   var el = $('#main');
   if (!sprint.started) {
@@ -1030,6 +1047,17 @@ function sendSprint(text, conf, voice) {
       drawSprintChat();
       toast(errText(e), 6000);
     });
+}
+
+function startFullDaySimulation(dayNum) {
+  var sc = FULL_DAY_SCENARIOS[dayNum - 1];
+  var tm = sc.opening.match(/\((.*?)\)/);
+  var startTime = tm ? tm[1] : '08:00 AM';
+  sprint = { started: true, isFullDay: true, fullDayScenario: sc, currentTime: startTime, history: [], turns: [], busy: false, lastSentText: '' };
+  go('sprint');
+  sprint.turns.push({ role: 'ai', text: sc.opening, fa: '' });
+  drawSprintChat();
+  if (settings.autoplay) speak(sc.opening);
 }
 
 function retrySprint() {
