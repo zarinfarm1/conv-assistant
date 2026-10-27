@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '121';
+var APP_VERSION = '122';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -763,16 +763,16 @@ var SPRINT_EXTRA_SCENARIOS = [
 ];
 
 var FULL_DAY_SCENARIOS = [
-  { title: 'روز ۱: فاکتورها و TrueConf', desc: 'پیگیری آریانت و چک کردن TrueConf پاشکویچ', opening: 'Good morning Armin, come in. (8:30 AM) How are you today? Listen, the PD team is waiting for the Arianet invoices. Have you followed up with Ms. Hoda? Also, go and check Mr. Pashkevich\'s TrueConf.', context: 'It is 8:30 AM. Focus on Arianet invoices and Pashkevich\'s TrueConf. At noon, Masoumeh will come to review the invoices. In the afternoon, a user will complain about a printer.' },
-  { title: 'روز ۲: انبارگردانی', desc: 'موجودی لپ‌تاپ، تحویل به دنیس و آزات', opening: 'Good morning. (9:00 AM) Did you have a good evening? Armin, we need to do a full inventory check today. I need the exact number of HP laptops and Xiaomi monitors. Also, Popov Denis and Azat Garaev need their laptops prepared today.', context: 'It is 9:00 AM. You are checking the warehouse. NISOC needs a laptop too but you are waiting for Reza\'s request. Later, Mr. Mostaghimzadeh asks for a Xiaomi monitor.' },
-  { title: 'روز ۳: بحران شبکه و MPLS', desc: 'قطعی MPLS و خط FTTH', opening: 'Good morning Armin. (8:00 AM) Sit down. We have a major issue. The MPLS link between Ahvaz and Tehran is dropping packets since last night. Have you checked the router logs yet?', context: 'It is 8:00 AM. The MPLS link is unstable. At 11 AM, Mr. Bahrami will call about the FTTH line and TIC security approval. You must end the day with a full status report.' },
-  { title: 'روز ۴: امنیت و نرم‌افزار', desc: 'کاسپرسکی و نصب آفیس', opening: 'Good morning. (10:00 AM) How was your weekend? Armin, we sent the Kaspersky Live CD to the group. I need you to check all laptops and prepare a list. Also, Artem Peshkov needs Office re-installed.', context: 'It is 10:00 AM. You must raise a concern about Kaspersky removing AutoCAD cracks. Later, coordinate with Artem and check the domain profile issue.' },
-  { title: 'روز ۵: تاییدیه‌ها', desc: 'تایید لپ‌تاپ ایگور و قرارداد کرد', opening: 'Armin, good morning. (9:30 AM) Hesam told me that Igor asked him to get a laptop from us for Denis. Do you approve? Also, any news about the contract copy for Mr. Kord?', context: 'It is 9:30 AM. Deal with the laptop approval. Later, coordinate with Milad and Mr. Kord for the contract. End the day by checking with Masoumeh about Aryant.' },
-  { title: 'روز ۶: پشتیبانی و تماس‌ها', desc: 'آفیس، TrueConf و راهنمایی گم‌شده', opening: 'Good morning Armin. (8:15 AM) I need a quick status on the tickets today. Also, did you talk to Artem about his Office re-install? And what about the network issue on the 3rd floor?', context: 'It is 8:15 AM. Handle the tickets. At noon, you have to call Popov Denis about his laptop. In the afternoon, help a new colleague who is lost in the building.' },
-  { title: 'روز ۷: یک روز شلوغ', desc: 'چندین خبر و چندین مشکل', opening: 'Good morning, Armin. (8:00 AM) Any updates for me today? I need a summary of everything.', context: 'It is 8:00 AM. You must report: Denis returned two laptops. Arianet invoices are still pending. FTTH issue resolved but TIC approval pending. Later, Mr. Raei-Tabar needs to be found.' },
-  { title: 'روز ۸: مشکلات پیچیده', desc: 'مشکل سایت E&C و دامین', opening: 'Armin, (10:00 AM) I need you to cooperate with Denis and solve the issue with the website used by our E&C department. Also, a user needs Office installed but their profile is on the old domain.', context: 'It is 10:00 AM. Coordinate with Denis. Later, explain the domain issue to the user. At the end of the day, give me a brief update.' },
-  { title: 'روز ۹: گزارش‌دهی', desc: 'گزارش روزانه و خرید تجهیزات', opening: 'Good morning. (9:00 AM) I need a quick update. Yesterday I finished the printer issue. Today I am setting up two laptops. No blockers. Now, tell me, do we need to order more keyboards?', context: 'It is 9:00 AM. Review the inventory. Later, a user requests a Xiaomi monitor. You must ask for my approval. End the day with a positive note.' },
-  { title: 'روز ۱۰: آزمون نهایی', desc: 'همه‌چیز با هم (استرس بالا)', opening: 'Good morning Armin. (8:00 AM) It is a busy day. MPLS is down, Arianet invoices are rejected, and Kaspersky is removing cracks. What is your plan?', context: 'It is 8:00 AM. You have to prioritize. Handle the network first, then the invoices. At the end of the day, I want a full report of what happened.' }
+  { title: 'روز ۱: فاکتورها و TrueConf', desc: 'پیگیری آریانت و چک کردن TrueConf', opening: 'Good morning Armin, come in. (8:30 AM) How are you today? Listen, the PD team is waiting for the Arianet invoices. Have you followed up with Ms. Hoda?', context: 'It is 8:30 AM. Focus on Arianet invoices. Later, Masoumeh will come to review them. In the afternoon, ask Armin to go check Mr. Pashkevich\'s TrueConf. Finally, a user will complain about a printer.' },
+  { title: 'روز ۲: انبارگردانی', desc: 'موجودی لپ‌تاپ و تجهیزات', opening: 'Good morning. (9:00 AM) Did you have a good evening? Armin, we need to do a full inventory check today. How many HP laptops and Xiaomi monitors do we have?', context: 'It is 9:00 AM. Check the warehouse. Later, tell Armin that Popov Denis and Azat Garaev need their laptops prepared today. Finally, mention NISOC needs a laptop too.' },
+  { title: 'روز ۳: بحران شبکه و MPLS', desc: 'قطعی MPLS و خط FTTH', opening: 'Good morning Armin. (8:00 AM) Sit down. We have a major issue. The MPLS link between Ahvaz and Tehran is dropping packets since last night. Have you checked the router logs yet?', context: 'It is 8:00 AM. The MPLS link is unstable. At 11 AM, tell Armin that Mr. Bahrami will call about the FTTH line. End the day by asking for a full status report.' },
+  { title: 'روز ۴: امنیت و نرم‌افزار', desc: 'کاسپرسکی و نصب آفیس', opening: 'Good morning. (10:00 AM) How was your weekend? Armin, we sent the Kaspersky Live CD to the group. I need you to check all laptops and prepare a list. How do you want to handle this?', context: 'It is 10:00 AM. Armin must raise a concern about Kaspersky removing cracks. Later, tell him Artem Peshkov needs Office re-installed.' },
+  { title: 'روز ۵: تاییدیه‌ها', desc: 'تایید لپ‌تاپ ایگور و قرارداد کرد', opening: 'Armin, good morning. (9:30 AM) Hesam told me that Igor asked him to get a laptop from us for Denis. Do you approve?', context: 'It is 9:30 AM. Deal with the laptop approval. Later, ask Armin for any news about the contract copy for Mr. Kord. End the day by checking with Masoumeh about Aryant.' },
+  { title: 'روز ۶: پشتیبانی و تماس‌ها', desc: 'آفیس، TrueConf و راهنمایی گم‌شده', opening: 'Good morning Armin. (8:15 AM) I need a quick status on the tickets today. What is the update?', context: 'It is 8:15 AM. Handle the tickets. At noon, tell Armin you talked to Artem about his Office re-install. In the afternoon, help a new colleague who is lost in the building.' },
+  { title: 'روز ۷: یک روز شلوغ', desc: 'چندین خبر و چندین مشکل', opening: 'Good morning, Armin. (8:00 AM) Any updates for me today? I need a summary.', context: 'It is 8:00 AM. You must ask Armin to report on Denis returning two laptops. Then ask about Arianet invoices. Finally, ask about the FTTH issue.' },
+  { title: 'روز ۸: مشکلات پیچیده', desc: 'مشکل سایت E&C و دامین', opening: 'Armin, (10:00 AM) I need you to cooperate with Denis and solve the issue with the website used by our E&C department. Can you do that?', context: 'It is 10:00 AM. Coordinate with Denis. Later, tell Armin a user needs Office installed but their profile is on the old domain and ask how he will handle it.' },
+  { title: 'روز ۹: گزارش‌دهی', desc: 'گزارش روزانه و خرید تجهیزات', opening: 'Good morning. (9:00 AM) I need a quick update. What did you do yesterday and what are you doing today?', context: 'It is 9:00 AM. Review the inventory. Later, tell Armin a user requested a Xiaomi monitor and ask for his approval. End the day with a positive note.' },
+  { title: 'روز ۱۰: آزمون نهایی', desc: 'همه‌چیز با هم (استرس بالا)', opening: 'Good morning Armin. (8:00 AM) It is a very busy day. MPLS is down and Arianet invoices are rejected. What is your plan to prioritize?', context: 'It is 8:00 AM. You have to prioritize. Handle the network first, then the invoices. At the end of the day, ask for a full report of what happened.' }
 ];
 
 function fullDaySystemPrompt() {
@@ -783,7 +783,7 @@ function fullDaySystemPrompt() {
     'CURRENT TIME: ' + (sprint.currentTime || '08:00 AM') + '\n\n' +
     'CRITICAL RULES:\n' +
     '1. You are Ildar. You are the BOSS. Do not talk about yourself in the third person.\n' +
-    '2. FAST-PACED TIME PROGRESSION: The whole day should finish in about 10-12 exchanges. After reacting to Armin, jump the time forward (e.g., "Good. It is 11:30 AM now. Next...", "Okay, 2 PM. I have a new problem..."). Do not waste time.\n' +
+    '2. STEP-BY-STEP INTERACTION (CRITICAL): Give ONLY ONE task or ask ONE question at a time. Do NOT dump multiple tasks in one reply. Wait for Armin to respond, then evaluate his answer, then advance the time and give the next task based on the context.\n' +
     '3. STRICT BOSS PERSONA: If Armin is slow, gives a bad answer, or uses broken English, act a bit impatient (e.g., "Armin, focus. I need this done." or "Come on, be brief.").\n' +
     '4. END OF DAY: If it is late afternoon/evening in the context, wrap up the day (e.g., "Okay, it is 5 PM. Send me the final report and go home."). Set "scenario_complete": true in this case.\n' +
     '5. Return the updated time in "current_time" (e.g., "11:30 AM").\n' +
@@ -1487,7 +1487,7 @@ function freeBubble(t){
 function freeAnalysis(t){
   if(t.pending) return '<div class="an"><span class="dots"><i></i><i></i><i></i></span> در حال تحلیل…</div>';
   var a = t.an; if(!a) return '';
-  var ms = a.mistakes||[];
+  var ms = (a.mistakes||[]).filter(function(m){ return m.original && m.fix; });
   var displayScore = a.score;
   // 🛡️ Safety net: اگر AI به اشتباه score=0 داد و پیام [START] نیست، مخفی‌اش کن
   if (displayScore === 0 && t.text && t.text.indexOf('[START]') === -1) displayScore = null;
@@ -1945,7 +1945,7 @@ function jobAnalysis(t){
     if(job.turns[ti] === t){ foundT = true; continue; }
     if(foundT && job.turns[ti].role === 'ai'){ aiReply = job.turns[ti].text || ''; break; }
   }
-  var ms = a.mistakes||[];
+  var ms = (a.mistakes||[]).filter(function(m){ return m.original && m.fix; });
   var displayScore = a.score;
   // 🛡️ Safety net: اگر AI به اشتباه score=0 داد و پیام [START] نیست، مخفی‌اش کن
   if (displayScore === 0 && t.text && t.text.indexOf('[START]') === -1) displayScore = null;
