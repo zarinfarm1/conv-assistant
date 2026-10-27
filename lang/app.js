@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '120';
+var APP_VERSION = '121';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -763,47 +763,33 @@ var SPRINT_EXTRA_SCENARIOS = [
 ];
 
 var FULL_DAY_SCENARIOS = [
-  {
-    title: 'شبکه و MPLS',
-    desc: 'صبح تا شب با مشکلات شبکه، MPLS و FTTH',
-    opening: "Good morning Armin. Sit down. First thing: we have a major issue. The MPLS link between Ahvaz and Tehran is dropping packets. I need you to coordinate with the network team in Moscow. Have you checked the router logs?",
-    context: "It's 8:00 AM. The MPLS link is unstable. Later in the day, Mr. Bahrami will call about the FTTH line and TIC security approval. End the day with a status report."
-  },
-  {
-    title: 'انبارگردانی و تجهیزات',
-    desc: 'تحویل لپ‌تاپ‌ها، انبار و موجودی',
-    opening: "Armin, we need to do a full inventory check today. I need the exact number of HP laptops, Xiaomi monitors, and keyboards. Also, Popov Denis and Azat Garaev need their laptops today. Let's start with the warehouse.",
-    context: "It's 9:00 AM. You are checking the warehouse. NISOC needs a laptop too but waiting for Reza's request. Later, Mr. Mostaghimzadeh asks for a Xiaomi monitor. Keep it realistic and fast-paced."
-  },
-  {
-    title: 'امنیت و نرم‌افزار',
-    desc: 'کاسپرسکی، آفیس، کرک اتوکد',
-    opening: "Armin, I have a task for you. We sent the Kaspersky Live CD to the group. I need you to check all laptops and prepare a list of models and serial numbers. Also, Artem Peshkov needs Office re-installed. How do you want to handle this?",
-    context: "It's 10:00 AM. Armin needs to raise a concern about Kaspersky removing AutoCAD cracks. Later, he must coordinate with Artem and check the domain profile issue. End with a progress report."
-  },
-  {
-    title: 'فاکتورها و کارهای اداری',
-    desc: 'آریانت، تیم PD، TrueConf',
-    opening: "Good morning. Any updates on the Arianet invoices? The PD team is waiting. Also, Ildar asked me to check your TrueConf. Is there any problem with it?",
-    context: "It's 11:00 AM. Focus on Ms. Hoda and the Arianet invoices. Later, coordinate with Masoumeh to review them and send to Tehran. Also handle a quick request about a video."
-  }
+  { title: 'روز ۱: فاکتورها و TrueConf', desc: 'پیگیری آریانت و چک کردن TrueConf پاشکویچ', opening: 'Good morning Armin, come in. (8:30 AM) How are you today? Listen, the PD team is waiting for the Arianet invoices. Have you followed up with Ms. Hoda? Also, go and check Mr. Pashkevich\'s TrueConf.', context: 'It is 8:30 AM. Focus on Arianet invoices and Pashkevich\'s TrueConf. At noon, Masoumeh will come to review the invoices. In the afternoon, a user will complain about a printer.' },
+  { title: 'روز ۲: انبارگردانی', desc: 'موجودی لپ‌تاپ، تحویل به دنیس و آزات', opening: 'Good morning. (9:00 AM) Did you have a good evening? Armin, we need to do a full inventory check today. I need the exact number of HP laptops and Xiaomi monitors. Also, Popov Denis and Azat Garaev need their laptops prepared today.', context: 'It is 9:00 AM. You are checking the warehouse. NISOC needs a laptop too but you are waiting for Reza\'s request. Later, Mr. Mostaghimzadeh asks for a Xiaomi monitor.' },
+  { title: 'روز ۳: بحران شبکه و MPLS', desc: 'قطعی MPLS و خط FTTH', opening: 'Good morning Armin. (8:00 AM) Sit down. We have a major issue. The MPLS link between Ahvaz and Tehran is dropping packets since last night. Have you checked the router logs yet?', context: 'It is 8:00 AM. The MPLS link is unstable. At 11 AM, Mr. Bahrami will call about the FTTH line and TIC security approval. You must end the day with a full status report.' },
+  { title: 'روز ۴: امنیت و نرم‌افزار', desc: 'کاسپرسکی و نصب آفیس', opening: 'Good morning. (10:00 AM) How was your weekend? Armin, we sent the Kaspersky Live CD to the group. I need you to check all laptops and prepare a list. Also, Artem Peshkov needs Office re-installed.', context: 'It is 10:00 AM. You must raise a concern about Kaspersky removing AutoCAD cracks. Later, coordinate with Artem and check the domain profile issue.' },
+  { title: 'روز ۵: تاییدیه‌ها', desc: 'تایید لپ‌تاپ ایگور و قرارداد کرد', opening: 'Armin, good morning. (9:30 AM) Hesam told me that Igor asked him to get a laptop from us for Denis. Do you approve? Also, any news about the contract copy for Mr. Kord?', context: 'It is 9:30 AM. Deal with the laptop approval. Later, coordinate with Milad and Mr. Kord for the contract. End the day by checking with Masoumeh about Aryant.' },
+  { title: 'روز ۶: پشتیبانی و تماس‌ها', desc: 'آفیس، TrueConf و راهنمایی گم‌شده', opening: 'Good morning Armin. (8:15 AM) I need a quick status on the tickets today. Also, did you talk to Artem about his Office re-install? And what about the network issue on the 3rd floor?', context: 'It is 8:15 AM. Handle the tickets. At noon, you have to call Popov Denis about his laptop. In the afternoon, help a new colleague who is lost in the building.' },
+  { title: 'روز ۷: یک روز شلوغ', desc: 'چندین خبر و چندین مشکل', opening: 'Good morning, Armin. (8:00 AM) Any updates for me today? I need a summary of everything.', context: 'It is 8:00 AM. You must report: Denis returned two laptops. Arianet invoices are still pending. FTTH issue resolved but TIC approval pending. Later, Mr. Raei-Tabar needs to be found.' },
+  { title: 'روز ۸: مشکلات پیچیده', desc: 'مشکل سایت E&C و دامین', opening: 'Armin, (10:00 AM) I need you to cooperate with Denis and solve the issue with the website used by our E&C department. Also, a user needs Office installed but their profile is on the old domain.', context: 'It is 10:00 AM. Coordinate with Denis. Later, explain the domain issue to the user. At the end of the day, give me a brief update.' },
+  { title: 'روز ۹: گزارش‌دهی', desc: 'گزارش روزانه و خرید تجهیزات', opening: 'Good morning. (9:00 AM) I need a quick update. Yesterday I finished the printer issue. Today I am setting up two laptops. No blockers. Now, tell me, do we need to order more keyboards?', context: 'It is 9:00 AM. Review the inventory. Later, a user requests a Xiaomi monitor. You must ask for my approval. End the day with a positive note.' },
+  { title: 'روز ۱۰: آزمون نهایی', desc: 'همه‌چیز با هم (استرس بالا)', opening: 'Good morning Armin. (8:00 AM) It is a busy day. MPLS is down, Arianet invoices are rejected, and Kaspersky is removing cracks. What is your plan?', context: 'It is 8:00 AM. You have to prioritize. Handle the network first, then the invoices. At the end of the day, I want a full report of what happened.' }
 ];
 
 function fullDaySystemPrompt() {
   var sc = sprint.fullDayScenario;
-  return 'You are Ildar, Armin\'s Russian IT manager. You speak short, direct, and sometimes impatient English.\n' +
-    'SIMULATION: A FULL WORKDAY.\n' +
-    'CURRENT SCENARIO: ' + sc.title + '\n' +
-    'CONTEXT: ' + sc.context + '\n\n' +
+  return 'You are Ildar, Armin\'s Russian IT manager. You are busy, direct, and sometimes impatient.\n' +
+    'SIMULATION: A FULL WORKDAY. CURRENT SCENARIO: ' + sc.title + '\n' +
+    'CONTEXT: ' + sc.context + '\n' +
+    'CURRENT TIME: ' + (sprint.currentTime || '08:00 AM') + '\n\n' +
     'CRITICAL RULES:\n' +
-    '1. You are roleplaying a real conversation from morning to evening. React to Armin\'s LAST message.\n' +
-    '2. ADVANCE THE TIME: After reacting, mention the time (e.g., "Okay, it\'s 2 PM now...") and introduce the NEXT event or task of the day based on the context.\n' +
-    '3. Evaluate ONLY Armin\'s LAST message.\n' +
-    '4. "score": MUST be an integer from 1 to 10. NEVER return 0.\n' +
-    '5. "corrected": natural better version of HIS message.\n' +
-    '6. "perfect_version": ideal 10/10 rewrite of HIS message. REQUIRED if score < 10.\n' +
-    '7. "mistakes": grammar/vocabulary errors.\n' +
-    '8. Return ONLY valid JSON: {"reply":"your line + next event","reply_fa":"ترجمه فارسی","analysis":{"score":1-10,"is_correct":true,"corrected":"...","perfect_version":"...","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"..."}}';
+    '1. You are Ildar. You are the BOSS. Do not talk about yourself in the third person.\n' +
+    '2. FAST-PACED TIME PROGRESSION: The whole day should finish in about 10-12 exchanges. After reacting to Armin, jump the time forward (e.g., "Good. It is 11:30 AM now. Next...", "Okay, 2 PM. I have a new problem..."). Do not waste time.\n' +
+    '3. STRICT BOSS PERSONA: If Armin is slow, gives a bad answer, or uses broken English, act a bit impatient (e.g., "Armin, focus. I need this done." or "Come on, be brief.").\n' +
+    '4. END OF DAY: If it is late afternoon/evening in the context, wrap up the day (e.g., "Okay, it is 5 PM. Send me the final report and go home."). Set "scenario_complete": true in this case.\n' +
+    '5. Return the updated time in "current_time" (e.g., "11:30 AM").\n' +
+    '6. Evaluate ONLY Armin\'s LAST message. "score" must be 1-10 (NEVER 0).\n' +
+    '7. "corrected" and "perfect_version" (required if score<10).\n' +
+    '8. Return ONLY valid JSON: {"reply":"your line","reply_fa":"...","current_time":"11:30 AM","scenario_complete":false,"analysis":{"score":1-10,"is_correct":true,"corrected":"...","perfect_version":"...","mistakes":[],"tip_fa":"..."}}';
 }
 
 function sprintExtraSystemPrompt(sc) {
@@ -840,23 +826,6 @@ function sprintSystemPrompt() {
     '9. Return ONLY valid JSON: {"reply":"your line","reply_fa":"ترجمه فارسی","analysis":{"score":1-10,"is_correct":true,"corrected":"...","perfect_version":"...","mistakes":[{"original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"نکته"}}';
 }
 
-function fullDaySystemPrompt() {
-  var sc = sprint.fullDayScenario;
-  return 'You are Ildar, Armin\'s Russian IT manager. You are busy, direct, and sometimes impatient.\n' +
-    'SIMULATION: A FULL WORKDAY. CURRENT SCENARIO: ' + sc.title + '\n' +
-    'CONTEXT: ' + sc.context + '\n' +
-    'CURRENT TIME: ' + (sprint.currentTime || '08:00 AM') + '\n\n' +
-    'CRITICAL RULES:\n' +
-    '1. You are Ildar. You are the BOSS. Do not talk about yourself in the third person.\n' +
-    '2. FAST-PACED TIME PROGRESSION: The whole day should finish in about 10-12 exchanges. After reacting to Armin, jump the time forward (e.g., "Good. It is 11:30 AM now. Next...", "Okay, 2 PM. I have a new problem..."). Do not waste time.\n' +
-    '3. STRICT BOSS PERSONA: If Armin is slow, gives a bad answer, or uses broken English, act a bit impatient (e.g., "Armin, focus. I need this done." or "Come on, be brief.").\n' +
-    '4. END OF DAY: If it is late afternoon/evening in the context, wrap up the day (e.g., "Okay, it is 5 PM. Send me the final report and go home."). Set "scenario_complete": true in this case.\n' +
-    '5. Return the updated time in "current_time" (e.g., "11:30 AM").\n' +
-    '6. Evaluate ONLY Armin\'s LAST message. "score" must be 1-10 (NEVER 0).\n' +
-    '7. "corrected" and "perfect_version" (required if score<10).\n' +
-    '8. Return ONLY valid JSON: {"reply":"your line","reply_fa":"...","current_time":"11:30 AM","scenario_complete":false,"analysis":{"score":1-10,"is_correct":true,"corrected":"...","perfect_version":"...","mistakes":[],"tip_fa":"..."}}';
-}
-
 function renderSprint() {
   var el = $('#main');
   if (!sprint.started) {
@@ -872,13 +841,18 @@ function renderSprint() {
     });
     h += '</div>';
 
-    // اضافه کردن حالت یک روز کامل با ایلدار
-    h += '<h2 style="margin-top:30px; color:var(--accent)">🏢 یک روز کامل با ایلدار</h2>';
-    h += '<p class="sub">شبیه‌سازی کامل یک روز کاری (از صبح تا شب). هر بار یک سناریوی جدید و رندوم (شامل MPLS، انبارگردانی، امنیت و...).</p>';
-    h += '<button type="button" class="card" id="startFullDay" style="text-align:start;cursor:pointer;display:flex;gap:12px;align-items:center;padding:16px;background:var(--accent-soft);border-color:var(--accent)">';
-    h += '<span style="display:grid;place-items:center;width:50px;height:50px;border-radius:50%;background:var(--accent);color:#fff;flex:none;font-size:1.5rem">☕</span>';
-    h += '<span style="flex:1"><div style="font-weight:800;font-size:1.1rem;color:var(--accent)">شروع یک روز جدید</div><div style="font-size:.85rem;color:var(--muted);margin-top:4px">ایلدار منتظرته...</div></span>';
-    h += '</button>';
+    // اضافه کردن حالت کمپین ۱۰ روزه
+    h += '<h2 style="margin-top:30px; color:var(--accent)">🏢 کمپین ۱۰ روزه (شبیه‌سازی کامل روز کاری)</h2>';
+    h += '<p class="sub">۱۰ روز متوالی با ایلدار. از احوال‌پرسی صبحگاهی تا گزارش شب. شامل MPLS، انبارگردانی، امنیت و...</p>';
+    h += '<div class="units" style="margin-top:12px; margin-bottom:24px;">';
+    FULL_DAY_SCENARIOS.forEach(function(d, idx) {
+      h += '<button type="button" class="unit" data-fullday="' + (idx + 1) + '" style="flex-direction:column;align-items:flex-start;padding:16px;background:var(--accent-soft);border-color:var(--accent)">';
+      h += '<div style="display:flex;justify-content:space-between;width:100%;margin-bottom:8px;"><span class="n" style="width:30px;height:30px;font-size:.8rem;background:var(--accent);color:#fff">' + fa(idx + 1) + '</span><span class="badge lv" style="background:var(--accent);color:#fff">روز کامل</span></div>';
+      h += '<div class="t" style="font-size:.95rem;color:var(--accent);font-weight:700">' + d.title + '</div>';
+      h += '<div class="f">' + d.desc + '</div>';
+      h += '</button>';
+    });
+    h += '</div>';
 
     // اضافه کردن بانک سناریو
     h += '<h2 style="margin-top:30px; color:var(--job)">💼 بانک سناریوهای ایلدار</h2>';
@@ -898,7 +872,7 @@ function renderSprint() {
     el.innerHTML = h;
     $$('.unit').forEach(function(b) { b.onclick = function() { startSprintDay(+b.getAttribute('data-day')); }; });
     $$('.task[data-extra]').forEach(function(b) { b.onclick = function() { startSprintExtra(+b.getAttribute('data-extra')); }; });
-    var sfd = $('#startFullDay'); if (sfd) sfd.onclick = startFullDaySimulation;
+    $$('.unit[data-fullday]').forEach(function(b) { b.onclick = function() { startFullDaySimulation(+b.getAttribute('data-fullday')); }; });
     return;
   }
 
@@ -909,7 +883,8 @@ function renderSprint() {
   var h = '<button type="button" class="link" id="sprintBack">← بازگشت</button>';
   
   if (isFullDay) {
-    h += '<div class="thead"><div><span class="pill" style="background:var(--accent);color:#fff">شبیه‌سازی یک روز</span> <b>' + sprint.fullDayScenario.title + '</b></div></div>';
+    h += '<div class="thead"><div><span class="pill" style="background:var(--accent);color:#fff">شبیه‌سازی یک روز</span> <b>' + sprint.fullDayScenario.title + '</b></div>';
+    h += '<div style="font-family:monospace;font-size:1.1rem;font-weight:800;background:var(--bg);padding:4px 12px;border-radius:8px;border:1px solid var(--line)">🕒 ' + (sprint.currentTime || '08:00 AM') + '</div></div>';
     h += '<div class="card" style="margin-bottom:12px;background:var(--accent-soft);border-color:var(--accent)">';
     h += '<div style="font-weight:700;font-size:.85rem;color:var(--accent);margin-bottom:6px">☕ وضعیت روز:</div>';
     h += '<div style="font-size:.9rem;color:var(--ink)">' + sprint.fullDayScenario.desc + '</div>';
@@ -941,9 +916,11 @@ function renderSprint() {
   drawSprintChat();
 }
 
-function startFullDaySimulation() {
-  var sc = FULL_DAY_SCENARIOS[Math.floor(Math.random() * FULL_DAY_SCENARIOS.length)];
-  sprint = { started: true, isFullDay: true, fullDayScenario: sc, history: [], turns: [], busy: false, lastSentText: '' };
+function startFullDaySimulation(dayNum) {
+  var sc = FULL_DAY_SCENARIOS[dayNum - 1];
+  var tm = sc.opening.match(/\((.*?)\)/);
+  var startTime = tm ? tm[1] : '08:00 AM';
+  sprint = { started: true, isFullDay: true, fullDayScenario: sc, currentTime: startTime, history: [], turns: [], busy: false, lastSentText: '' };
   go('sprint');
   sprint.turns.push({ role: 'ai', text: sc.opening, fa: '' });
   drawSprintChat();
@@ -1035,6 +1012,9 @@ function sendSprint(text, conf, voice) {
       }
       ut.pending = false;
       ut.an = j.analysis || { score: 7, is_correct: true, corrected: '', perfect_version: '', mistakes: [] };
+      if (sprint.isFullDay && j.current_time) {
+        sprint.currentTime = j.current_time;
+      }
       sprint.turns.push({ role: 'ai', text: j.reply, fa: j.reply_fa });
       sprint.busy = false;
       drawSprintChat();
@@ -1047,17 +1027,6 @@ function sendSprint(text, conf, voice) {
       drawSprintChat();
       toast(errText(e), 6000);
     });
-}
-
-function startFullDaySimulation(dayNum) {
-  var sc = FULL_DAY_SCENARIOS[dayNum - 1];
-  var tm = sc.opening.match(/\((.*?)\)/);
-  var startTime = tm ? tm[1] : '08:00 AM';
-  sprint = { started: true, isFullDay: true, fullDayScenario: sc, currentTime: startTime, history: [], turns: [], busy: false, lastSentText: '' };
-  go('sprint');
-  sprint.turns.push({ role: 'ai', text: sc.opening, fa: '' });
-  drawSprintChat();
-  if (settings.autoplay) speak(sc.opening);
 }
 
 function retrySprint() {
