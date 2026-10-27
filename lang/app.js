@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '122';
+var APP_VERSION = '123';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -789,7 +789,8 @@ function fullDaySystemPrompt() {
     '5. Return the updated time in "current_time" (e.g., "11:30 AM").\n' +
     '6. Evaluate ONLY Armin\'s LAST message. "score" must be 1-10 (NEVER 0).\n' +
     '7. "corrected" and "perfect_version" (required if score<10).\n' +
-    '8. Return ONLY valid JSON: {"reply":"your line","reply_fa":"...","current_time":"11:30 AM","scenario_complete":false,"analysis":{"score":1-10,"is_correct":true,"corrected":"...","perfect_version":"...","mistakes":[],"tip_fa":"..."}}';
+    '8. "hints": Provide 3 sample English replies for Armin based on your question: one simple (A2), one professional (B1/B2), and one asking a follow-up question.\n' +
+    '9. Return ONLY valid JSON: {"reply":"your line","reply_fa":"...","current_time":"11:30 AM","scenario_complete":false,"hints":["Simple reply...","Professional reply...","Question reply..."],"analysis":{"score":1-10,"is_correct":true,"corrected":"...","perfect_version":"...","mistakes":[],"tip_fa":"..."}}';
 }
 
 function sprintExtraSystemPrompt(sc) {
@@ -922,7 +923,7 @@ function startFullDaySimulation(dayNum) {
   var startTime = tm ? tm[1] : '08:00 AM';
   sprint = { started: true, isFullDay: true, fullDayScenario: sc, currentTime: startTime, history: [], turns: [], busy: false, lastSentText: '' };
   go('sprint');
-  sprint.turns.push({ role: 'ai', text: sc.opening, fa: '' });
+  sprint.turns.push({ role: 'ai', text: sc.opening, fa: '', hints: [], id: Date.now() });
   drawSprintChat();
   if (settings.autoplay) speak(sc.opening);
 }
@@ -1015,7 +1016,7 @@ function sendSprint(text, conf, voice) {
       if (sprint.isFullDay && j.current_time) {
         sprint.currentTime = j.current_time;
       }
-      sprint.turns.push({ role: 'ai', text: j.reply, fa: j.reply_fa });
+      sprint.turns.push({ role: 'ai', text: j.reply, fa: j.reply_fa, hints: j.hints || [], id: Date.now() });
       sprint.busy = false;
       drawSprintChat();
       if (settings.autoplay) speak(j.reply);
@@ -1908,7 +1909,25 @@ function renderJobPlay(){
   drawJobChat();
 }
 function jobBubble(t){
-  if(t.role==='ai') return '<div class="b job-ai"><div class="bt" dir="ltr">'+esc(t.text)+'</div><button type="button" class="mini" data-say="'+esc(t.text)+'">'+ic('vol')+'</button></div>';
+  if(t.role==='ai'){
+    var hb = '<div class="b job-ai"><div class="bt" dir="ltr">'+esc(t.text)+'</div><div style="display:flex;gap:8px;margin-top:8px"><button type="button" class="mini" data-say="'+esc(t.text)+'">'+ic('vol')+'</button>';
+    if(t.hints && t.hints.length > 0){
+      hb += '<button type="button" class="btn ghost small" style="padding:2px 8px;font-size:.75rem;height:auto" onclick="var el=document.getElementById(\'hint-'+t.id+'\'); el.style.display = el.style.display===\'none\'?\'block\':\'none\';">💡 رهنما</button>';
+    }
+    hb += '</div>';
+    if(t.hints && t.hints.length > 0){
+      hb += '<div id="hint-'+t.id+'" style="display:none; margin-top:8px; padding:10px; background:rgba(255,255,255,0.1); border-radius:8px; border-right:3px solid var(--accent); text-align:right;">';
+      hb += '<div style="font-size:.75rem;color:var(--accent);margin-bottom:6px;font-weight:700">پیشنهادهای جواب:</div>';
+      t.hints.forEach(function(h, i){
+        hb += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding-bottom:6px;border-bottom:1px dashed rgba(255,255,255,0.1)">';
+        hb += '<span dir="ltr" style="font-family:Lexend;font-size:.85rem;color:var(--ink);text-align:left">'+esc(h)+'</span>';
+        hb += '<button type="button" class="mini" data-say="'+esc(h)+'" style="margin-right:8px;flex-shrink:0">'+ic('vol')+'</button>';
+        hb += '</div>';
+      });
+      hb += '</div>';
+    }
+    return hb + '</div>';
+  }
   if(t.role==='sample') return '<div class="b ai" style="background:var(--accent-soft);border-color:var(--accent)"><div style="font-size:.75rem;color:#8a6d00;font-weight:700;margin-bottom:4px">📝 نمونه</div><div class="bt" dir="ltr">'+esc(t.text)+'</div></div>';
   if(t.role==='phrases'){
     var ph = '<div class="b ai" style="background:var(--brand-soft);border-color:var(--brand);max-width:100%"><div style="font-size:.78rem;color:var(--brand);font-weight:700;margin-bottom:6px">🎁 عبارت‌ها</div>';
