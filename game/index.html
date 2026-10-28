@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#06060a">
+<title>زمان فاجعه</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+
+</head>
+<body>
+<div id="wrap">
+<canvas id="c" width="800" height="420"></canvas>
+<div id="pad" class="hide">
+  <button data-k="L" class="b-move">◀</button>
+  <button data-k="R" class="b-move">▶</button>
+  <button data-k="U" class="b-jump">▲</button>
+  <button class="b-attack">ضربه</button>
+  <button data-a="D" class="b-dash">⚡</button>
+  <button data-a="R" class="b-rewind">⏪</button>
+  <button class="b-menu">☰</button>
+</div>
+<div id="menu" class="hide">
+  <div class="menu-panel">
+    <h3>منو</h3>
+    <button data-menu="diff">سختی: عادی</button>
+    <button data-menu="reset">↺ ریست مرحله</button>
+    <button data-menu="new">🗑 شروع از اول (پاک‌کردن ذخیره)</button>
+    <button data-menu="next">⏭ مرحله بعد (تست)</button>
+    <button data-menu="prev">⏮ مرحله قبل (تست)</button>
+    <button data-menu="boss">👹 پرش به باس (تست)</button>
+	<button data-menu="boss-death">💀 دیدن مرگ باس (تست)</button>
+    <button data-menu="fs">⛶ تمام‌صفحه</button>
+    <button data-menu="close">ادامه</button>
+  </div>
+</div>
+<div id="rotate-hint">
+  <div class="rotate-icon">📱</div>
+  <p>گوشی را افقی بگیر</p>
+</div>
+</div>
+<script src="js/00-config.js"></script>
+<script src="js/01-core.js"></script>
+<script src="js/02-player.js"></script>
+<script src="js/03-enemies.js"></script>
+<script src="js/04-phoenix.js"></script>
+<script src="js/05-levels.js"></script>
+<script src="js/06-cinematics.js"></script>
+<script src="js/07-intro.js"></script>
+<script src="js/08-world.js"></script>
+<script src="js/09-ui.js"></script>
+<script src="js/10-render-utils.js"></script>
+<script src="js/11-main.js"></script>
+
+
+</body>
+</html>
