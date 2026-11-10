@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '123';
+var APP_VERSION = '125';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -717,6 +717,7 @@ function render(){
     if(view==='talk') return renderTalk();
     if(view==='notes') return renderNotes();
     if(view==='settings') return renderSettings();
+    if(view==='meet') return renderMeet();
     renderProgram();
   }catch(e){
     console.error('Render error:', e);
@@ -2769,6 +2770,18 @@ document.addEventListener('click', function(e){
   b.setAttribute('type', 'button');
   b.innerHTML = '🏃‍♂️ اسپرینت ۱۰ روزه';
   b.onclick = function(){ go('sprint'); };
+  tabsNav.insertBefore(b, tabsNav.firstChild);
+})();
+
+(function injectMeetTab(){
+  var tabsNav = document.querySelector('.tabs');
+  if(!tabsNav || tabsNav.querySelector('[data-v="meet"]')) return;
+  var b = document.createElement('button');
+  b.className = 'tab';
+  b.setAttribute('data-v', 'meet');
+  b.setAttribute('type', 'button');
+  b.innerHTML = '🛡️ آمادگی ۶ روزه';
+  b.onclick = function(){ go('meet'); };
   tabsNav.insertBefore(b, tabsNav.firstChild);
 })();
 
