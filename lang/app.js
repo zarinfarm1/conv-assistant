@@ -1,8 +1,8 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '128';
 var APP_VERSION = '131';
+var APP_VERSION = '132';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -3175,6 +3175,386 @@ function drawMeetChatV131() {
 
 // Override the router to use the new version
 window.renderMeet = renderMeetV131;
+// ============ HYBRID MEET MODE (v132) ============
+var meetV132 = { view: 'cats', catId: null, turns: [], busy: false, timeLeft: 0, level: 7, inputMode: 'both', timer: null };
+
+var MEET_DATA_V132 = [
+  {
+    id: 'm1',
+    title: 'روز اول و احوال‌پرسی',
+    icon: '👋',
+    desc: 'اولین دیدار حضوری، گپ صمیمی و استرس اولیه',
+    context: 'First, greet Armin and ask how he is doing. Wait. THEN ask how his year was. Wait. THEN ask if he has any problems.',
+    questions: [
+      { q: "Good morning Armin. It's so good to finally see you in person after a whole year!", q_fa: 'صبح بخیر آرمین. خیلی خوبه که بالاخره بعد از یک سال از نزدیک می‌بینمت!', ans_simple: "Good morning Ildar. Nice to see you too.", ans_pro: "Good morning Ildar. It's great to finally meet you in person." },
+      { q: "How are you doing today?", q_fa: 'امروز چطوری؟', ans_simple: "I'm fine, thank you. How about you?", ans_pro: "I'm doing well, thank you. How are you today?" },
+      { q: "How was your year?", q_fa: 'سالت چطور بود؟', ans_simple: "It was a busy but good year. I learned a lot.", ans_pro: "It was a very productive year. I learned a lot and improved my skills significantly." },
+      { q: "Any problems I should know about?", q_fa: 'مشکلی هست که من باید بدونم؟', ans_simple: "No, everything is good so far.", ans_pro: "No major issues right now. Everything is under control." }
+    ]
+  },
+  {
+    id: 'm2',
+    title: 'پیگیری و هماهنگی',
+    icon: '📄',
+    desc: 'فاکتورها، هدا، دنیس، سعد محمدی و پیمانکار',
+    context: 'Ask about the Arianet invoices with Hoda. Then ask about the invoice problem with Saad Mohammadi. Then ask about the E&C website with Denis. Finally ask about the fiber optic contractor.',
+    questions: [
+      { q: "Did you follow up with Ms. Hoda about the Arianet invoices?", q_fa: 'آیا پیگیری فاکتورهای آریانت رو با خانم هدا انجام دادی؟', ans_simple: "Yes, I called her. She said she will check.", ans_pro: "Yes, I spoke with her this morning. She is reviewing them and will get back to me by tomorrow." },
+      { q: "What about the invoice problem with Saad Mohammadi?", q_fa: 'در مورد مشکل فاکتور با سعد محمدی چی شد؟', ans_simple: "I talked to him. We are fixing it.", ans_pro: "I discussed it with him. We found the issue and I'm working on the solution now." },
+      { q: "Could you please go talk to Denis about the E&C website issue?", q_fa: 'می‌تونی بری با دنیس درباره مشکل سایت E&C صحبت کنی؟', ans_simple: "Sure, I will go to his office now.", ans_pro: "Of course. I'll coordinate with him right away and let you know the result." },
+      { q: "When is the fiber optic contractor coming to pull the cable?", q_fa: 'پیمانکار فیبر نوری کِی میاد که کابل رو بکشه؟', ans_simple: "He is coming tomorrow morning.", ans_pro: "He is scheduled for tomorrow morning. I will supervise the process and update you." }
+    ]
+  },
+  {
+    id: 'm3',
+    title: 'تجهیزات و انبار',
+    icon: '📦',
+    desc: 'موجودی لپ‌تاپ، خرید مانیتور، تحویل به آزات و نیسوک',
+    context: 'Ask about spare HP laptops. Then ask about buying a Xiaomi monitor. Then ask about handing over a laptop to Azat Garaev. Finally ask about the NISOC laptop for Reza.',
+    questions: [
+      { q: "How many spare HP laptops do we have in stock right now?", q_fa: 'الان چند تا لپ‌تاپ HP یدکی توی انبار داریم؟', ans_simple: "We have 4 new ones. And one used.", ans_pro: "We have four new HP laptops in stock. I also have one older model that is being prepared." },
+      { q: "I want to buy a Xiaomi monitor. How do I get it?", q_fa: 'میخوام یه مانیتور شیائومی بخرم. چطوری بگیرم؟', ans_simple: "I can order it for you. Just approve it.", ans_pro: "You just need to approve the request. I'll contact the supplier and handle the paperwork for you." },
+      { q: "Azat Garaev needs a laptop today. Can you hand it over?", q_fa: 'آزات گارائف امروز لپ‌تاپ لازم داره. می‌تونی تحویلش بدی؟', ans_simple: "Yes, I will give it to him now.", ans_pro: "I'll prepare it for him without setting it up, as you instructed, and hand it over today." },
+      { q: "Is the NISOC laptop ready for Reza?", q_fa: 'لپ‌تاپ نیسوک برای رضا آماده است؟', ans_simple: "Not yet. I am waiting for his request.", ans_pro: "Not yet. As soon as Reza sends me the official request, I will finish the setup immediately." }
+    ]
+  },
+  {
+    id: 'm4',
+    title: 'شبکه و فنی',
+    icon: '🌐',
+    desc: 'MPLS، FTTH، کاسپرسکی و خطاهای فنی',
+    context: 'Ask about the MPLS link. Then ask about the Kaspersky scan. Then ask about FTTH installation. Finally ask about the domain user list.',
+    questions: [
+      { q: "What is the status of the MPLS link between Ahvaz and Tehran?", q_fa: 'وضعیت لینک MPLS بین اهواز و تهران چطوره؟', ans_simple: "It's a bit unstable. I am checking it.", ans_pro: "We are experiencing some packet loss. I'm coordinating with the Moscow team to stabilize it." },
+      { q: "Why is the Kaspersky scan taking so long?", q_fa: 'چرا اسکن کاسپرسکی اینقدر طول کشیده؟', ans_simple: "It is scanning many laptops. It takes time.", ans_pro: "The scan is heavy, and I am checking each laptop carefully. I don't want to miss any cracked software." },
+      { q: "Did the FTTH installation in the Reno building finish?", q_fa: 'نصب FTTH توی ساختمان رنو تموم شد؟', ans_simple: "No, waiting for TIC approval.", ans_pro: "The technical part is done, but we are waiting for the final TIC security approval. I'm following it up." },
+      { q: "I need a list of all users in the domain. Can you do it?", q_fa: 'من لیست همه یوزرهای دامین رو می‌خوام. می‌تونی انجام بدی؟', ans_simple: "Yes, I will send it by tomorrow.", ans_pro: "Certainly. I will extract the list and send it to you by tomorrow morning." }
+    ]
+  },
+  {
+    id: 'm5',
+    title: 'تاییدیه‌ها و دستورات',
+    icon: '✅',
+    desc: 'درخواست خرید، تایید لپ‌تاپ، دستورات چند مرحله‌ای',
+    context: 'Ask for approval for Igor\'s laptop. Then ask about ordering keyboards. Finally give a multi-step instruction to check the router.',
+    questions: [
+      { q: "Igor asked for a laptop for Denis. Do you approve?", q_fa: 'ایگور برای دنیس لپ‌تاپ خواسته. تایید می‌کنی؟', ans_simple: "Yes, I approve. Which model?", ans_pro: "Yes, I'll provide one of the MPS laptops. Should I give him the i5 or i7 model?" },
+      { q: "We need to order more keyboards. Should I proceed?", q_fa: 'ما باید کیبورد بیشتری سفارش بدیم. ادامه بدم؟', ans_simple: "Yes, please order 5 of them.", ans_pro: "Yes, please proceed. Let's order five units to be safe." },
+      { q: "I need you to go to the 3rd floor, check the router, and report back to me.", q_fa: 'می‌خوام بری طبقه سوم، روتر رو چک کنی و بهم گزارش بدی.', ans_simple: "Understood. I am going now.", ans_pro: "Understood. I'm heading there now, I will check the connections and report back in 15 minutes." }
+    ]
+  },
+  {
+    id: 'm6',
+    title: 'جملات نجات‌بخش 🚑',
+    icon: '🛡️',
+    desc: 'وقتی جواب سوالی رو نمی‌دونی یا متوجه نشدی چی بگی؟',
+    context: 'Ask a technical question he might not know (like IP address). Wait. Then ask him to explain a complex issue. Wait. Then ask if he understood your previous instruction.',
+    questions: [
+      { q: "What is the IP address of the main switch?", q_fa: 'آی‌پی آدرس سوئیچ اصلی چیه؟', ans_simple: "I don't know. Let me check.", ans_pro: "I don't have that information right now, let me check the system and get back to you in a minute." },
+      { q: "Could you explain the Kaspersky issue in detail?", q_fa: 'می‌تونی مشکل کاسپرسکی رو با جزئیات توضیح بدی؟', ans_simple: "I am not sure how to explain. It is complex.", ans_pro: "I'm not sure I can explain it perfectly in English, but the main issue is that..." },
+      { q: "Did you understand my instruction?", q_fa: 'دستور من رو متوجه شدی؟', ans_simple: "Yes, I understood.", ans_pro: "Let me make sure I understand. You want me to do X, right?" },
+      { q: "Why didn't you answer my call?", q_fa: 'چرا جواب تماس من رو ندادی؟', ans_simple: "Sorry, I was in the server room.", ans_pro: "I apologize, I was in the server room and there was no signal. Could you send me a text message next time?" }
+    ]
+  }
+];
+
+function renderMeetV132() {
+  var el = $('#main');
+  var h = '<h1>🛡️ آمادگی ۶ روزه (ملاقات ایلدار)</h1>';
+  if (meetV132.view === 'cats') {
+    h += '<p class="sub">موضوع رو انتخاب کن، بعد حالت مطالعه یا تمرین فشاری رو بزن.</p>';
+    h += '<div class="units" style="margin-top:20px;">';
+    MEET_DATA_V132.forEach(function(c) {
+      h += '<button type="button" class="unit" data-meetcat="' + c.id + '" style="flex-direction:column;align-items:flex-start;padding:16px;background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;text-align:start;cursor:pointer">';
+      h += '<div style="display:flex;justify-content:space-between;width:100%;margin-bottom:8px;"><span class="n" style="width:40px;height:40px;font-size:1.5rem;display:flex;align-items:center;justify-content:center">' + c.icon + '</span></div>';
+      h += '<div class="t" style="font-size:1.1rem;font-weight:700;color:var(--brand)">' + c.title + '</div>';
+      h += '<div class="f" style="font-size:.85rem;color:var(--muted);margin-top:4px">' + c.desc + '</div>';
+      h += '</button>';
+    });
+    h += '</div>';
+    el.innerHTML = h;
+    $$('[data-meetcat]').forEach(function(b){ b.onclick = function(){ meetV132.view='modes'; meetV132.catId=b.getAttribute('data-meetcat'); renderMeetV132(); }; });
+    return;
+  }
+
+  var cat = MEET_DATA_V132.find(function(c){ return c.id === meetV132.catId; });
+  if (meetV132.view === 'modes') {
+     h = '<button type="button" class="link" id="meetBack">← بازگشت</button>';
+     h += '<h2>' + cat.icon + ' ' + cat.title + '</h2>';
+     h += '<div class="mode-grid" style="margin-top:20px">';
+     h += '<button type="button" class="mode-card" id="startStudy"><div class="mi">📖</div><div class="mt">حالت مطالعه</div><div class="md">چت هوشمند + راهنما</div></button>';
+     h += '<button type="button" class="mode-card" id="startPressureSetup"><div class="mi">⚡</div><div class="mt">حالت پرفشار</div><div class="md">با تایمر و نمره‌دهی</div></button>';
+     h += '</div>';
+     el.innerHTML = h;
+     $('#meetBack').onclick = function(){ meetV132.view='cats'; renderMeetV132(); };
+     $('#startStudy').onclick = function(){ startMeetStudyV132(cat); };
+     $('#startPressureSetup').onclick = function(){ meetV132.view='pressure_setup'; renderMeetV132(); };
+     return;
+  }
+
+  if (meetV132.view === 'pressure_setup') {
+     h = '<button type="button" class="link" id="meetBack2">← بازگشت</button>';
+     h += '<h2>⚡ تنظیمات حالت پرفشار</h2>';
+     h += '<div class="card stack" style="margin-top:14px">';
+     h += '<div class="field"><label>چند ثانیه فرصت داری؟</label><div class="chips" id="timeChips">';
+     [['10','۱۰ (راحت)'],['7','۷ (واقعی)'],['5','۵ (چالشی)']].forEach(function(x){ h += '<button type="button" class="chip" data-time="'+x[0]+'" '+(meetV132.level==x[0]?'aria-pressed="true"':'')+'>'+x[1]+'</button>'; });
+     h += '</div></div>';
+     h += '<div class="field"><label>حالت ورودی</label><div class="chips" id="inputChips">';
+     [['type','تایپ'],['voice','صدا'],['both','هر دو']].forEach(function(x){ h += '<button type="button" class="chip" data-input="'+x[0]+'" '+(meetV132.inputMode==x[0]?'aria-pressed="true"':'')+'>'+x[1]+'</button>'; });
+     h += '</div></div>';
+     h += '<button type="button" class="btn brand" id="startPressureBtn">شروع تمرین</button>';
+     h += '</div>';
+     el.innerHTML = h;
+     $('#meetBack2').onclick = function(){ meetV132.view='modes'; renderMeetV132(); };
+     $$('#timeChips .chip').forEach(function(b){ b.onclick=function(){ $$('#timeChips .chip').forEach(function(x){x.setAttribute('aria-pressed','false')}); b.setAttribute('aria-pressed','true'); meetV132.level=b.getAttribute('data-time'); } });
+     $$('#inputChips .chip').forEach(function(b){ b.onclick=function(){ $$('#inputChips .chip').forEach(function(x){x.setAttribute('aria-pressed','false')}); b.setAttribute('aria-pressed','true'); meetV132.inputMode=b.getAttribute('data-input'); } });
+     $('#startPressureBtn').onclick = function(){ startMeetPressureV132(cat); };
+     return;
+  }
+
+  if (meetV132.view === 'study') {
+    h = '<button type="button" class="link" id="meetBack3">← پایان</button>';
+    h += '<div class="thead"><div><b>📖 مطالعه: ' + cat.title + '</b><div class="sub">به انگلیسی جواب بده</div></div></div>';
+    h += '<div class="chat" id="meetChat" style="margin-bottom:10px">' + meetV132.turns.map(meetBubbleV132).join('') + '</div>';
+    
+    h += '<details style="margin-bottom:15px; background:var(--bg-soft); border:1px solid var(--line); border-radius:8px; padding:10px">';
+    h += '<summary style="cursor:pointer; font-weight:700; font-size:.9rem; color:var(--brand)">📖 مشاهده کتابچه سوالات و جواب‌ها</summary>';
+    h += '<div style="margin-top:10px; display:flex; flex-direction:column; gap:10px;">';
+    cat.questions.forEach(function(q, i) {
+      h += '<div style="border-right:3px solid var(--brand); padding-right:8px;">';
+      h += '<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;"><button type="button" class="mini" data-say="' + esc(q.q) + '">' + ic('vol') + '</button><span dir="ltr" style="font-size:.85rem;font-weight:700">' + esc(q.q) + '</span></div>';
+      h += '<div style="font-size:.8rem;color:var(--muted);margin-bottom:6px">' + esc(q.q_fa) + '</div>';
+      h += '<div style="font-size:.75rem;color:var(--ok);font-weight:700;">ساده:</div>';
+      h += '<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;"><button type="button" class="mini" data-say="' + esc(q.ans_simple) + '">' + ic('vol') + '</button><span dir="ltr" style="font-size:.8rem">' + esc(q.ans_simple) + '</span></div>';
+      h += '<div style="font-size:.75rem;color:var(--brand);font-weight:700;">حرفه‌ای:</div>';
+      h += '<div style="display:flex;gap:6px;align-items:center;"><button type="button" class="mini" data-say="' + esc(q.ans_pro) + '">' + ic('vol') + '</button><span dir="ltr" style="font-size:.8rem">' + esc(q.ans_pro) + '</span></div>';
+      h += '</div>';
+    });
+    h += '</div></details>';
+
+    h += '<div class="composer"><div class="cbox"><button type="button" class="mic job-mic ' + (listening ? 'rec' : '') + '" id="meetMic">' + ic('mic') + '</button><input type="text" id="meetMsg" dir="ltr" placeholder="Type reply…"><button type="button" class="send" id="meetSend">' + ic('send') + '</button></div></div>';
+    el.innerHTML = h;
+    $('#meetBack3').onclick = function(){ meetV132.view='modes'; meetV132.turns=[]; renderMeetV132(); };
+    $('#meetSend').onclick = function(){ sendMeetStudyV132($('#meetMsg').value); };
+    $('#meetMsg').onkeydown = function(e){ if(e.key==='Enter'){ e.preventDefault(); sendMeetStudyV132($('#meetMsg').value); } };
+    if ($('#meetMic')) {
+       $('#meetMic').onclick = function(){
+         if(listening){ rec && rec.stop(); return; }
+         rec = listen({interim:function(t){ var m=$('#meetMsg'); if(m) m.value=t; },done:function(t,c){ listening=false; var bb=$('#meetMic'); if(bb) bb.classList.remove('rec'); if(t) sendMeetStudyV132(t); }});
+         if(rec){ listening=true; $('#meetMic').classList.add('rec'); }
+       };
+    }
+    drawMeetChatV132();
+    return;
+  }
+
+  if (meetV132.view === 'pressure') {
+     h = '<button type="button" class="link" id="meetExit">← پایان</button>';
+     h += '<div class="thead"><div><b>⚡ پرفشار: ' + cat.title + '</b></div>';
+     h += '<div id="timerDisplay" style="font-family:monospace;font-size:1.2rem;font-weight:800;background:var(--bg);padding:4px 12px;border-radius:8px;border:1px solid var(--line)">⏱️ ' + meetV132.level + 's</div>';
+     h += '</div>';
+     h += '<div class="chat" id="meetChat">' + meetV132.turns.map(meetBubbleV132).join('') + '</div>';
+     h += '<div class="composer"><div class="cbox">';
+     if (meetV132.inputMode !== 'type') {
+       h += '<button type="button" class="mic job-mic ' + (listening ? 'rec' : '') + '" id="meetMic">' + ic('mic') + '</button>';
+     }
+     h += '<input type="text" id="meetMsg" dir="ltr" placeholder="Type reply…">';
+     h += '<button type="button" class="send" id="meetSend">' + ic('send') + '</button></div></div>';
+     el.innerHTML = h;
+     $('#meetExit').onclick = function(){ clearInterval(meetV132.timer); meetV132.view='modes'; meetV132.turns=[]; renderMeetV132(); };
+     $('#meetSend').onclick = function(){ sendMeetPressureV132($('#meetMsg').value); };
+     $('#meetMsg').onkeydown = function(e){ if(e.key==='Enter'){ e.preventDefault(); sendMeetPressureV132($('#meetMsg').value); } };
+     if ($('#meetMic')) {
+        $('#meetMic').onclick = function(){
+          if(listening){ rec && rec.stop(); return; }
+          rec = listen({interim:function(t){ var m=$('#meetMsg'); if(m) m.value=t; },done:function(t,c){ listening=false; var bb=$('#meetMic'); if(bb) bb.classList.remove('rec'); if(t) sendMeetPressureV132(t); }});
+          if(rec){ listening=true; $('#meetMic').classList.add('rec'); }
+        };
+     }
+     drawMeetChatV132();
+     startTimerV132();
+     return;
+  }
+}
+
+function meetBubbleV132(t) {
+  if (t.role === 'ai') {
+    var h = '<div class="b job-ai"><div class="bt" dir="ltr">' + esc(t.text) + '</div>';
+    h += '<button type="button" class="mini" data-say="' + esc(t.text) + '">' + ic('vol') + '</button>';
+    return h + '</div>';
+  }
+  return '<div class="b job-me"><div class="bt" dir="ltr">' + esc(t.text) + '</div></div>' + (t.err ? '<div class="an">ارسال نشد.</div>' : jobAnalysis(t));
+}
+
+function startMeetStudyV132(cat) {
+  meetV132.view = 'study';
+  meetV132.turns = [];
+  meetV132.busy = true;
+  meetV132.catId = cat.id;
+  go('meet');
+  drawMeetChatV132();
+  
+  var qs = cat.questions.map(function(q){ return q.q; }).join('\n');
+  var prompt = "You are Ildar, Armin's Russian IT manager. We are practicing a real conversation.\n" +
+    "CONTEXT: " + cat.context + "\n" +
+    "TARGET QUESTIONS: \n" + qs + "\n" +
+    "RULES:\n" +
+    "1. Ask ONLY ONE question at a time from the Target Questions.\n" +
+    "2. If Armin goes off-script, respond naturally to his answer, BUT then immediately steer the conversation back to the next question on the list.\n" +
+    "3. Keep your replies short (1-2 sentences).\n" +
+    "4. CRITICAL: Evaluate Armin's LAST message. Provide score (1-10), is_correct, corrected, perfect_version, and mistakes.\n" +
+    "5. Return ONLY valid JSON: {\"reply\":\"your line\",\"reply_fa\":\"Persian translation\",\"analysis\":{\"score\":1-10,\"is_correct\":true,\"corrected\":\"...\",\"perfect_version\":\"...\",\"mistakes\":[],\"tip_fa\":\"...\"}}";
+
+  callAI(prompt, [{role:'user',content:'[START]'}], 1000, {json:true})
+    .then(function(raw){
+      var j;
+      try { j = parseJSON(raw); } catch(e) { j = { reply: "Hi Armin, good to see you. How are you doing?", reply_fa: "سلام آرمین، خوشحالم می‌بینمت. چطوری؟" }; }
+      meetV132.turns.push({role:'ai', text:j.reply, fa:j.reply_fa});
+      meetV132.busy = false;
+      drawMeetChatV132();
+      if (settings.autoplay) speak(j.reply);
+    })
+    .catch(function(e){ meetV132.busy = false; drawMeetChatV132(); toast(errText(e)); });
+}
+
+function sendMeetStudyV132(text) {
+  text = (text||'').trim();
+  if(!text || meetV132.busy) return;
+  $('#meetMsg').value = '';
+  var ut = {role:'me', text:text, pending:true};
+  meetV132.turns.push(ut);
+  meetV132.busy = true;
+  drawMeetChatV132();
+  
+  var cat = MEET_DATA_V132.find(function(c){ return c.id === meetV132.catId; });
+  var qs = cat.questions.map(function(q){ return q.q; }).join('\n');
+  var prompt = "You are Ildar, Armin's Russian IT manager. We are practicing a real conversation.\n" +
+    "CONTEXT: " + cat.context + "\n" +
+    "TARGET QUESTIONS: \n" + qs + "\n" +
+    "RULES:\n" +
+    "1. Ask ONLY ONE question at a time from the Target Questions.\n" +
+    "2. If Armin goes off-script, respond naturally to his answer, BUT then immediately steer the conversation back to the next question on the list.\n" +
+    "3. Keep your replies short (1-2 sentences).\n" +
+    "4. CRITICAL: Evaluate Armin's LAST message. Provide score (1-10), is_correct, corrected, perfect_version, and mistakes.\n" +
+    "5. Return ONLY valid JSON: {\"reply\":\"your line\",\"reply_fa\":\"Persian translation\",\"analysis\":{\"score\":1-10,\"is_correct\":true,\"corrected\":\"...\",\"perfect_version\":\"...\",\"mistakes\":[],\"tip_fa\":\"...\"}}";
+
+  var history = meetV132.turns.filter(function(t){ return !t.err; }).map(function(t){
+    if (t.role === 'ai') return { role: 'assistant', content: JSON.stringify({reply: t.text, reply_fa: t.fa||'', analysis:{score:8, is_correct:true, corrected:'', perfect_version:'', mistakes:[], tip_fa:''}}) };
+    return { role: 'user', content: t.text };
+  });
+
+  callAI(prompt, history, 1500, {json:true})
+    .then(function(raw){
+      var j;
+      try { j = parseJSON(raw); } catch(e) { 
+        j = { reply: "Okay, moving on. What is the next update?", reply_fa: "باشه، بریم جلو. آپدیت بعدی چیه؟", analysis: {score:7, is_correct:true, corrected:'', perfect_version:'', mistakes:[], tip_fa:''} }; 
+      }
+      ut.pending = false;
+      ut.an = j.analysis || {score:7, is_correct:true, mistakes:[]};
+      meetV132.turns.push({role:'ai', text:j.reply, fa:j.reply_fa});
+      meetV132.busy = false;
+      drawMeetChatV132();
+      if (settings.autoplay) speak(j.reply);
+    })
+    .catch(function(e){ meetV132.busy = false; ut.pending = false; ut.err = true; drawMeetChatV132(); toast(errText(e)); });
+}
+
+function startMeetPressureV132(cat) {
+  meetV132.view = 'pressure';
+  meetV132.turns = [];
+  meetV132.busy = true;
+  meetV132.catId = cat.id;
+  go('meet');
+  drawMeetChatV132();
+  
+  var qs = cat.questions.map(function(q){ return q.q; }).join('\n');
+  var prompt = "You are Ildar, Armin's Russian IT manager. You are testing him under pressure. You speak short, direct English.\n" +
+    "CONTEXT: " + cat.context + "\n" +
+    "TARGET QUESTIONS: \n" + qs + "\n" +
+    "Rules:\n1. Ask ONLY ONE question at a time from the Target Questions.\n2. Keep it short (1 sentence).\n" +
+    "Return ONLY valid JSON: {\"reply\":\"your question\",\"reply_fa\":\"Persian translation\"}";
+
+  callAI(prompt, [{role:'user',content:'[START]'}], 1000, {json:true})
+    .then(function(raw){
+      var j;
+      try { j = parseJSON(raw); } catch(e) { j = { reply: "Armin, give me a quick status.", reply_fa: "آرمین، یه وضعیت سریع بده." }; }
+      meetV132.turns.push({role:'ai', text:j.reply, fa:j.reply_fa});
+      meetV132.busy = false;
+      drawMeetChatV132();
+      if (settings.autoplay) speak(j.reply);
+      startTimerV132();
+    })
+    .catch(function(e){ meetV132.busy = false; drawMeetChatV132(); toast(errText(e)); });
+}
+
+function sendMeetPressureV132(text) {
+  text = (text||'').trim();
+  if(!text || meetV132.busy) return;
+  clearInterval(meetV132.timer);
+  $('#meetMsg').value = '';
+  var ut = {role:'me', text:text, pending:true};
+  meetV132.turns.push(ut);
+  meetV132.busy = true;
+  drawMeetChatV132();
+  
+  var cat = MEET_DATA_V132.find(function(c){ return c.id === meetV132.catId; });
+  var qs = cat.questions.map(function(q){ return q.q; }).join('\n');
+  var prompt = "You are Ildar, Armin's Russian IT manager. You are testing him under pressure. You speak short, direct English.\n" +
+    "CONTEXT: " + cat.context + "\n" +
+    "TARGET QUESTIONS: \n" + qs + "\n" +
+    "Rules:\n1. Evaluate Armin's answer. React briefly and ask the NEXT question from the Target Questions.\n2. Keep it short (1 sentence).\n" +
+    "Return ONLY valid JSON: {\"reply\":\"your line\",\"reply_fa\":\"Persian translation\",\"analysis\":{\"score\":1-10,\"is_correct\":true,\"corrected\":\"...\",\"perfect_version\":\"...\",\"mistakes\":[],\"tip_fa\":\"...\"}}";
+
+  var history = meetV132.turns.filter(function(t){ return !t.err; }).map(function(t){
+    if (t.role === 'ai') return { role: 'assistant', content: JSON.stringify({reply: t.text, analysis:{score:8, is_correct:true, corrected:'', perfect_version:'', mistakes:[], tip_fa:''}}) };
+    return { role: 'user', content: t.text };
+  });
+
+  callAI(prompt, history, 1500, {json:true})
+    .then(function(raw){
+      var j;
+      try { j = parseJSON(raw); } catch(e) {
+        j = { reply: "Okay, let's move to the next task.", reply_fa: "باشه، بریم سراغ کار بعدی.", analysis: {score:7, is_correct:true, corrected:'', perfect_version:'', mistakes:[], tip_fa:''} };
+      }
+      ut.pending = false;
+      ut.an = j.analysis || {score:7, is_correct:true, mistakes:[]};
+      meetV132.turns.push({role:'ai', text:j.reply, fa:j.reply_fa});
+      meetV132.busy = false;
+      drawMeetChatV132();
+      if (settings.autoplay) speak(j.reply);
+      startTimerV132();
+    })
+    .catch(function(e){ meetV132.busy=false; ut.pending=false; ut.err=true; drawMeetChatV132(); toast(errText(e)); });
+}
+
+function startTimerV132() {
+  clearInterval(meetV132.timer);
+  meetV132.timeLeft = parseInt(meetV132.level);
+  var el = $('#timerDisplay');
+  if (el) el.innerHTML = '⏱️ ' + meetV132.timeLeft + 's';
+  meetV132.timer = setInterval(function() {
+    meetV132.timeLeft--;
+    var el = $('#timerDisplay');
+    if (el) {
+      el.innerHTML = '⏱️ ' + meetV132.timeLeft + 's';
+      if (meetV132.timeLeft <= 3) el.style.color = 'var(--bad)';
+      else el.style.color = 'var(--brand)';
+    }
+    if (meetV132.timeLeft <= 0) {
+      clearInterval(meetV132.timer);
+      if (!meetV132.busy) sendMeetPressureV132('(Time out)');
+    }
+  }, 1000);
+}
+
+function drawMeetChatV132() {
+  var c = $('#meetChat'); if(!c) return;
+  c.innerHTML = meetV132.turns.map(meetBubbleV132).join('') + (meetV132.busy && !meetV132.turns.some(function(t){return t.pending}) ? '<div class="b ai"><span class="dots"><i></i><i></i><i></i></span></div>' : '');
+  window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
+}
+
+// Override the router to use the new version
+window.renderMeet = renderMeetV132;
 // ============ INIT ============
 document.addEventListener('click', function(e){
   var s = e.target.closest && e.target.closest('[data-say]');
