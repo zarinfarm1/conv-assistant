@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '126';
+var APP_VERSION = '127';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -729,12 +729,12 @@ function render(){
 var meet = { view: 'cats', catId: null, turns: [], busy: false, timeLeft: 0, level: 7, inputMode: 'both', timer: null, isPressure: false };
 
 var MEET_DATA = [
-  { id: 'm1', title: 'روز اول و احوال‌پرسی', icon: '👋', desc: 'اولین دیدار حضوری، گپ صمیمی و استرس اولیه', context: 'The first face-to-face meeting after a year. Greet Armin, ask how he is doing, how his year was, and if he has any problems. Keep it very friendly.' },
-  { id: 'm2', title: 'پیگیری و هماهنگی', icon: '📄', desc: 'فاکتورها، هدا، دنیس، سعد محمدی و پیمانکار', context: 'Ask Armin about the Arianet invoices with Hoda, the E&C website with Denis, the invoice problem with Saad Mohammadi, and the fiber optic contractor.' },
-  { id: 'm3', title: 'تجهیزات و انبار', icon: '📦', desc: 'موجودی لپ‌تاپ، خرید مانیتور، تحویل به آزات و نیسوک', context: 'Ask about spare HP laptops, buying a Xiaomi monitor, handing over a laptop to Azat Garaev, and the NISOC laptop for Reza.' },
-  { id: 'm4', title: 'شبکه و فنی', icon: '🌐', desc: 'MPLS، FTTH، کاسپرسکی و خطاهای فنی', context: 'Ask about the MPLS link between Ahvaz and Tehran, Kaspersky scan progress, FTTH installation in Reno building, and the domain user list.' },
-  { id: 'm5', title: 'تاییدیه‌ها و دستورات', icon: '✅', desc: 'درخواست خرید، تایید لپ‌تاپ، دستورات چند مرحله‌ای', context: 'Ask for approval for Igor/Denis laptop, ordering keyboards, and give a multi-step instruction to check the 3rd floor router.' },
-  { id: 'm6', title: 'جملات نجات‌بخش 🚑', icon: '🛡️', desc: 'وقتی جواب سوالی رو نمی‌دونی یا متوجه نشدی چی بگی؟', context: 'Ask Armin a technical question he might not know. Test his survival phrases (e.g., asking for repetition, checking understanding).' }
+  { id: 'm1', title: 'روز اول و احوال‌پرسی', icon: '👋', desc: 'اولین دیدار حضوری، گپ صمیمی و استرس اولیه', context: 'First, greet Armin and ask how he is doing. Wait for his reply. THEN ask how his year was. Wait for his reply. THEN ask if he has any problems.' },
+  { id: 'm2', title: 'پیگیری و هماهنگی', icon: '📄', desc: 'فاکتورها، هدا، دنیس، سعد محمدی و پیمانکار', context: 'Ask about the Arianet invoices with Hoda. Then ask about the E&C website with Denis. Then ask about the invoice problem with Saad Mohammadi. Finally ask about the fiber optic contractor.' },
+  { id: 'm3', title: 'تجهیزات و انبار', icon: '📦', desc: 'موجودی لپ‌تاپ، خرید مانیتور، تحویل به آزات و نیسوک', context: 'Ask about spare HP laptops. Then ask about buying a Xiaomi monitor. Then ask about handing over a laptop to Azat Garaev. Finally ask about the NISOC laptop for Reza.' },
+  { id: 'm4', title: 'شبکه و فنی', icon: '🌐', desc: 'MPLS، FTTH، کاسپرسکی و خطاهای فنی', context: 'Ask about the MPLS link. Then ask about the Kaspersky scan. Then ask about FTTH installation. Finally ask about the domain user list.' },
+  { id: 'm5', title: 'تاییدیه‌ها و دستورات', icon: '✅', desc: 'درخواست خرید، تایید لپ‌تاپ، دستورات چند مرحله‌ای', context: 'Ask for approval for Igor\'s laptop. Then ask about ordering keyboards. Finally give a multi-step instruction to check the router.' },
+  { id: 'm6', title: 'جملات نجات‌بخش 🚑', icon: '🛡️', desc: 'وقتی جواب سوالی رو نمی‌دونی یا متوجه نشدی چی بگی؟', context: 'Ask a technical question he might not know (like IP address). Wait. Then ask him to explain a complex issue. Wait. Then ask if he understood your previous instruction.' }
 ];
 
 function renderMeet() {
@@ -850,8 +850,11 @@ function startMeetStudy(cat) {
   meet.catId = cat.id;
   go('meet');
   drawMeetChat();
-  var prompt = "You are Ildar, Armin's Russian IT manager. You are having a natural, step-by-step conversation. Context: " + cat.context + "\n" +
-    "Rules:\n1. Start the conversation with a greeting.\n2. Provide 3 hints for Armin's next reply (simple, professional, question).\n" +
+  var prompt = "You are Ildar, Armin's Russian IT manager. We are doing a PIECE-BY-PIECE conversation practice.\n" +
+    "CRITICAL RULE: Ask ONLY ONE SHORT QUESTION at a time. NEVER combine multiple questions in one turn. Keep your response to 1-2 short sentences maximum.\n" +
+    "Context: " + cat.context + "\n" +
+    "If starting, greet him and ask the FIRST question from the context.\n" +
+    "Provide 3 hints for Armin's next reply (simple, professional, question).\n" +
     "Return ONLY JSON: {\"reply\":\"your line\",\"reply_fa\":\"Persian translation\",\"hints\":[\"hint1\",\"hint2\",\"hint3\"]}";
   callAI(prompt, [{role:'user',content:'[START]'}], 1200, {json:true})
     .then(function(raw){
@@ -873,8 +876,11 @@ function sendMeetStudy(text) {
   meet.busy = true;
   drawMeetChat();
   var cat = MEET_DATA.find(function(c){ return c.id === meet.catId; });
-  var prompt = "You are Ildar, Armin's Russian IT manager. Natural, step-by-step conversation. Context: " + cat.context + "\n" +
-    "Rules:\n1. React to Armin's last message, then continue the conversation.\n2. Provide 3 hints for Armin's NEXT reply.\n" +
+  var prompt = "You are Ildar, Armin's Russian IT manager. We are doing a PIECE-BY-PIECE conversation practice.\n" +
+    "CRITICAL RULE: Ask ONLY ONE SHORT QUESTION at a time. NEVER combine multiple questions in one turn. Keep your response to 1-2 short sentences maximum.\n" +
+    "Context: " + cat.context + "\n" +
+    "React briefly to Armin's last message, then ask the NEXT question from the context.\n" +
+    "Provide 3 hints for Armin's NEXT reply (simple, professional, question).\n" +
     "Return ONLY JSON: {\"reply\":\"your line\",\"reply_fa\":\"Persian translation\",\"hints\":[\"hint1\",\"hint2\",\"hint3\"]}";
   var history = meet.turns.filter(function(t){ return !t.err; }).map(function(t){
     return { role: t.role === 'ai' ? 'assistant' : 'user', content: t.text };
