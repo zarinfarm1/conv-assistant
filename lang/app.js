@@ -3,6 +3,7 @@
 // ============ APP VERSION ============
 var APP_VERSION = '131';
 var APP_VERSION = '132';
+var APP_VERSION = '134';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -154,7 +155,7 @@ function initSync(){
 function pushToCloud(silent){
   if(!syncEnabled || !syncKey) return Promise.resolve();
   var proxies = getProxyList();
-  var payload = JSON.stringify({prog:prog, lessonCache:lessonCache, grammarCache:grammarCache, mistakes:mistakes, importedScenarios:importedScenarios, customLessons:customLessons, updatedAt:Date.now()});
+  var payload = JSON.stringify({prog:prog, lessonCache:lessonCache, grammarCache:grammarCache, mistakes:mistakes, importedScenarios:importedScenarios, customLessons:customLessons, meetBox:m33Box, meetExtra:m33Extra, meetOvr:m33Ovr, meetDays:m33Days, updatedAt:Date.now()});
   function tryOne(base){
     var isGAS = base.indexOf('script.google.com') >= 0;
     var url, options;
@@ -229,6 +230,10 @@ function pullFromCloud(silent){
         if(Array.isArray(d.mistakes)){mistakes=d.mistakes; store.set('zy_mistakes',mistakes)}
         if(Array.isArray(d.importedScenarios)){importedScenarios=d.importedScenarios; store.set('zy_imported',importedScenarios)}
         if(Array.isArray(d.customLessons)){customLessons=d.customLessons; store.set('zy_custom_lessons',customLessons)}
+        if(d.meetBox){m33Box=d.meetBox; store.set('zy_meet_box',m33Box)}
+        if(d.meetExtra){m33Extra=d.meetExtra; store.set('zy_meet_extra',m33Extra)}
+        if(d.meetOvr){m33Ovr=d.meetOvr; store.set('zy_meet_ovr',m33Ovr)}
+        if(d.meetDays){m33Days=d.meetDays; store.set('zy_meet_days',m33Days)}
         if(!silent) toast('پیشرفت از ابر بارگذاری شد ✅');
         render(); return true;
       });
@@ -257,7 +262,7 @@ function schedulePushToCloud(){
   syncTimer = setTimeout(function(){pushToCloud(true)}, 1500);
 }
 function exportData(){
-  var data={v:1,exportedAt:new Date().toISOString(),prog:prog,lessonCache:lessonCache,grammarCache:grammarCache,mistakes:mistakes,importedScenarios:importedScenarios,customLessons:customLessons};
+  var data={v:1,exportedAt:new Date().toISOString(),prog:prog,lessonCache:lessonCache,grammarCache:grammarCache,mistakes:mistakes,importedScenarios:importedScenarios,customLessons:customLessons,meetBox:m33Box,meetExtra:m33Extra,meetOvr:m33Ovr,meetDays:m33Days};
   return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
 }
 function importData(b64){
@@ -269,6 +274,10 @@ function importData(b64){
   if(data.mistakes){mistakes=data.mistakes;store.set('zy_mistakes',mistakes)}
   if(data.importedScenarios){importedScenarios=data.importedScenarios;store.set('zy_imported',importedScenarios)}
   if(data.customLessons){customLessons=data.customLessons;store.set('zy_custom_lessons',customLessons)}
+  if(data.meetBox){m33Box=data.meetBox;store.set('zy_meet_box',m33Box)}
+  if(data.meetExtra){m33Extra=data.meetExtra;store.set('zy_meet_extra',m33Extra)}
+  if(data.meetOvr){m33Ovr=data.meetOvr;store.set('zy_meet_ovr',m33Ovr)}
+  if(data.meetDays){m33Days=data.meetDays;store.set('zy_meet_days',m33Days)}
   return true;
 }
 
@@ -3555,6 +3564,594 @@ function drawMeetChatV132() {
 
 // Override the router to use the new version
 window.renderMeet = renderMeetV132;
+// ============ MEET v134: آمادگی ۶ روزه ایلدار ============
+APP_VERSION = '134';
+
+var M33 = {view:'home',catId:null,deck:[],pos:0,revealed:false,showFa:false,yes:0,no:0,missed:[],
+  secs:45,timed:false,left:0,timer:null,tok:0,timedOut:false,ans:'',title:'',lastItems:[],lastOpts:{},
+  liveDeck:[],turns:[],busy:false,curQ:null,genBusy:false};
+var m33Box = store.get('zy_meet_box',{}) || {};
+var m33Extra = store.get('zy_meet_extra',{}) || {};
+var m33Ovr = store.get('zy_meet_ovr',{}) || {};
+var m33Days = store.get('zy_meet_days',{}) || {};
+[m33Box,m33Extra,m33Ovr,m33Days].forEach(function(o,i){ if(typeof o!=='object'||Array.isArray(o)||!o){ if(i===0)m33Box={}; if(i===1)m33Extra={}; if(i===2)m33Ovr={}; if(i===3)m33Days={}; } });
+
+var M33_CATS = [
+  {id:'greet',icon:'👋',title:'سلام و احوال‌پرسی',desc:'اولین دیدار حضوری، چای، حال و احوال'},
+  {id:'year',icon:'📅',title:'سال گذشته و کار تو',desc:'سالت چطور بود، مشکل داری، بار کاری'},
+  {id:'stock',icon:'📦',title:'موجودی و انبار',desc:'چند تا لپ‌تاپ، مانیتور، کابل داریم'},
+  {id:'buy',icon:'🛒',title:'خرید و تهیه',desc:'می‌خوام فلان چیز رو بخرم، از کجا، چقدر'},
+  {id:'follow',icon:'📄',title:'پیگیری فاکتور و تماس',desc:'هدا، سعد محمدی، معصومه، آریانت'},
+  {id:'go',icon:'🚶',title:'برو پیش فلانی',desc:'برو به دنیس بگو، با آرتم صحبت کن'},
+  {id:'fiber',icon:'🔌',title:'پیمانکار فیبر و ساختمان‌ها',desc:'FTTH، کشیدن کابل، تاییدیه امنیتی'},
+  {id:'net',icon:'🌐',title:'شبکه و فنی',desc:'MPLS، VPN، وای‌فای، سرور، بکاپ'},
+  {id:'sec',icon:'🛡️',title:'امنیت و نرم‌افزار',desc:'کاسپرسکی، آفیس، لایسنس، رمز'},
+  {id:'tasks',icon:'✅',title:'دستور و تایید',desc:'گزارش روزانه، دستور چندمرحله‌ای، تایید'},
+  {id:'users',icon:'🧑‍💻',title:'پشتیبانی کاربران',desc:'تیکت، پرینتر، رمز، آماده‌سازی لپ‌تاپ'},
+  {id:'plan',icon:'💡',title:'پیشنهاد و برنامه',desc:'ایده، بودجه، هدف سال بعد، آموزش'},
+  {id:'save',icon:'🚑',title:'نفهمیدم / نمی‌دونم',desc:'سوال‌هایی که جوابشون رو نمی‌دونی یا تند گفته'},
+  {id:'small',icon:'☕',title:'گپ کوتاه و خداحافظی',desc:'هوا، ناهار، رستوران، خداحافظی'}
+];
+
+var M33_Q = {
+greet:[
+["Armin! Finally we meet in person. How are you?","آرمین! بالاخره حضوری می‌بینمت. چطوری؟","I'm fine, thank you. Nice to meet you.","I'm doing well, thank you. It's really nice to finally meet you in person."],
+["How are you feeling today? Not too nervous, I hope?","امروز چه حسی داری؟ امیدوارم زیاد استرس نداشته باشی.","A little nervous, but I'm fine.","Maybe a little nervous, but I'm very happy to meet you."],
+["How is your family?","خانواده‌ات چطورن؟","They're fine, thank you.","They're all well, thank you for asking."],
+["Did you sleep well?","خوب خوابیدی؟","Yes, I did. Thank you.","Yes, I slept well. Thanks for asking."],
+["Would you like some tea or coffee?","چای یا قهوه می‌خوری؟","Tea, please. Thank you.","Tea would be great, thank you."],
+["Please, sit down. Make yourself comfortable.","بفرما بشین. راحت باش.","Thank you.","Thank you, Ildar. I appreciate it."],
+["I heard a lot about you from the team. They say you work very well.","از تیم زیاد درباره‌ات شنیدم. می‌گن خوب کار می‌کنی.","Thank you. That's kind of you.","Thank you, that's very kind. I try to do my best."],
+["Do you remember our interview last year? It was a long time ago!","مصاحبه پارسالمون یادته؟ خیلی وقت پیش بود!","Yes, I remember. It was a good talk.","Yes, of course. I remember it well. I'm happy to be on the team."],
+["Do you like working here?","از کار کردن اینجا خوشت میاد؟","Yes, I like it very much.","Yes, I really enjoy it. The team is friendly and I learn a lot."],
+["Can you understand me OK? Is my English too fast?","منو خوب می‌فهمی؟ انگلیسیم زیادی تنده؟","A little fast, but I understand.","I understand you, but could you speak a bit slower, please?"],
+["Don't be nervous. We are just going to talk, OK?","استرس نداشته باش. فقط قراره صحبت کنیم، باشه؟","OK, thank you. I'll try my best.","Thank you, that helps. I'll do my best."],
+["Shall we start?","شروع کنیم؟","Yes, sure. I'm ready.","Yes, of course. I'm ready when you are."]
+],
+year:[
+["How was your year? Tell me in a few words.","سالت چطور بود؟ در چند کلمه بگو.","It was busy, but good.","It was a busy year, but a good one. I learned a lot."],
+["What was the biggest thing you did this year?","مهم‌ترین کاری که امسال کردی چی بود؟","I set up many laptops.","I set up many laptops and fixed a lot of network problems."],
+["Do you have any problems at work right now?","الان تو کار مشکلی داری؟","No, everything is fine.","No big problems. Everything is under control."],
+["Is the workload OK? Is it too much work?","حجم کار خوبه؟ زیاد نیست؟","It's OK. Sometimes it's busy.","It's manageable. Sometimes it's very busy, but I can handle it."],
+["Do you need any help from me or from Moscow?","از من یا از مسکو کمکی لازم داری؟","Not now. Thank you.","Not right now, but I'll tell you if I need something."],
+["How is the team in the office? Do you work well together?","تیم توی دفتر چطوره؟ با هم خوب کار می‌کنید؟","Yes, they're nice people.","Yes, we work well together. Everybody helps each other."],
+["What is the hardest part of your job?","سخت‌ترین قسمت کارت چیه؟","Sometimes there are many urgent tasks.","The hardest part is when many urgent requests come at the same time."],
+["What do you like most in your job?","بیشتر از همه چی کارت رو دوست داری؟","I like solving problems.","I like solving problems and helping people work without stress."],
+["How is your English now? Are you studying?","انگلیسی‌ات الان چطوره؟ درس می‌خونی؟","I'm studying every day.","I'm studying every day. My listening is good, and I'm improving my speaking."],
+["Is there anything you want to change in our IT work?","چیزی هست که بخوای تو کار IT عوض کنی؟","Yes, we need better documents.","Yes, I think we need better documentation and a few more spare devices."],
+["Do you want to learn something new this year?","امسال می‌خوای چیز جدیدی یاد بگیری؟","Yes, networking and security.","Yes, I'd like to learn more about networking and security."],
+["Are you happy here? Be honest.","اینجا خوشحالی؟ صادق باش.","Yes, I'm happy here.","Yes, I'm happy. I like my work and my colleagues."]
+],
+stock:[
+["How many spare HP laptops do we have?","چند تا لپ‌تاپ HP یدکی داریم؟","We have four.","We have four new HP laptops in stock."],
+["And how many used laptops?","و چند تا لپ‌تاپ دست‌دوم؟","Two, I think. Let me check.","I think two, but let me check and give you the exact number."],
+["Do we have spare monitors?","مانیتور یدکی داریم؟","Yes, we have three.","Yes, we have three monitors. One of them is Xiaomi."],
+["What about keyboards and mice?","کیبورد و ماوس چی؟","Yes, we have some.","Yes, we have a few. I will count them and send you the list."],
+["Do we have spare power adapters?","آداپتور برق یدکی داریم؟","Yes, but not many.","Yes, but only a few. I think we should order more."],
+["How many network cables do we have?","چند تا کابل شبکه داریم؟","I don't know the exact number.","I don't have the exact number. I'll count them and tell you today."],
+["Can I see the warehouse? Where do you keep everything?","می‌تونم انبار رو ببینم؟ همه چیز رو کجا نگه می‌داری؟","Sure. Please follow me.","Of course. It's this way, please follow me. Everything is on the shelves."],
+["Do you have an inventory list?","لیست موجودی داری؟","Yes, in Excel.","Yes, I keep it in an Excel file. I can show you now."],
+["Is anything missing or broken?","چیزی گم یا خراب شده؟","No, nothing is missing.","Nothing is missing. Two items are old, but they work."],
+["What do we need to order soon?","به‌زودی چی باید سفارش بدیم؟","Maybe two keyboards and a laptop.","I think we need two keyboards and one more laptop for new users."],
+["Who has the laptop that was prepared for Reza Amiri?","لپ‌تاپی که برای رضا امیری آماده شده پیش کیه؟","I still have it with me.","I still have it. I'm waiting for the official request."],
+["Do people sign something when they take equipment?","وقتی کسی تجهیزات می‌گیره چیزی امضا می‌کنه؟","Yes, they sign a form.","Yes, they sign a handover form and I keep a copy."]
+],
+buy:[
+["I want to buy a Xiaomi monitor. How can I get it?","می‌خوام یه مانیتور شیائومی بخرم. چطوری بگیرمش؟","I can order it for you.","I can order it for you. I just need your approval."],
+["Where is the best place to buy it here?","بهترین جا برای خریدش اینجا کجاست؟","I know one shop. I'll take you.","I know a good shop. I can take you there, or I can order it online."],
+["How much does it cost, more or less?","تقریباً چقدر قیمتشه؟","Let me check the price.","I'm not sure about the exact price. Let me check and tell you."],
+["How long will it take to arrive?","چقدر طول می‌کشه برسه؟","Usually two or three days.","Usually two or three days. I'll confirm with the supplier."],
+["Can you take me to the shop? I want to see the options.","می‌تونی منو ببری مغازه؟ می‌خوام گزینه‌ها رو ببینم.","Yes, of course.","Yes, of course. When would you like to go?"],
+["Do we have a supplier for laptops?","تامین‌کننده لپ‌تاپ داریم؟","Yes, we have one.","Yes, we have a supplier. I'll send you the contact details."],
+["Do you need a purchase request for this?","برای این درخواست خرید لازمه؟","Yes, I need your approval.","Yes, I'll prepare a purchase request. I need your approval first."],
+["Can you get two quotes so we can compare?","می‌تونی دو تا قیمت بگیری که مقایسه کنیم؟","Yes. I'll ask two suppliers.","Yes, I'll ask two suppliers and send you a comparison today."],
+["Will we get an official invoice?","فاکتور رسمی می‌دن؟","Yes, they give an invoice.","Yes, they give an official invoice. I'll check it before we pay."],
+["I need a top-up for my phone. How do I do it?","شارژ گوشی لازم دارم. چطوری انجام بدم؟","I can buy it for you.","I can buy it for you and send you the receipt."],
+["Which brand do you recommend?","کدوم برند رو پیشنهاد می‌کنی؟","I recommend HP. It's reliable.","I recommend HP. It's reliable and we already have spare parts."],
+["Is there a warranty?","گارانتی داره؟","Yes, one year.","I think one year, but I'll check the warranty card."]
+],
+follow:[
+["Did you call Ms. Hoda about the invoices?","درباره فاکتورها به خانم هدا زنگ زدی؟","Yes, I called her today.","Yes, I called her today. She said she will send them tomorrow."],
+["Please call Hoda about the invoices. Can you do it now?","لطفاً درباره فاکتورها با هدا تماس بگیر. الان می‌تونی؟","Sure. I'll call her now.","Sure, I'll call her right now and tell you what she says."],
+["What did she say?","چی گفت؟","She said she'll send them tomorrow.","She said they had an internal problem. She will send the invoices tomorrow."],
+["Did she send the PDF copies?","نسخه‌های PDF رو فرستاد؟","Not yet.","Not yet. I'll remind her this afternoon."],
+["Please talk to Saad Mohammadi about the invoice problem.","لطفاً درباره مشکل فاکتور با سعد محمدی صحبت کن.","OK. I'll talk to him today.","Of course. I'll talk to him today and explain the problem."],
+["What is the problem with the invoice, exactly?","دقیقاً مشکل فاکتور چیه؟","The amount does not match.","The amount on the invoice doesn't match our records. I asked them to correct it."],
+["Did Masoumeh check the Arianet invoices?","معصومه فاکتورهای آریانت رو چک کرد؟","Yes, we checked them together.","Yes, we reviewed them together. If there are no other issues, she will send them to Tehran."],
+["When can we send them to Tehran?","کی می‌تونیم بفرستیم تهران؟","I think tomorrow.","I think tomorrow, if there are no more problems."],
+["Why is it taking so long?","چرا اینقدر طول کشیده؟","Sorry. They are slow to answer.","Sorry for the delay. The supplier was slow to reply, but I'm following up every day."],
+["Is Arianet in the delivery list for the PD team?","آریانت تو لیست تحویل تیم PD هست؟","Not yet.","Not yet. The PD team accepts invoices by their list, and Arianet is not added."],
+["Please send me a short email about this.","لطفاً یه ایمیل کوتاه درباره‌اش بفرست.","Yes, I'll send it today.","Sure. I'll send you a short summary by email today."],
+["Call me when you have news.","وقتی خبر داشتی بهم زنگ بزن.","OK, I will.","OK, I'll call you as soon as I have news."]
+],
+go:[
+["Please go to Denis and tell him about the E&C website.","لطفاً برو پیش دنیس و درباره سایت E&C بهش بگو.","OK. I'll go now.","OK, I'll go to Denis now and ask about the E&C website."],
+["Can you cooperate with Denis? He will give you access.","می‌تونی با دنیس همکاری کنی؟ بهت دسترسی می‌ده.","Yes, of course.","Yes, of course. I'll work with him and tell you the result."],
+["Please go to Artem and ask about his Office.","لطفاً برو پیش آرتم و درباره آفیسش بپرس.","OK. I'll go to him.","OK, I'll go to Artem and check what he needs."],
+["Tell Reza to send the request for the laptop.","به رضا بگو درخواست لپ‌تاپ رو بفرسته.","OK, I'll tell him.","OK, I'll tell Reza to send the request today."],
+["Please give this document to Milad.","لطفاً این سند رو به میلاد بده.","Understood. I'll take it.","Understood. I'll give it to Milad personally."],
+["Go and ask Mr. Kord about the contract.","برو از آقای کرد درباره قرارداد بپرس.","OK. I'll ask him.","OK. I'll go and ask him, and I'll let you know."],
+["Find Mr. Pashkevich and check his TrueConf.","آقای پاشکویچ رو پیدا کن و TrueConf ش رو چک کن.","Sure. I'll find him.","Sure. I'll find him and check his TrueConf now."],
+["Please bring me the contract copy when you have it.","لطفاً وقتی نسخه قرارداد رو گرفتی برام بیار.","Yes, I will.","Yes, I'll bring it as soon as I receive it."],
+["Ask Hesam about the laptop for Denis.","از حسام درباره لپ‌تاپ دنیس بپرس.","OK. I'll ask him.","OK. I'll ask Hesam and report back to you."],
+["Please take the laptop to Azat in the Shadegan wing.","لطفاً لپ‌تاپ رو ببر برای آزات تو ساختمان شادگان.","Yes. I'll take it now.","Yes, I'll take the laptop to him now, without setup, as you said."],
+["After that, come back and tell me.","بعدش برگرد و بهم بگو.","OK. I'll come back.","OK. When I finish, I'll come back and give you an update."],
+["Do you know where to find him?","می‌دونی کجا پیداش کنی؟","Not sure. Where is his office?","I'm not sure. Could you tell me where his office is?"]
+],
+fiber:[
+["The fiber optic contractor is coming. Do you know when?","پیمانکار فیبر نوری داره میاد. می‌دونی کی؟","Tomorrow morning, I think.","I think tomorrow morning. I'll confirm with him."],
+["Please meet him and show him the place.","لطفاً ازش استقبال کن و محل رو نشونش بده.","OK. I'll meet him.","OK. I'll meet him at the entrance and show him the route."],
+["Where will he pull the cable?","کابل رو از کجا می‌کشه؟","From the street to the building.","From the main road to the Reno building. I'll show him the path."],
+["Did you talk to Mr. Bahrami about the FTTH line?","با آقای بهرامی درباره خط FTTH صحبت کردی؟","Yes, I did.","Yes. The issue with TCI was resolved. Only the TIC security approval is pending."],
+["What are we waiting for now?","الان منتظر چی هستیم؟","The security approval.","We are waiting for the TIC security approval."],
+["How long will the installation take?","نصب چقدر طول می‌کشه؟","Maybe two days.","I think two days, after the approval."],
+["Do you need anything from me for this?","برای این از من چیزی لازم داری؟","Maybe a letter from you.","Maybe an official letter from you would help with the approval."],
+["Who will pay the contractor?","پول پیمانکار رو کی می‌ده؟","I don't know yet.","I don't know yet. I'll ask the finance team and tell you."],
+["Will the internet be faster after that?","بعدش اینترنت سریع‌تر می‌شه؟","Yes, much faster.","Yes, it should be much faster and more stable than now."],
+["Please send me photos when the work is done.","لطفاً وقتی کار تموم شد عکس برام بفرست.","Sure, I will.","Sure. I'll take photos and send them to you."]
+],
+net:[
+["What is the status of the MPLS link?","وضعیت لینک MPLS چطوره؟","It's working, but a bit unstable.","It's working, but sometimes we have packet loss. I'm checking it."],
+["Is the internet stable now?","اینترنت الان پایداره؟","Yes, most of the time.","Yes, most of the time. We had a short problem yesterday."],
+["What happened with the network yesterday?","دیروز با شبکه چی شد؟","The link was down for an hour.","The link was down for about an hour. I contacted the provider."],
+["Can people connect to the VPN without problems?","مردم بدون مشکل به VPN وصل می‌شن؟","Yes, no problems.","Yes. A few users had problems, but I fixed them."],
+["Does TrueConf work well for meetings?","TrueConf برای جلسه‌ها خوب کار می‌کنه؟","Yes, it works well.","Yes, it works well. I checked it with Mr. Pashkevich."],
+["Is the Wi-Fi good in all rooms?","وای‌فای تو همه اتاق‌ها خوبه؟","Not in all rooms.","Not in all rooms. The signal is weak on the third floor."],
+["Can you show me the server room?","می‌تونی اتاق سرور رو نشونم بدی؟","Sure. Please come.","Sure, of course. Please follow me."],
+["Do we have a backup? What if the server fails?","بکاپ داریم؟ اگه سرور خراب بشه چی؟","Yes, we have a backup.","Yes, we back up every night. I can show you the last backup."],
+["Is the domain working fine? Can you prepare a user list?","دامین خوب کار می‌کنه؟ می‌تونی لیست کاربرها رو آماده کنی؟","Yes. I'll prepare it tomorrow.","Yes, it's fine. I'll prepare the user list and send it by tomorrow."],
+["What is the biggest risk in our network?","بزرگ‌ترین ریسک شبکه ما چیه؟","The old equipment.","I think the old equipment. Some switches are very old."],
+["Do you have a plan if the internet goes down?","اگه اینترنت قطع بشه برنامه داری؟","Yes. We use a backup line.","Yes, we have a backup line. It is slower, but it works."],
+["Please check the router on the third floor and report back.","لطفاً روتر طبقه سوم رو چک کن و گزارش بده.","Understood. I'm going now.","Understood. I'll check it and report back in fifteen minutes."]
+],
+sec:[
+["Did you scan the laptops with Kaspersky?","لپ‌تاپ‌ها رو با کاسپرسکی اسکن کردی؟","Yes, four so far.","Yes, I've scanned four laptops so far. It takes some time."],
+["Why is it so slow?","چرا اینقدر کنده؟","Because the scan is long.","Because it's a full scan. I don't want to miss any problem."],
+["Did you find any viruses?","ویروسی پیدا کردی؟","No, not yet.","No, not yet. The ones I scanned are clean."],
+["Is there any cracked software on the laptops?","نرم‌افزار کرک‌شده روی لپ‌تاپ‌ها هست؟","I'm checking it.","I'm checking. I'm worried the scan can remove some cracks, like AutoCAD."],
+["Please prepare a list: model, serial number, and domain name.","لطفاً یه لیست آماده کن: مدل، سریال و نام دامین.","OK. I'll prepare it.","OK. I already have most serial numbers and models, only the PC names are missing."],
+["Can you install Office on Artem's laptop?","می‌تونی آفیس رو روی لپ‌تاپ آرتم نصب کنی؟","Yes, I'll do it.","Yes. First I need to change his domain profile, then I'll install Office."],
+["Do the users have licenses for their software?","کاربرها برای نرم‌افزارهاشون لایسنس دارن؟","Most of them, yes.","Most of them do. I'll check the rest and send you a list."],
+["How do we protect the laptops from viruses?","چطوری از لپ‌تاپ‌ها در برابر ویروس محافظت می‌کنیم؟","We use antivirus and updates.","We use antivirus, regular updates, and I check the laptops often."],
+["What about passwords? Are they safe?","رمزها چی؟ امنن؟","We change them regularly.","Users change them regularly. I want to make the rules stricter."],
+["Is it OK to use USB drives?","استفاده از فلش اشکالی نداره؟","It's better to scan them.","It's risky. I recommend scanning every USB drive before use."]
+],
+tasks:[
+["Armin, any updates for me today?","آرمین، امروز خبری برام داری؟","Yes. Everything is going well.","Yes. I finished the setup, and I'm checking two tickets today."],
+["What did you do yesterday and what are you doing today?","دیروز چیکار کردی و امروز چیکار می‌کنی؟","Yesterday I fixed printers. Today I'm setting up laptops.","Yesterday I fixed two printers. Today I'm setting up two laptops. No blockers."],
+["Please prepare the list by tomorrow.","لطفاً لیست رو تا فردا آماده کن.","OK. I'll do it.","Understood. I'll send it to you by tomorrow morning."],
+["Please prepare a laptop for Denis Popov.","لطفاً یه لپ‌تاپ برای دنیس پوپوف آماده کن.","Understood. I'll prepare it.","Understood. I'll prepare it. Which model do you prefer?"],
+["First go to the third floor, then check the printer, then report to me.","اول برو طبقه سوم، بعد پرینتر رو چک کن، بعد به من گزارش بده.","Understood.","Understood. Third floor, then the printer, then I'll report to you."],
+["Which task is more urgent now?","الان کدوم کار فوری‌تره؟","The network, I think.","I think the network issue, because many users are affected."],
+["Can you finish this today?","می‌تونی امروز تمومش کنی؟","Yes, by the end of the day.","Yes, I'll finish it by the end of the day."],
+["If you can't finish, tell me early, OK?","اگه نتونستی تموم کنی زود بهم بگو، باشه؟","OK. I will.","OK, I will tell you as soon as I see a problem."],
+["Do you need my approval for anything?","برای چیزی تایید من لازمه؟","Yes, for one monitor.","Yes. Mr. Mostaghimzadeh requested a Xiaomi monitor. Do you approve?"],
+["Why was this late?","چرا این دیر شد؟","Sorry. The parts came late.","Sorry for the delay. The parts arrived late. It will be ready tomorrow."],
+["Please write everything in an email so we have a record.","لطفاً همه چیز رو تو یه ایمیل بنویس که سابقه داشته باشیم.","Yes, I'll send an email.","Of course. I'll send you a summary by email today."],
+["Good job. Anything else?","آفرین. چیز دیگه‌ای هست؟","No, that's all. Thank you.","That's all for now. Thank you for your support."]
+],
+users:[
+["How do you handle user requests? Is there a ticket system?","درخواست کاربرها رو چطوری مدیریت می‌کنی؟ سیستم تیکت هست؟","Yes, we use tickets.","Yes, users send a ticket or call me, and I write it down."],
+["How many tickets do you get per day?","روزی چند تا تیکت داری؟","About five to ten.","About five to ten, more on busy days."],
+["What are the most common problems?","رایج‌ترین مشکل‌ها چی هستن؟","Printers and internet.","Mostly printers, internet problems, and Office issues."],
+["A user says the printer isn't working. What do you do first?","کاربر می‌گه پرینتر کار نمی‌کنه. اول چیکار می‌کنی؟","I check the cable and the power.","I ask if it's on, check the paper and the error, then connect remotely."],
+["A user forgot the password. What do you do?","کاربر رمزش رو فراموش کرده. چیکار می‌کنی؟","I reset it for them.","I verify who they are, then I reset it and ask them to change it."],
+["How do you help users who work remotely?","به کاربرهایی که ریموت کار می‌کنن چطوری کمک می‌کنی؟","I connect remotely.","I connect with remote access and fix it, or guide them by phone."],
+["Do users complain about you?","کاربرها از تو شکایت می‌کنن؟","No, they are happy.","No, I think they are happy. I try to answer quickly."],
+["How do you prepare a new laptop?","یه لپ‌تاپ جدید رو چطوری آماده می‌کنی؟","I install Windows and Office.","I install Windows, Office, antivirus, and join it to the domain."],
+["How long does it take to set up a laptop?","آماده‌سازی یه لپ‌تاپ چقدر طول می‌کشه؟","About two hours.","About two hours, with all the programs."],
+["Do you train users? For example, how to use TrueConf?","به کاربرها آموزش می‌دی؟ مثلاً TrueConf؟","Yes, when needed.","Yes, I show them how to use it, and I send a short guide."]
+],
+plan:[
+["What can we improve in IT? Give me your ideas.","تو IT چی رو می‌تونیم بهتر کنیم؟ ایده‌هات رو بگو.","More spare devices.","I suggest more spare devices and better documentation."],
+["What is your suggestion for the old laptops?","پیشنهادت برای لپ‌تاپ‌های قدیمی چیه؟","We should replace them.","I suggest replacing the oldest ones step by step."],
+["Do you need a budget for something?","برای چیزی بودجه لازم داری؟","Yes, for two laptops.","Yes, for two spare laptops and a few keyboards."],
+["What are your goals for next year?","هدف‌هات برای سال بعد چیه؟","Better English and more skills.","I want to improve my English and learn more about networking and security."],
+["Would you like to visit the Moscow office one day?","دوست داری یه روز دفتر مسکو رو ببینی؟","Yes, I'd love to.","Yes, I'd love to. It would be a great experience."],
+["What is the first thing you want to do after this meeting?","اولین کاری که بعد این جلسه می‌خوای بکنی چیه؟","Finish my tasks.","Finish my tasks and send you the summary."],
+["Do you want a training course? Maybe English or IT?","دوره آموزشی می‌خوای؟ شاید انگلیسی یا IT؟","Yes, English, please.","Yes, an English course would help me a lot."],
+["What do you think about our documentation?","درباره مستندات ما چی فکر می‌کنی؟","It's not complete yet.","It's not complete yet. I'm working on it."],
+["What can I do to help you in your work?","چطور می‌تونم تو کارت کمکت کنم؟","Quick approvals help me.","Quick approvals would help me a lot."],
+["Can you give me a short report every day?","می‌تونی هر روز یه گزارش کوتاه بدی؟","Yes, no problem.","Yes, no problem. I'll send you a short report every day."]
+],
+save:[
+["What is the IP address of the main switch?","آی‌پی سوئیچ اصلی چیه؟","I don't know. Let me check.","I don't have it now. Let me check and tell you in a minute."],
+["Could you explain the problem in detail?","می‌تونی مشکل رو با جزئیات توضیح بدی؟","Give me a minute, please.","Sure. Give me a minute, I want to explain it clearly."],
+["So, the thing from yesterday, did it go OK with them?","خب، اون موضوع دیروز، با اونا خوب پیش رفت؟","Sorry, which one? The invoices?","Sorry, could you repeat that? Do you mean the invoices or the laptops?"],
+["Did you understand my instruction?","دستورم رو فهمیدی؟","Yes. You want me to…","Let me make sure I understand. You want me to… right?"],
+["Why didn't you answer my call?","چرا جواب تماسم رو ندادی؟","Sorry, I missed it.","Sorry. Could you send me a message next time? It's easier for me."],
+["Do you speak Russian?","روسی بلدی؟","No, only a few words.","No, only a few words. I speak Persian and English."],
+["Can you explain it in English, simply?","می‌تونی ساده به انگلیسی توضیح بدی؟","I'll try. One moment.","I'll try. My spoken English is not perfect, but I'm working on it."],
+["Armin, are you listening?","آرمین، گوش می‌کنی؟","Yes, sorry. Please repeat.","Yes, sorry. Could you please repeat the last part?"],
+["What is your opinion about this?","نظرت درباره این چیه؟","Let me think for a second.","That's a good question. Let me think for a second."],
+["Do you know how to fix this?","می‌دونی چطور درستش کنی؟","Not sure. I'll find out.","I'm not sure yet, but I'll find out and tell you today."]
+],
+small:[
+["Is the weather always this hot here?","هوا همیشه اینجا اینقدر گرمه؟","In summer, yes.","In summer, yes. It's very hot, but winter is nice."],
+["What is a good restaurant near here?","یه رستوران خوب این اطراف کجاست؟","I know a good one.","I know a good restaurant nearby. I can show you."],
+["What food do you recommend?","چه غذایی پیشنهاد می‌کنی؟","Kebab is very famous.","I recommend kebab. It's very famous here."],
+["Do you want to have lunch together?","می‌خوای با هم ناهار بخوریم؟","Yes, with pleasure.","Yes, with pleasure. Thank you for the invitation."],
+["How long does it take you to get to work?","رسیدن به محل کار چقدر طول می‌کشه؟","About thirty minutes.","About thirty minutes by car."],
+["Do you have any hobbies?","سرگرمی داری؟","I like technology and music.","I like technology and learning new things. I also enjoy music."],
+["Is there anything you need from me?","چیزی از من لازم داری؟","No, thank you. Everything is OK.","No, thank you. Everything is fine. I appreciate your help."],
+["Thank you for your time today.","ممنون از وقتی که گذاشتی.","Thank you too, Ildar.","Thank you, Ildar. It was great to meet you."],
+["See you tomorrow, OK?","فردا می‌بینمت، باشه؟","Yes, see you tomorrow.","Yes, see you tomorrow. Have a good evening."],
+["Have a good rest of the day!","بقیه روزت خوش!","You too. Goodbye.","You too, Ildar. Take care."]
+]
+};
+
+var M33_RESCUE = [
+["Sorry, could you repeat that, please?","ببخشید، می‌شه تکرار کنید؟"],
+["Could you speak a little slower, please?","می‌شه یه کم آهسته‌تر صحبت کنید؟"],
+["Sorry, I didn't understand. Could you say it in a simpler way?","ببخشید نفهمیدم. می‌شه ساده‌تر بگید؟"],
+["Do you mean the HP laptop?","منظورتون لپ‌تاپ HP هست؟ (Do you mean + X)"],
+["Let me make sure I understand. You want me to…?","بذارید مطمئن بشم فهمیدم. می‌خواید من… ؟"],
+["Let me check and get back to you.","بذارید چک کنم و بهتون خبر بدم."],
+["Give me a minute, please.","یه دقیقه وقت بدید."],
+["That's a good question. Let me think for a second.","سوال خوبیه. یه لحظه فکر کنم."],
+["I'm not sure. I will find out and tell you.","مطمئن نیستم. پیگیری می‌کنم و بهتون می‌گم."],
+["I don't have that information right now.","الان این اطلاعات رو ندارم."],
+["My spoken English is not perfect, but I'm working on it.","انگلیسی صحبتم کامل نیست، ولی دارم روش کار می‌کنم."],
+["Could you send me a message? It's easier for me to write.","می‌شه پیام بفرستید؟ نوشتن برام راحت‌تره."],
+["Could you write it down or show me on the screen?","می‌شه بنویسید یا روی صفحه نشونم بدید؟"],
+["Sorry, I missed your call. I'll call you back.","ببخشید تماستون رو از دست دادم. باهاتون تماس می‌گیرم."],
+["Yes, of course. I'll do it now.","بله حتماً. همین الان انجام می‌دم."],
+["I'll finish it by the end of the day.","تا آخر روز تمومش می‌کنم."],
+["I'll send you an email about it today.","امروز درباره‌اش ایمیل می‌فرستم."],
+["I'll talk to him and let you know.","باهاش صحبت می‌کنم و بهتون خبر می‌دم."],
+["Sorry for the delay.","ببخشید بابت تاخیر."],
+["No problem. Thank you for your help.","مشکلی نیست. ممنون از کمکتون."]
+];
+
+var M33_TPL = [
+["Yes, I did. + کاری که کردی","Yes, I called Ms. Hoda this morning."],
+["Not yet, but + برنامه‌ات","Not yet, but I'll do it today."],
+["I'll + فعل + (زمان)","I'll check it and tell you in ten minutes."],
+["We have + عدد + چیز","We have four new HP laptops."],
+["The problem is + X. I'm + فعل‌ing","The problem is the cable. I'm replacing it."],
+["It's done. / It's working now.","The printer is working now."],
+["I talked to + نفر. He said + ...","I talked to Denis. He said he will send access."],
+["Could you + فعل, please?","Could you approve it, please?"],
+["Do you approve? / Should I proceed?","A user requested a monitor. Do you approve?"],
+["Sorry for + اسم","Sorry for the delay."],
+["I'm waiting for + X","I'm waiting for his request."],
+["I don't know yet. I'll find out.","I don't know yet. I'll find out and tell you."]
+];
+
+var M33_PLAN = [
+ {t:'روز ۱ — شروع و نجات‌بخش‌ها',cats:['greet','small','save'],timed:0,note:'اول جمله‌های نجات‌بخش رو بلند بخون و صداشون رو گوش بده، بعد فلش‌کارت.'},
+ {t:'روز ۲ — خودت و کارت',cats:['year','stock','users'],timed:0,note:'جواب‌های کوتاه رو حفظ کن. عددها رو با واقعیت خودت عوض کن (✏️).'},
+ {t:'روز ۳ — خرید و دستور رفتن',cats:['buy','go','stock'],timed:0,note:'قالب «I\'ll + فعل» رو توی همه‌ی جواب‌ها استفاده کن.'},
+ {t:'روز ۴ — پیگیری و فیبر',cats:['follow','go','fiber'],timed:60,note:'حالت تایمر ۱ دقیقه‌ای. اگه نرسیدی، جواب کوتاه رو بگو.'},
+ {t:'روز ۵ — فنی، امنیت و دستورها',cats:['net','sec','tasks','plan'],timed:45,note:'یه دور گفتگوی زنده با ایلدار (AI) هم بزن.'},
+ {t:'روز ۶ — شبیه‌سازی کامل',cats:'all',timed:30,n:25,note:'ترکیبی و تایمر ۳۰ ثانیه. مثل روز واقعی.'}
+];
+
+function m33Items(catId){
+  var out=[], base=M33_Q[catId]||[];
+  base.forEach(function(r,i){ out.push({id:catId+'-'+i,cat:catId,q:r[0],fa:r[1],s:r[2],p:r[3]}); });
+  (m33Extra[catId]||[]).forEach(function(r){ out.push({id:r.id,cat:catId,q:r.q,fa:r.fa||'',s:r.s,p:r.p}); });
+  out.forEach(function(it){ if(m33Ovr[it.id]) it.s=m33Ovr[it.id]; });
+  return out;
+}
+function m33Pool(cats){
+  var ids = (cats==='all') ? M33_CATS.map(function(c){return c.id}) : cats;
+  var out=[]; ids.forEach(function(id){ out=out.concat(m33Items(id)); }); return out;
+}
+function m33Shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t} return a; }
+function m33Level(id){ var b=m33Box[id]; return b ? b.b : 0; }
+function m33Mark(id,ok){
+  var cur=m33Level(id);
+  m33Box[id]={b: ok ? (cur ? Math.min(3,cur+1) : 2) : 1, t:Date.now()};
+  store.set('zy_meet_box',m33Box);
+}
+function m33Deck(items,n){
+  var w=[],nw=[],mid=[],ms=[];
+  items.forEach(function(it){ var l=m33Level(it.id); (l===1?w:(l===0?nw:(l===2?mid:ms))).push(it); });
+  return m33Shuffle(w).concat(m33Shuffle(nw),m33Shuffle(mid),m33Shuffle(ms)).slice(0,n||15);
+}
+function m33CatStats(id){
+  var it=m33Items(id), k=0; it.forEach(function(x){ if(m33Level(x.id)>=2)k++; });
+  return {known:k,total:it.length};
+}
+function m33CatTitle(id){
+  if(id==='all') return 'همه‌ی دسته‌ها';
+  var c=M33_CATS.filter(function(x){return x.id===id})[0]; return c?c.title:'';
+}
+function m33Go(v){
+  clearInterval(M33.timer);
+  if('speechSynthesis' in window) speechSynthesis.cancel();
+  if(rec && listening){ try{rec.stop()}catch(e){} }
+  M33.view=v; renderMeetV133(); window.scrollTo(0,0);
+}
+function m33Sim(a,b){ a=norm(a); b=norm(b); if(!a||!b) return 0; return sim(a,b); }
+function m33Row(text,sub){
+  return '<div style="display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line)"><button type="button" class="mini" data-say="'+esc(text)+'">'+ic('vol')+'</button><div style="flex:1"><div dir="ltr" style="font-family:Lexend,sans-serif;font-weight:600;font-size:.92rem;text-align:left">'+esc(text)+'</div>'+(sub?'<div style="font-size:.78rem;color:var(--muted)">'+esc(sub)+'</div>':'')+'</div></div>';
+}
+function m33RescueHTML(open){
+  var h='<details class="card" '+(open?'open':'')+' style="margin:12px 0;border-color:var(--bad);background:var(--bad-soft)"><summary style="cursor:pointer;font-weight:800;color:var(--bad)">🚑 جمله‌های نجات‌بخش ('+fa(M33_RESCUE.length)+')</summary><div style="margin-top:10px">';
+  M33_RESCUE.forEach(function(r){ h+=m33Row(r[0],r[1]); });
+  return h+'</div></details>';
+}
+function m33TplHTML(){
+  var h='<details class="card" style="margin:12px 0"><summary style="cursor:pointer;font-weight:800;color:var(--brand)">🧩 قالب‌های جواب (با ۱۲ قالب بیشتر سوال‌ها جواب داده می‌شن)</summary><div style="margin-top:10px">';
+  M33_TPL.forEach(function(r){ h+='<div style="padding:8px 0;border-bottom:1px dashed var(--line)"><div dir="ltr" style="font-family:Lexend,sans-serif;font-weight:700;font-size:.88rem;color:var(--brand);text-align:left">'+esc(r[0])+'</div><div style="display:flex;gap:8px;align-items:center;margin-top:4px"><button type="button" class="mini" data-say="'+esc(r[1])+'">'+ic('vol')+'</button><span dir="ltr" style="font-family:Lexend,sans-serif;font-size:.85rem;text-align:left">'+esc(r[1])+'</span></div></div>'; });
+  return h+'</div></details>';
+}
+
+function renderMeetV133(){
+  var el=$('#main'); if(!el) return;
+  if(M33.view==='home') return m33Home(el);
+  if(M33.view==='cat') return m33Cat(el);
+  if(M33.view==='card') return m33Card(el);
+  if(M33.view==='sum') return m33Sum(el);
+  if(M33.view==='live') return m33Live(el);
+  if(M33.view==='list') return m33List(el);
+  M33.view='home'; m33Home(el);
+}
+
+function m33Home(el){
+  var all=m33Pool('all'), known=0, weak=0;
+  all.forEach(function(it){ var l=m33Level(it.id); if(l>=2)known++; if(l===1)weak++; });
+  var pct=all.length?Math.round(known*100/all.length):0;
+  var h='<h1>🛡️ آمادگی ۶ روزه برای ایلدار</h1><p class="sub">هدف اینه که جواب کوتاه و ساده بدی، نه کامل. هر روز یه برنامه داری.</p>';
+  h+='<div class="card" style="background:var(--brand-soft);border-color:var(--brand)"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><b>📊 پیشرفت حفظ</b><div class="sub" style="font-size:.85rem;margin-top:4px">'+fa(known)+' از '+fa(all.length)+' سوال بلدی · '+fa(weak)+' ضعیف</div></div><div style="font-size:1.6rem;font-weight:800;color:var(--brand)">'+fa(pct)+'٪</div></div>';
+  h+='<div style="height:8px;background:rgba(0,0,0,.1);border-radius:4px;overflow:hidden;margin-top:10px"><i style="display:block;height:100%;background:var(--brand);width:'+pct+'%"></i></div>';
+  h+='<div class="row" style="margin-top:12px"><button type="button" class="btn brand" id="m33Mix">🎯 تمرین ترکیبی</button>'+(weak?'<button type="button" class="btn ghost" id="m33Weak">🔁 مرور ضعیف‌ها ('+fa(weak)+')</button>':'')+'<button type="button" class="btn ghost" id="m33LiveAll">💬 گفتگوی زنده</button></div></div>';
+  h+=m33RescueHTML(true);
+  h+='<h2 style="margin-top:20px">🗓️ برنامه ۶ روزه</h2><div style="display:grid;gap:10px;margin-top:8px">';
+  M33_PLAN.forEach(function(d,i){
+    var done=!!m33Days[i];
+    var names=(d.cats==='all')?'همه‌ی دسته‌ها':d.cats.map(m33CatTitle).join(' · ');
+    h+='<div class="card" style="padding:14px;'+(done?'background:var(--ok-soft);border-color:var(--ok)':'')+'"><div style="font-weight:700">'+esc(d.t)+(d.timed?' <span class="pill warn" style="font-size:.7rem">⏱️ '+fa(d.timed)+' ثانیه</span>':'')+'</div><div class="sub" style="font-size:.8rem;margin:4px 0">'+esc(names)+'</div><div style="font-size:.82rem;color:var(--muted)">'+esc(d.note)+'</div><div class="row" style="margin-top:10px"><button type="button" class="btn brand small" data-plan="'+i+'">شروع</button><button type="button" class="btn ghost small" data-pdone="'+i+'">'+(done?'✓ انجام شد':'○ علامت بزن')+'</button></div></div>';
+  });
+  h+='</div>';
+  h+=m33TplHTML();
+  h+='<h2 style="margin-top:20px">📚 دسته‌ها ('+fa(M33_CATS.length)+')</h2><div class="units" style="margin-top:10px">';
+  M33_CATS.forEach(function(c){
+    var st=m33CatStats(c.id);
+    h+='<button type="button" class="unit" data-m33cat="'+c.id+'" style="flex-direction:column;align-items:flex-start;padding:14px;margin-bottom:10px;text-align:start;cursor:pointer"><div style="display:flex;justify-content:space-between;width:100%;align-items:center"><span style="font-size:1.5rem">'+c.icon+'</span><span class="badge lv">'+fa(st.known)+'/'+fa(st.total)+'</span></div><div class="t" style="font-weight:700;color:var(--brand);margin-top:6px">'+esc(c.title)+'</div><div class="f" style="font-size:.8rem;color:var(--muted);margin-top:2px">'+esc(c.desc)+'</div></button>';
+  });
+  h+='</div>';
+  el.innerHTML=h;
+  $('#m33Mix').onclick=function(){ m33Start(m33Pool('all'),{title:'تمرین ترکیبی',n:15}); };
+  var w=$('#m33Weak'); if(w) w.onclick=function(){ m33Start(m33Pool('all').filter(function(it){return m33Level(it.id)===1}),{title:'مرور ضعیف‌ها',n:15}); };
+  $('#m33LiveAll').onclick=function(){ M33.catId='all'; m33LiveStart(); };
+  $$('[data-plan]').forEach(function(b){ b.onclick=function(){ var d=M33_PLAN[+b.getAttribute('data-plan')]; m33Start(m33Pool(d.cats),{title:d.t,timed:d.timed,secs:d.timed,n:d.n||20}); }; });
+  $$('[data-pdone]').forEach(function(b){ b.onclick=function(){ var i=b.getAttribute('data-pdone'); if(m33Days[i]) delete m33Days[i]; else m33Days[i]=Date.now(); store.set('zy_meet_days',m33Days); renderMeetV133(); }; });
+  $$('[data-m33cat]').forEach(function(b){ b.onclick=function(){ M33.catId=b.getAttribute('data-m33cat'); m33Go('cat'); }; });
+}
+
+function m33Cat(el){
+  var id=M33.catId, c=M33_CATS.filter(function(x){return x.id===id})[0]; if(!c){ m33Go('home'); return; }
+  var st=m33CatStats(id);
+  var h='<button type="button" class="link" id="m33Back">← بازگشت</button>';
+  h+='<h2>'+c.icon+' '+esc(c.title)+'</h2><p class="sub">'+fa(st.known)+' از '+fa(st.total)+' سوال رو بلدی</p>';
+  h+='<div class="mode-grid" style="margin-top:14px">';
+  h+='<button type="button" class="mode-card" id="m33Flash"><div class="mi">📇</div><div class="mt">فلش‌کارت</div><div class="md">بدون تایمر، با تکرار هوشمند</div></button>';
+  h+='<button type="button" class="mode-card" id="m33Timed"><div class="mi">⏱️</div><div class="mt">تایمر</div><div class="md">مثل جلسه واقعی</div></button>';
+  h+='<button type="button" class="mode-card" id="m33LiveBtn"><div class="mi">💬</div><div class="mt">گفتگوی زنده با ایلدار</div><div class="md">AI تصحیح می‌کنه</div></button>';
+  h+='<button type="button" class="mode-card" id="m33ListBtn"><div class="mi">📖</div><div class="mt">مرور همه سوال‌ها</div><div class="md">با جواب و صدا</div></button>';
+  h+='</div>';
+  h+='<div class="card stack" style="margin-top:14px"><div class="field"><label>ثانیه برای حالت تایمر</label><div class="chips" id="m33Secs">';
+  [['60','۱ دقیقه (چالشی)'],['45','۴۵ ثانیه (واقعی)'],['30','۳۰ ثانیه (راحت)']].forEach(function(x){ h+='<button type="button" class="chip" data-secs="'+x[0]+'" aria-pressed="'+(String(M33.secs)===x[0])+'">'+x[1]+'</button>'; });
+  h+='</div></div></div>';
+  h+='<div class="card" style="margin-top:14px"><b>➕ سوال بیشتر</b><div class="sub" style="font-size:.85rem;margin:4px 0 10px">هوش مصنوعی ۲۰ سوال جدید از همین موضوع می‌سازه و به بانک اضافه می‌شه (به کلید API نیاز داره).</div><button type="button" class="btn brand" id="m33Gen" '+(M33.genBusy?'disabled':'')+'>'+(M33.genBusy?'در حال ساخت… (۳۰-۶۰ ثانیه)':'➕ ۲۰ سوال جدید بساز')+'</button></div>';
+  h+=m33RescueHTML(false);
+  el.innerHTML=h;
+  $('#m33Back').onclick=function(){ m33Go('home'); };
+  $('#m33Flash').onclick=function(){ m33Start(m33Items(id),{title:c.title,n:15}); };
+  $('#m33Timed').onclick=function(){ m33Start(m33Items(id),{title:c.title+' ⏱️',timed:true,secs:M33.secs,n:15}); };
+  $('#m33LiveBtn').onclick=function(){ m33LiveStart(); };
+  $('#m33ListBtn').onclick=function(){ m33Go('list'); };
+  $$('#m33Secs .chip').forEach(function(b){ b.onclick=function(){ $$('#m33Secs .chip').forEach(function(x){x.setAttribute('aria-pressed','false')}); b.setAttribute('aria-pressed','true'); M33.secs=+b.getAttribute('data-secs'); }; });
+  $('#m33Gen').onclick=function(){ m33Generate(id); };
+}
+function m33Generate(catId){
+  if(M33.genBusy) return;
+  var c=M33_CATS.filter(function(x){return x.id===catId})[0]; if(!c) return;
+  var existing=m33Items(catId).slice(-40).map(function(x){return x.q}).join('\n');
+  M33.genBusy=true; renderMeetV133();
+  var sys='You write realistic workplace conversation practice for Armin, a Persian-speaking IT support specialist with weak spoken English, at an international company (about 70% Iranian and 30% Russian staff). His manager Ildar is Russian, kind, direct, speaks short and simple English, and is meeting Armin in person for the first time after a job interview last year. Topic: '+c.title+' - '+c.desc+'. Write 20 NEW questions Ildar could realistically ask on this topic (do not repeat the existing ones). For each give: q (what Ildar says, 1 short sentence, plain English), fa (Persian translation), s (Armin\'s SHORT answer, max 10 words, very simple grammar), p (a better professional answer, max 22 words). Return ONLY JSON: {"items":[{"q":"","fa":"","s":"","p":""}]}';
+  callAI(sys,[{role:'user',content:'Existing questions (do not repeat):\n'+existing}],6000,{json:true})
+    .then(function(raw){
+      var j=parseJSON(raw), arr=(j.items||[]).filter(function(x){return x && x.q && x.s && x.p});
+      if(!arr.length) throw new Error('empty');
+      if(!m33Extra[catId]) m33Extra[catId]=[];
+      arr.forEach(function(x,i){ m33Extra[catId].push({id:'x-'+catId+'-'+Date.now()+'-'+i,q:String(x.q),fa:String(x.fa||''),s:String(x.s),p:String(x.p)}); });
+      store.set('zy_meet_extra',m33Extra);
+      M33.genBusy=false; toast(fa(arr.length)+' سوال جدید اضافه شد ✅');
+      if(view==='meet' && M33.view==='cat') renderMeetV133();
+    })
+    .catch(function(e){ M33.genBusy=false; toast(errText(e),6000); if(view==='meet' && M33.view==='cat') renderMeetV133(); });
+}
+
+function m33Start(items,opts){
+  if(!items || !items.length){ toast('سوالی برای تمرین نیست'); return; }
+  opts=opts||{};
+  M33.lastItems=items; M33.lastOpts=opts;
+  M33.deck=m33Deck(items,opts.n||15); M33.pos=0; M33.revealed=false; M33.showFa=false;
+  M33.yes=0; M33.no=0; M33.missed=[]; M33.timed=!!opts.timed; if(opts.secs) M33.secs=+opts.secs;
+  M33.title=opts.title||''; M33.ans=''; M33.timedOut=false;
+  m33Go('card');
+}
+function m33Card(el){
+  var it=M33.deck[M33.pos];
+  if(!it){ m33Go('sum'); return; }
+  var pct=Math.round(M33.pos*100/Math.max(1,M33.deck.length));
+  var h='<button type="button" class="link" id="mcExit">← پایان</button>';
+  h+='<div class="thead"><div><b>'+esc(M33.title)+'</b><div class="sub">سوال '+fa(M33.pos+1)+' از '+fa(M33.deck.length)+'</div></div>';
+  if(M33.timed) h+='<div id="mcTimer" style="font-family:monospace;font-size:1.2rem;font-weight:800;background:var(--bg);padding:4px 12px;border-radius:8px;border:1px solid var(--line)">⏱️ '+M33.secs+'s</div>';
+  h+='</div><div style="height:6px;background:rgba(0,0,0,.08);border-radius:3px;overflow:hidden;margin-bottom:12px"><i style="display:block;height:100%;background:var(--brand);width:'+pct+'%"></i></div>';
+  h+='<div class="card"><div style="font-size:.75rem;color:var(--muted);margin-bottom:6px">🎙️ ایلدار می‌گه:</div><div dir="ltr" style="font-size:1.25rem;font-weight:700;line-height:1.6;text-align:left;font-family:Lexend,sans-serif">'+esc(it.q)+'</div>';
+  h+='<div class="row" style="margin-top:10px"><button type="button" class="mini" data-say="'+esc(it.q)+'">'+ic('vol')+'</button>'+(M33.revealed?'':'<button type="button" class="btn ghost small" id="mcFa">'+(M33.showFa?'پنهان ترجمه':'ترجمه')+'</button>')+'</div>';
+  if(M33.showFa||M33.revealed) h+='<div style="margin-top:10px;font-size:.9rem;color:var(--muted)">'+esc(it.fa)+'</div>';
+  h+='</div>';
+  if(!M33.revealed){
+    h+='<div class="card" style="margin-top:12px"><div style="font-size:.85rem;margin-bottom:8px">جوابت رو بگو یا بنویس (با صدا یا تایپ)، بعد جواب نمونه رو ببین:</div><div style="display:flex;gap:8px;align-items:center"><button type="button" class="mic job-mic '+(listening?'rec':'')+'" id="mcMic">'+ic('mic')+'</button><input type="text" id="mcAns" dir="ltr" placeholder="Your answer…" autocomplete="off" style="flex:1"></div><button type="button" class="btn brand" id="mcReveal" style="margin-top:10px;width:100%">👀 نمایش جواب</button></div>';
+  } else {
+    if(M33.timedOut) h+='<div class="card" style="margin-top:12px;background:var(--bad-soft);border-color:var(--bad)"><b style="color:var(--bad)">⏰ وقت تموم شد!</b> توی جلسه واقعی با «Let me check» وقت بخر.</div>';
+    if(M33.ans){
+      var sc=Math.max(m33Sim(M33.ans,it.s),m33Sim(M33.ans,it.p));
+      var lab=sc>=0.75?'خیلی شبیه جواب نمونه ✅':(sc>=0.45?'تا حدی شبیه است':'متفاوت از جواب نمونه (لزوماً غلط نیست)');
+      h+='<div class="card" style="margin-top:12px"><div style="font-size:.75rem;color:var(--muted)">جواب تو:</div><div dir="ltr" style="font-family:Lexend,sans-serif;text-align:left;margin:4px 0">'+esc(M33.ans)+'</div><div style="font-size:.8rem;color:var(--muted)">'+lab+'</div></div>';
+    }
+    h+='<div class="card" style="margin-top:12px;border-color:var(--ok);background:var(--ok-soft)"><div style="font-size:.75rem;color:var(--ok);font-weight:700;margin-bottom:6px">✅ جواب کوتاه (اینو حفظ کن)</div>'+m33Row(it.s,'')+'<div style="font-size:.75rem;color:var(--brand);font-weight:700;margin:10px 0 2px">🎯 جواب حرفه‌ای‌تر</div>'+m33Row(it.p,'')+'<button type="button" class="btn ghost small" id="mcEdit" style="margin-top:10px">✏️ جواب کوتاه خودم</button></div>';
+    h+='<div class="row" style="margin-top:14px"><button type="button" class="btn brand" id="mcYes" style="flex:1">✅ بلد بودم</button><button type="button" class="btn ghost" id="mcNo" style="flex:1">❌ باید تمرین کنم</button></div>';
+  }
+  el.innerHTML=h;
+  $('#mcExit').onclick=function(){ m33Go(M33.pos>0?'sum':(M33.catId?'cat':'home')); };
+  var fb=$('#mcFa'); if(fb) fb.onclick=function(){ M33.showFa=!M33.showFa; renderMeetV133(); };
+  if(!M33.revealed){
+    $('#mcReveal').onclick=m33Reveal;
+    $('#mcAns').onkeydown=function(e){ if(e.key==='Enter'){ e.preventDefault(); m33Reveal(); } };
+    $('#mcMic').onclick=function(){
+      if(listening){ rec && rec.stop(); return; }
+      rec=listen({interim:function(t){ var m=$('#mcAns'); if(m) m.value=t; },done:function(t){ listening=false; var bb=$('#mcMic'); if(bb) bb.classList.remove('rec'); if(t){ var m=$('#mcAns'); if(m) m.value=t; m33Reveal(); } }});
+      if(rec){ listening=true; $('#mcMic').classList.add('rec'); }
+    };
+    var tok=++M33.tok;
+    var begin=function(){ if(tok===M33.tok && view==='meet' && M33.view==='card' && !M33.revealed && M33.timed) m33StartTimer(); };
+    if(settings.autoplay) speak(it.q,begin); else begin();
+  } else {
+    $('#mcYes').onclick=function(){ m33Next(true); };
+    $('#mcNo').onclick=function(){ m33Next(false); };
+    $('#mcEdit').onclick=function(){
+      var v=prompt('جواب کوتاه خودت رو (به انگلیسی) بنویس. خالی بذاری به حالت اول برمی‌گرده:',it.s);
+      if(v===null) return; v=v.trim();
+      if(v){ m33Ovr[it.id]=v; it.s=v; } else { delete m33Ovr[it.id]; var orig=(M33_Q[it.cat]||[])[parseInt(String(it.id).split('-')[1],10)]; if(orig && String(it.id).indexOf('x-')!==0) it.s=orig[2]; }
+      store.set('zy_meet_ovr',m33Ovr); renderMeetV133();
+    };
+  }
+}
+function m33StartTimer(){
+  clearInterval(M33.timer); M33.left=M33.secs;
+  M33.timer=setInterval(function(){
+    if(view!=='meet' || M33.view!=='card' || M33.revealed){ clearInterval(M33.timer); return; }
+    M33.left--;
+    var t=$('#mcTimer'); if(t){ t.textContent='⏱️ '+M33.left+'s'; t.style.color=M33.left<=3?'var(--bad)':'var(--brand)'; }
+    if(M33.left<=0){ clearInterval(M33.timer); M33.timedOut=true; m33Reveal(); }
+  },1000);
+}
+function m33Reveal(){
+  if(M33.revealed) return;
+  clearInterval(M33.timer);
+  var inp=$('#mcAns'); M33.ans=inp?inp.value.trim():'';
+  if(listening){ try{rec&&rec.stop()}catch(e){} listening=false; }
+  M33.revealed=true; renderMeetV133();
+}
+function m33Next(ok){
+  var it=M33.deck[M33.pos]; if(!it) return;
+  m33Mark(it.id,ok);
+  if(ok){ M33.yes++; award(1); }
+  else {
+    M33.no++;
+    if(M33.missed.indexOf(it)<0) M33.missed.push(it);
+    it._rep=(it._rep||0)+1;
+    if(it._rep<=2) M33.deck.splice(Math.min(M33.deck.length,M33.pos+4),0,it);
+  }
+  M33.pos++; M33.revealed=false; M33.showFa=false; M33.ans=''; M33.timedOut=false;
+  renderMeetV133(); window.scrollTo(0,0);
+}
+function m33Sum(el){
+  var h='<h1>🏁 تمرین تموم شد</h1><div class="card" style="text-align:center"><div style="font-size:2rem;font-weight:800;color:var(--ok)">'+fa(M33.yes)+' ✅</div><div class="sub">'+fa(M33.no)+' بار «باید تمرین کنم» زدی</div></div>';
+  if(M33.missed.length){
+    h+='<div class="card" style="margin-top:12px"><b>🔁 این‌ها رو دوباره مرور کن:</b>';
+    M33.missed.forEach(function(it){ h+='<div style="padding:8px 0;border-bottom:1px dashed var(--line)"><div dir="ltr" style="font-size:.85rem;color:var(--muted);text-align:left">'+esc(it.q)+'</div>'+m33Row(it.s,'')+'</div>'; });
+    h+='</div>';
+  }
+  h+='<div class="row" style="margin-top:14px"><button type="button" class="btn brand" id="sumAgain">🔄 دوباره</button><button type="button" class="btn ghost" id="sumBack">بازگشت</button></div>';
+  el.innerHTML=h;
+  $('#sumAgain').onclick=function(){ m33Start(M33.lastItems,M33.lastOpts); };
+  $('#sumBack').onclick=function(){ m33Go(M33.catId && M33.lastOpts && !M33.lastOpts.n ? 'cat' : 'home'); };
+}
+
+function m33List(el){
+  var id=M33.catId, items=(id==='all')?m33Pool('all'):m33Items(id);
+  var h='<button type="button" class="link" id="m33LBack">← بازگشت</button><h2>📖 '+esc(m33CatTitle(id))+'</h2>';
+  items.forEach(function(it,i){
+    var l=m33Level(it.id), dot=l===0?'⚪':(l===1?'🔴':(l===2?'🟡':'🟢'));
+    h+='<details class="card" style="margin-top:8px;padding:12px"><summary style="cursor:pointer"><span dir="ltr" style="font-family:Lexend,sans-serif;font-size:.88rem">'+dot+' '+esc(it.q)+'</span></summary><div style="margin-top:8px"><div style="font-size:.82rem;color:var(--muted)">'+esc(it.fa)+'</div>'+m33Row(it.q,'')+'<div style="font-size:.75rem;color:var(--ok);font-weight:700;margin-top:6px">کوتاه</div>'+m33Row(it.s,'')+'<div style="font-size:.75rem;color:var(--brand);font-weight:700;margin-top:6px">حرفه‌ای‌تر</div>'+m33Row(it.p,'')+'</div></details>';
+  });
+  el.innerHTML=h;
+  $('#m33LBack').onclick=function(){ m33Go(id==='all'?'home':'cat'); };
+}
+
+function m33LiveStart(){
+  M33.liveDeck=m33Shuffle(M33.catId==='all'?m33Pool('all'):m33Items(M33.catId));
+  M33.turns=[]; M33.busy=false;
+  m33AskNext('');
+  m33Go('live');
+  var q=M33.curQ; if(q && settings.autoplay) speak(q.q);
+}
+function m33AskNext(prefix){
+  if(!M33.liveDeck.length) M33.liveDeck=m33Shuffle(M33.catId==='all'?m33Pool('all'):m33Items(M33.catId));
+  var it=M33.liveDeck.shift(); M33.curQ=it;
+  M33.turns.push({role:'ai',text:it.q,fa:it.fa,item:it});
+}
+function m33Bubble(t){
+  if(t.role==='ai'){
+    var h='<div class="b job-ai"><div class="bt" dir="ltr">'+esc(t.text)+'</div>'+(t.fa?'<div class="fa">'+esc(t.fa)+'</div>':'')+'<div style="display:flex;gap:8px;margin-top:8px"><button type="button" class="mini" data-say="'+esc(t.text)+'">'+ic('vol')+'</button></div>';
+    if(t.item){
+      h+='<details style="margin-top:8px"><summary style="cursor:pointer;font-size:.78rem;color:var(--accent);font-weight:700">💡 جواب نمونه</summary>'+m33Row(t.item.s,'')+m33Row(t.item.p,'')+'</details>';
+    }
+    return h+'</div>';
+  }
+  return '<div class="b job-me"><div class="bt" dir="ltr">'+esc(t.text)+'</div></div>'+(t.err?'<div class="an">ارسال نشد.</div>':jobAnalysis(t));
+}
+function m33Live(el){
+  var h='<button type="button" class="link" id="m33LvBack">← پایان</button>';
+  h+='<div class="thead"><div><b>💬 ایلدار: '+esc(m33CatTitle(M33.catId))+'</b><div class="sub">به انگلیسی جواب بده. ایلدار مهربونه 🙂</div></div></div>';
+  h+='<div class="chat" id="m33chat"></div>';
+  h+='<div class="composer"><div class="cbox"><button type="button" class="mic job-mic '+(listening?'rec':'')+'" id="m33Mic">'+ic('mic')+'</button><input type="text" id="m33msg" dir="ltr" placeholder="Type reply…" autocomplete="off"><button type="button" class="send" id="m33Send">'+ic('send')+'</button></div></div>';
+  el.innerHTML=h;
+  $('#m33LvBack').onclick=function(){ m33Go(M33.catId==='all'?'home':'cat'); };
+  $('#m33Send').onclick=function(){ m33LiveSend($('#m33msg').value); };
+  $('#m33msg').onkeydown=function(e){ if(e.key==='Enter'){ e.preventDefault(); m33LiveSend($('#m33msg').value); } };
+  $('#m33Mic').onclick=function(){
+    if(M33.busy) return;
+    if(listening){ rec && rec.stop(); return; }
+    rec=listen({interim:function(t){ var m=$('#m33msg'); if(m) m.value=t; },done:function(t){ listening=false; var bb=$('#m33Mic'); if(bb) bb.classList.remove('rec'); if(t) m33LiveSend(t); }});
+    if(rec){ listening=true; $('#m33Mic').classList.add('rec'); }
+  };
+  m33DrawLive();
+}
+function m33DrawLive(){
+  var c=$('#m33chat'); if(!c || view!=='meet' || M33.view!=='live') return;
+  c.innerHTML=M33.turns.map(m33Bubble).join('')+(M33.busy && !M33.turns.some(function(t){return t.pending})?'<div class="b ai"><span class="dots"><i></i><i></i><i></i></span></div>':'');
+  window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
+}
+function m33LiveSend(text){
+  text=(text||'').trim(); if(!text || M33.busy || !M33.curQ) return;
+  var m=$('#m33msg'); if(m) m.value='';
+  var q=M33.curQ, ut={role:'me',text:text,pending:true};
+  M33.turns.push(ut); M33.busy=true; m33DrawLive();
+  var sys='You are Ildar, a kind, friendly Russian IT manager who speaks short, simple English. You are meeting Armin (Persian-speaking IT support, weak spoken English) in person for the first time after his job interview last year. Be warm and encouraging, never harsh.'+getUserContext()+
+    '\nYou just asked Armin: "'+q.q+'"\nA good short answer would be: "'+q.s+'"\n'+
+    'Evaluate ONLY Armin\'s answer to that question. "reaction" = your warm reply in max 8 words, NOT a question. "score" must be an integer 1-10 (never 0). "corrected" = natural better version of HIS answer (empty if already good). "perfect_version" = ideal short 10/10 version of HIS answer (required if score<10). Return ONLY valid JSON: {"reaction":"...","reaction_fa":"...","analysis":{"score":1-10,"is_correct":true,"corrected":"...","perfect_version":"...","mistakes":[{"type":"grammar|vocabulary|register|brevity","original":"...","fix":"...","explain_fa":"..."}],"tip_fa":"..."}}';
+  callAI(sys,[{role:'user',content:'Armin answered: "'+text+'"'}],900,{json:true})
+    .then(function(raw){
+      var j; try{ j=parseJSON(raw); }catch(e){ j={reaction:'OK, thank you.',reaction_fa:'',analysis:{score:7,is_correct:true,mistakes:[]}}; }
+      ut.pending=false; ut.an=j.analysis||{score:7,is_correct:true,mistakes:[]};
+      var sc=ut.an.score;
+      if(sc>=8) m33Mark(q.id,true); else if(sc!=null && sc<=5) m33Mark(q.id,false);
+      (ut.an.mistakes||[]).forEach(function(mk){
+        if(!mk.original||!mk.fix) return;
+        if(mistakes.some(function(x){return x.original===mk.original && x.fix===mk.fix})) return;
+        mistakes.unshift({original:mk.original,fix:mk.fix,explain:mk.explain_fa||'',type:mk.type||'grammar',level:'meet',topic:m33CatTitle(q.cat),date:new Date().toLocaleDateString('fa-IR')});
+      });
+      mistakes=mistakes.slice(0,300); store.set('zy_mistakes',mistakes);
+      var reaction=(j.reaction||'').trim();
+      if(reaction) M33.turns.push({role:'ai',text:reaction,fa:j.reaction_fa||''});
+      m33AskNext('');
+      M33.busy=false; award(2); m33DrawLive();
+      if(settings.autoplay) speak((reaction?reaction+' ':'')+M33.curQ.q);
+    })
+    .catch(function(e){ M33.busy=false; ut.pending=false; ut.err=true; m33DrawLive(); toast(errText(e),6000); });
+}
+
+window.renderMeet = renderMeetV133;
+
 // ============ INIT ============
 document.addEventListener('click', function(e){
   var s = e.target.closest && e.target.closest('[data-say]');
