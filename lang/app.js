@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '125';
+var APP_VERSION = '126';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -726,87 +726,22 @@ function render(){
   }
 }
 
-var meet = { view: 'cats', catId: null, turns: [], busy: false, currentQ: null };
+var meet = { view: 'cats', catId: null, turns: [], busy: false, timeLeft: 0, level: 7, inputMode: 'both', timer: null, isPressure: false };
 
 var MEET_DATA = [
-  {
-    id: 'm1',
-    title: 'روز اول و احوال‌پرسی',
-    icon: '👋',
-    desc: 'اولین دیدار حضوری، گپ صمیمی و استرس اولیه',
-    questions: [
-      { q: "Good morning Armin. It's been a year since the interview. How are you doing today? Any problems so far?", q_fa: 'صبح بخیر آرمین. یک سال از مصاحبه گذشته. امروز چطوری؟ تا الان مشکلی داشتی؟', ans_simple: "Good morning Ildar. I'm fine, thank you. No problems so far.", ans_pro: "Good morning. I'm doing well, thank you. Everything is under control, no major issues so far." },
-      { q: "How do you feel about working here after one year?", q_fa: 'بعد از یک سال کار کردن اینجا چه حسی داری؟', ans_simple: "I really like working here. I learned a lot.", ans_pro: "I really enjoy it. I've learned a lot about the company and improved my skills significantly." },
-      { q: "Is everything going well with your daily tasks?", q_fa: 'همه چیز با کارهای روزمره‌ات خوب پیش می‌ره؟', ans_simple: "Yes, everything is good. I am managing my tasks.", ans_pro: "Yes, I've organized my workflow well. The daily tasks are running smoothly." },
-      { q: "Do you need any help or training from my side?", q_fa: 'نیاز به کمک یا آموزشی از طرف من داری؟', ans_simple: "No, I am fine. But thank you for asking.", ans_pro: "Not right now, thank you. If I face any complex issue, I will definitely ask for your guidance." }
-    ]
-  },
-  {
-    id: 'm2',
-    title: 'پیگیری و هماهنگی',
-    icon: '📄',
-    desc: 'فاکتورها، هدا، دنیس، سعد محمدی و پیمانکار',
-    questions: [
-      { q: "Did you follow up with Ms. Hoda about the Arianet invoices?", q_fa: 'آیا پیگیری فاکتورهای آریانت رو با خانم هدا انجام دادی؟', ans_simple: "Yes, I called her. She said she will check.", ans_pro: "Yes, I spoke with her this morning. She is reviewing them and will get back to me by tomorrow." },
-      { q: "Could you please go talk to Denis about the E&C website issue?", q_fa: 'می‌تونی بری با دنیس درباره مشکل سایت E&C صحبت کنی؟', ans_simple: "Sure, I will go to his office now.", ans_pro: "Of course. I'll coordinate with him right away and let you know the result." },
-      { q: "What about the invoice problem with Saad Mohammadi?", q_fa: 'در مورد مشکل فاکتور با سعد محمدی چی شد؟', ans_simple: "I talked to him. We are fixing it.", ans_pro: "I discussed it with him. We found the issue and I'm working on the solution now." },
-      { q: "When is the fiber optic contractor coming to pull the cable?", q_fa: 'پیمانکار فیبر نوری کِی میاد که کابل رو بکشه؟', ans_simple: "He is coming tomorrow morning.", ans_pro: "He is scheduled for tomorrow morning. I will supervise the process and update you." }
-    ]
-  },
-  {
-    id: 'm3',
-    title: 'تجهیزات و انبار',
-    icon: '📦',
-    desc: 'موجودی لپ‌تاپ، خرید مانیتور، تحویل به آزات و نیسوک',
-    questions: [
-      { q: "How many spare HP laptops do we have in stock right now?", q_fa: 'الان چند تا لپ‌تاپ HP یدکی توی انبار داریم؟', ans_simple: "We have 4 new ones. And one used.", ans_pro: "We have four new HP laptops in stock. I also have one older model that is being prepared." },
-      { q: "I want to buy a Xiaomi monitor. How do I get it? Where should I go?", q_fa: 'میخوام یه مانیتور شیائومی بخرم. چطوری بگیرم؟ کجا برم؟', ans_simple: "I can order it for you. Just approve it.", ans_pro: "You just need to approve the request. I'll contact the supplier and handle the paperwork for you." },
-      { q: "Azat Garaev needs a laptop today. Can you hand it over?", q_fa: 'آزات گارائف امروز لپ‌تاپ لازم داره. می‌تونی تحویلش بدی؟', ans_simple: "Yes, I will give it to him now.", ans_pro: "I'll prepare it for him without setting it up, as you instructed, and hand it over today." },
-      { q: "Is the NISOC laptop ready for Reza?", q_fa: 'لپ‌تاپ نیسوک برای رضا آماده است؟', ans_simple: "Not yet. I am waiting for his request.", ans_pro: "Not yet. As soon as Reza sends me the official request, I will finish the setup immediately." }
-    ]
-  },
-  {
-    id: 'm4',
-    title: 'شبکه و فنی',
-    icon: '🌐',
-    desc: 'MPLS، FTTH، کاسپرسکی و خطاهای فنی',
-    questions: [
-      { q: "What is the status of the MPLS link between Ahvaz and Tehran?", q_fa: 'وضعیت لینک MPLS بین اهواز و تهران چطوره؟', ans_simple: "It's a bit unstable. I am checking it.", ans_pro: "We are experiencing some packet loss. I'm coordinating with the Moscow team to stabilize it." },
-      { q: "Why is the Kaspersky scan taking so long?", q_fa: 'چرا اسکن کاسپرسکی اینقدر طول کشیده؟', ans_simple: "It is scanning many laptops. It takes time.", ans_pro: "The scan is heavy, and I am checking each laptop carefully. I don't want to miss any cracked software." },
-      { q: "Did the FTTH installation in the Reno building finish?", q_fa: 'نصب FTTH توی ساختمان رنو تموم شد؟', ans_simple: "No, waiting for TIC approval.", ans_pro: "The technical part is done, but we are waiting for the final TIC security approval. I'm following it up." },
-      { q: "I need a list of all users in the domain. Can you do it?", q_fa: 'من لیست همه یوزرهای دامین رو می‌خوام. می‌تونی انجام بدی؟', ans_simple: "Yes, I will send it by tomorrow.", ans_pro: "Certainly. I will extract the list and send it to you by tomorrow morning." }
-    ]
-  },
-  {
-    id: 'm5',
-    title: 'تاییدیه‌ها و دستورات',
-    icon: '✅',
-    desc: 'درخواست خرید، تایید لپ‌تاپ، دستورات چند مرحله‌ای',
-    questions: [
-      { q: "Igor asked for a laptop for Denis. Do you approve?", q_fa: 'ایگور برای دنیس لپ‌تاپ خواسته. تایید می‌کنی؟', ans_simple: "Yes, I approve. Which model?", ans_pro: "Yes, I'll provide one of the MPS laptops. Should I give him the i5 or i7 model?" },
-      { q: "We need to order more keyboards. Should I proceed?", q_fa: 'ما باید کیبورد بیشتری سفارش بدیم. ادامه بدم؟', ans_simple: "Yes, please order 5 of them.", ans_pro: "Yes, please proceed. Let's order five units to be safe." },
-      { q: "I need you to go to the 3rd floor, check the router, and report back to me.", q_fa: 'می‌خوام بری طبقه سوم، روتر رو چک کنی و بهم گزارش بدی.', ans_simple: "Understood. I am going now.", ans_pro: "Understood. I'm heading there now, I will check the connections and report back in 15 minutes." }
-    ]
-  },
-  {
-    id: 'm6',
-    title: 'جملات نجات‌بخش 🚑',
-    icon: '🛡️',
-    desc: 'وقتی جواب سوالی رو نمی‌دونی یا متوجه نشدی چی بگی؟',
-    questions: [
-      { q: "What is the IP address of the main switch?", q_fa: 'آی‌پی آدرس سوئیچ اصلی چیه؟', ans_simple: "I don't know. Let me check.", ans_pro: "I don't have that information right now, let me check the system and get back to you in a minute." },
-      { q: "Could you explain the Kaspersky issue in detail?", q_fa: 'می‌تونی مشکل کاسپرسکی رو با جزئیات توضیح بدی؟', ans_simple: "I am not sure how to explain. It is complex.", ans_pro: "I'm not sure I can explain it perfectly in English, but the main issue is that..." },
-      { q: "Did you understand my instruction?", q_fa: 'دستور من رو متوجه شدی؟', ans_simple: "Yes, I understood.", ans_pro: "Let me make sure I understand. You want me to do X, right?" },
-      { q: "Why didn't you answer my call?", q_fa: 'چرا جواب تماس من رو ندادی؟', ans_simple: "Sorry, I was in the server room.", ans_pro: "I apologize, I was in the server room and there was no signal. Could you send me a text message next time?" }
-    ]
-  }
+  { id: 'm1', title: 'روز اول و احوال‌پرسی', icon: '👋', desc: 'اولین دیدار حضوری، گپ صمیمی و استرس اولیه', context: 'The first face-to-face meeting after a year. Greet Armin, ask how he is doing, how his year was, and if he has any problems. Keep it very friendly.' },
+  { id: 'm2', title: 'پیگیری و هماهنگی', icon: '📄', desc: 'فاکتورها، هدا، دنیس، سعد محمدی و پیمانکار', context: 'Ask Armin about the Arianet invoices with Hoda, the E&C website with Denis, the invoice problem with Saad Mohammadi, and the fiber optic contractor.' },
+  { id: 'm3', title: 'تجهیزات و انبار', icon: '📦', desc: 'موجودی لپ‌تاپ، خرید مانیتور، تحویل به آزات و نیسوک', context: 'Ask about spare HP laptops, buying a Xiaomi monitor, handing over a laptop to Azat Garaev, and the NISOC laptop for Reza.' },
+  { id: 'm4', title: 'شبکه و فنی', icon: '🌐', desc: 'MPLS، FTTH، کاسپرسکی و خطاهای فنی', context: 'Ask about the MPLS link between Ahvaz and Tehran, Kaspersky scan progress, FTTH installation in Reno building, and the domain user list.' },
+  { id: 'm5', title: 'تاییدیه‌ها و دستورات', icon: '✅', desc: 'درخواست خرید، تایید لپ‌تاپ، دستورات چند مرحله‌ای', context: 'Ask for approval for Igor/Denis laptop, ordering keyboards, and give a multi-step instruction to check the 3rd floor router.' },
+  { id: 'm6', title: 'جملات نجات‌بخش 🚑', icon: '🛡️', desc: 'وقتی جواب سوالی رو نمی‌دونی یا متوجه نشدی چی بگی؟', context: 'Ask Armin a technical question he might not know. Test his survival phrases (e.g., asking for repetition, checking understanding).' }
 ];
 
 function renderMeet() {
   var el = $('#main');
   var h = '<h1>🛡️ آمادگی ۶ روزه (ملاقات ایلدار)</h1>';
-  h += '<p class="sub">اول اینجا سوال‌ها را بخوان و با صدا گوش کن. بعد در هر دسته، تمرین فشاری بده.</p>';
   if (meet.view === 'cats') {
+    h += '<p class="sub">موضوع رو انتخاب کن، بعد حالت مطالعه یا تمرین فشاری رو بزن.</p>';
     h += '<div class="units" style="margin-top:20px;">';
     MEET_DATA.forEach(function(c) {
       h += '<button type="button" class="unit" data-meetcat="' + c.id + '" style="flex-direction:column;align-items:flex-start;padding:16px;background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;text-align:start;cursor:pointer">';
@@ -817,84 +752,119 @@ function renderMeet() {
     });
     h += '</div>';
     el.innerHTML = h;
-    $$('[data-meetcat]').forEach(function(b){ b.onclick = function(){ meet.view='study'; meet.catId=b.getAttribute('data-meetcat'); renderMeet(); }; });
+    $$('[data-meetcat]').forEach(function(b){ b.onclick = function(){ meet.view='modes'; meet.catId=b.getAttribute('data-meetcat'); renderMeet(); }; });
     return;
   }
 
-  if (meet.view === 'study') {
-    var cat = MEET_DATA.find(function(c){ return c.id === meet.catId; });
-    h = '<button type="button" class="link" id="meetBack">← بازگشت</button>';
-    h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">';
-    h += '<h2>' + cat.icon + ' ' + cat.title + '</h2>';
-    h += '<button type="button" class="btn brand" id="meetStartPressure">🔥 شروع تمرین فشاری</button>';
-    h += '</div>';
-    h += '<div class="stack" style="margin-top:16px">';
-    cat.questions.forEach(function(q, i) {
-      h += '<div class="card" style="padding:16px; border-right:4px solid var(--brand)">';
-      h += '<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px"><button type="button" class="mini" data-say="' + esc(q.q) + '">' + ic('vol') + '</button><div style="flex:1"><div dir="ltr" style="font-family:Lexend;font-size:1rem;font-weight:700">' + esc(q.q) + '</div><div style="font-size:.85rem;color:var(--muted);margin-top:4px">' + esc(q.q_fa) + '</div></div></div>';
-      h += '<div style="background:var(--bg); border-radius:8px; padding:10px; margin-top:10px">';
-      h += '<div style="font-size:.75rem;color:var(--ok);font-weight:700;margin-bottom:4px">پاسخ ساده:</div>';
-      h += '<div style="display:flex;gap:8px;align-items:center"><button type="button" class="mini" data-say="' + esc(q.ans_simple) + '">' + ic('vol') + '</button><span dir="ltr" style="font-family:Lexend;font-size:.9rem">' + esc(q.ans_simple) + '</span></div>';
-      h += '<div style="font-size:.75rem;color:var(--brand);font-weight:700;margin-top:10px;margin-bottom:4px">پاسخ حرفه‌ای:</div>';
-      h += '<div style="display:flex;gap:8px;align-items:center"><button type="button" class="mini" data-say="' + esc(q.ans_pro) + '">' + ic('vol') + '</button><span dir="ltr" style="font-family:Lexend;font-size:.9rem">' + esc(q.ans_pro) + '</span></div>';
-      h += '</div></div>';
-    });
-    h += '</div>';
-    el.innerHTML = h;
-    $('#meetBack').onclick = function(){ meet.view='cats'; renderMeet(); };
-    $('#meetStartPressure').onclick = function(){ startMeetPressure(cat); };
-    return;
+  var cat = MEET_DATA.find(function(c){ return c.id === meet.catId; });
+  if (meet.view === 'modes') {
+     h = '<button type="button" class="link" id="meetBack">← بازگشت</button>';
+     h += '<h2>' + cat.icon + ' ' + cat.title + '</h2>';
+     h += '<div class="mode-grid" style="margin-top:20px">';
+     h += '<button type="button" class="mode-card" id="startStudy"><div class="mi">📖</div><div class="mt">حالت مطالعه</div><div class="md">گفتگوی طبیعی با راهنما</div></button>';
+     h += '<button type="button" class="mode-card" id="startPressureSetup"><div class="mi">⚡</div><div class="mt">حالت پرفشار</div><div class="md">با تایمر و نمره‌دهی</div></button>';
+     h += '</div>';
+     el.innerHTML = h;
+     $('#meetBack').onclick = function(){ meet.view='cats'; renderMeet(); };
+     $('#startStudy').onclick = function(){ startMeetStudy(cat); };
+     $('#startPressureSetup').onclick = function(){ meet.view='pressure_setup'; renderMeet(); };
+     return;
   }
 
-  if (meet.view === 'pressure') {
-    var cat = MEET_DATA.find(function(c){ return c.id === meet.catId; });
-    h = '<button type="button" class="link" id="meetBack2">← پایان تمرین</button>';
-    h += '<div class="thead"><div><b>🔥 تمرین فشاری: ' + cat.title + '</b><div class="sub">به انگلیسی جواب بده</div></div></div>';
-    h += '<div class="chat" id="meetChat">' + meet.turns.map(jobBubble).join('') + '</div>';
-    h += '<div class="composer"><div class="cbox"><button type="button" class="mic job-mic ' + (listening ? 'rec' : '') + '" id="meetMic">' + ic('mic') + '</button><input type="text" id="meetMsg" dir="ltr" placeholder="Type reply…"><button type="button" class="send" id="meetSend">' + ic('send') + '</button></div></div>';
-    el.innerHTML = h;
-    $('#meetBack2').onclick = function(){ meet.view='cats'; meet.turns=[]; renderMeet(); };
-    $('#meetSend').onclick = function(){ sendMeet($('#meetMsg').value); };
-    $('#meetMsg').onkeydown = function(e){ if(e.key==='Enter'){ e.preventDefault(); sendMeet($('#meetMsg').value); } };
-    $('#meetMic').onclick = function(){
-      if(listening){ rec && rec.stop(); return; }
-      rec = listen({interim:function(t){ var m=$('#meetMsg'); if(m) m.value=t; },done:function(t,c){ listening=false; var bb=$('#meetMic'); if(bb) bb.classList.remove('rec'); if(t) sendMeet(t); }});
-      if(rec){ listening=true; $('#meetMic').classList.add('rec'); }
-    };
-    drawMeetChat();
-    return;
+  if (meet.view === 'pressure_setup') {
+     h = '<button type="button" class="link" id="meetBack2">← بازگشت</button>';
+     h += '<h2>⚡ تنظیمات حالت پرفشار</h2>';
+     h += '<div class="card stack" style="margin-top:14px">';
+     h += '<div class="field"><label>چند ثانیه فرصت داری؟</label><div class="chips" id="timeChips">';
+     [['10','۱۰ (راحت)'],['7','۷ (واقعی)'],['5','۵ (چالشی)']].forEach(function(x){ h += '<button type="button" class="chip" data-time="'+x[0]+'" '+(meet.level==x[0]?'aria-pressed="true"':'')+'>'+x[1]+'</button>'; });
+     h += '</div></div>';
+     h += '<div class="field"><label>حالت ورودی</label><div class="chips" id="inputChips">';
+     [['type','تایپ'],['voice','صدا'],['both','هر دو']].forEach(function(x){ h += '<button type="button" class="chip" data-input="'+x[0]+'" '+(meet.inputMode==x[0]?'aria-pressed="true"':'')+'>'+x[1]+'</button>'; });
+     h += '</div></div>';
+     h += '<button type="button" class="btn brand" id="startPressureBtn">شروع تمرین</button>';
+     h += '</div>';
+     el.innerHTML = h;
+     $('#meetBack2').onclick = function(){ meet.view='modes'; renderMeet(); };
+     $$('#timeChips .chip').forEach(function(b){ b.onclick=function(){ $$('#timeChips .chip').forEach(function(x){x.setAttribute('aria-pressed','false')}); b.setAttribute('aria-pressed','true'); meet.level=b.getAttribute('data-time'); } });
+     $$('#inputChips .chip').forEach(function(b){ b.onclick=function(){ $$('#inputChips .chip').forEach(function(x){x.setAttribute('aria-pressed','false')}); b.setAttribute('aria-pressed','true'); meet.inputMode=b.getAttribute('data-input'); } });
+     $('#startPressureBtn').onclick = function(){ startMeetPressure(cat); };
+     return;
+  }
+
+  if (meet.view === 'study' || meet.view === 'pressure') {
+     var isPressure = meet.view === 'pressure';
+     h = '<button type="button" class="link" id="meetExit">← پایان</button>';
+     h += '<div class="thead"><div><b>'+(isPressure?'⚡ پرفشار':'📖 مطالعه')+': ' + cat.title + '</b></div>';
+     if (isPressure) {
+       h += '<div id="timerDisplay" style="font-family:monospace;font-size:1.2rem;font-weight:800;background:var(--bg);padding:4px 12px;border-radius:8px;border:1px solid var(--line)">⏱️ ' + meet.level + 's</div>';
+     }
+     h += '</div>';
+     h += '<div class="chat" id="meetChat">' + meet.turns.map(meetBubble).join('') + '</div>';
+     h += '<div class="composer"><div class="cbox">';
+     if (!isPressure || meet.inputMode !== 'type') {
+       h += '<button type="button" class="mic job-mic ' + (listening ? 'rec' : '') + '" id="meetMic">' + ic('mic') + '</button>';
+     }
+     h += '<input type="text" id="meetMsg" dir="ltr" placeholder="Type reply…">';
+     h += '<button type="button" class="send" id="meetSend">' + ic('send') + '</button></div></div>';
+     el.innerHTML = h;
+     $('#meetExit').onclick = function(){ clearInterval(meet.timer); meet.view='modes'; meet.turns=[]; renderMeet(); };
+     $('#meetSend').onclick = function(){ isPressure ? sendMeetPressure($('#meetMsg').value) : sendMeetStudy($('#meetMsg').value); };
+     $('#meetMsg').onkeydown = function(e){ if(e.key==='Enter'){ e.preventDefault(); isPressure ? sendMeetPressure($('#meetMsg').value) : sendMeetStudy($('#meetMsg').value); } };
+     if ($('#meetMic')) {
+        $('#meetMic').onclick = function(){
+          if(listening){ rec && rec.stop(); return; }
+          rec = listen({interim:function(t){ var m=$('#meetMsg'); if(m) m.value=t; },done:function(t,c){ listening=false; var bb=$('#meetMic'); if(bb) bb.classList.remove('rec'); if(t) isPressure ? sendMeetPressure(t) : sendMeetStudy(t); }});
+          if(rec){ listening=true; $('#meetMic').classList.add('rec'); }
+        };
+     }
+     drawMeetChat();
+     if (isPressure) startTimer();
+     return;
   }
 }
 
-function startMeetPressure(cat) {
-  meet.view = 'pressure';
+function meetBubble(t) {
+  if (t.role === 'ai') {
+    var h = '<div class="b job-ai"><div class="bt" dir="ltr">' + esc(t.text) + '</div>';
+    h += '<button type="button" class="mini" data-say="' + esc(t.text) + '">' + ic('vol') + '</button>';
+    if (t.hints && t.hints.length && meet.view === 'study') {
+       h += '<div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">';
+       h += '<div style="font-size:.75rem; color:var(--accent); font-weight:700;">💡 پیشنهادهای جواب:</div>';
+       t.hints.forEach(function(hint){
+         h += '<div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:6px 10px; border-radius:6px;">';
+         h += '<span dir="ltr" style="font-size:.85rem; font-family:Lexend; text-align:left;">' + esc(hint) + '</span>';
+         h += '<button type="button" class="btn ghost small" style="padding:2px 6px; font-size:.7rem;" onclick="document.getElementById(\'meetMsg\').value=\'' + esc(hint).replace(/'/g, "\\'") + '\'; document.getElementById(\'meetMsg\').focus();">انتخاب</button>';
+         h += '</div>';
+       });
+       h += '</div>';
+    }
+    return h + '</div>';
+  }
+  return '<div class="b job-me"><div class="bt" dir="ltr">' + esc(t.text) + '</div></div>' + (t.err ? '<div class="an">ارسال نشد.</div>' : (meet.view === 'pressure' ? jobAnalysis(t) : ''));
+}
+
+function startMeetStudy(cat) {
+  meet.view = 'study';
   meet.turns = [];
-  meet.busy = false;
+  meet.busy = true;
   meet.catId = cat.id;
   go('meet');
-  
-  var qs = cat.questions.map(function(q){ return q.q; }).join('\n');
-  var prompt = 'You are Ildar. You are doing a pressured Q&A practice with Armin.\n' +
-    'Here are the questions you MUST ask him one by one, based on the category: ' + cat.title + '\n' +
-    'Questions:\n' + qs + '\n\n' +
-    'Rules:\n' +
-    '1. Ask ONLY ONE question at a time from the list above.\n' +
-    '2. React to his answer briefly, evaluate it, and give him a short hint if needed.\n' +
-    '3. Move to the next question after he answers.\n' +
-    '4. Return ONLY valid JSON: {"reply":"your question","reply_fa":"ترجمه","analysis":{"score":1-10,"is_correct":true,"corrected":"...","perfect_version":"...","mistakes":[],"tip_fa":"..."}}';
-  
-  meet.busy = true;
   drawMeetChat();
-  callAI(prompt, [{role:'user', content:'[START]'}], 1500, {json:true})
+  var prompt = "You are Ildar, Armin's Russian IT manager. You are having a natural, step-by-step conversation. Context: " + cat.context + "\n" +
+    "Rules:\n1. Start the conversation with a greeting.\n2. Provide 3 hints for Armin's next reply (simple, professional, question).\n" +
+    "Return ONLY JSON: {\"reply\":\"your line\",\"reply_fa\":\"Persian translation\",\"hints\":[\"hint1\",\"hint2\",\"hint3\"]}";
+  callAI(prompt, [{role:'user',content:'[START]'}], 1200, {json:true})
     .then(function(raw){
-      var j; try{j=parseJSON(raw)}catch(e){j={reply:raw, reply_fa:''}};
-      meet.turns.push({role:'ai', text:j.reply, fa:j.reply_fa, id:Date.now()});
+      var j = parseJSON(raw);
+      meet.turns.push({role:'ai', text:j.reply, fa:j.reply_fa, hints:j.hints});
       meet.busy = false;
       drawMeetChat();
-    }).catch(function(e){ meet.busy=false; drawMeetChat(); toast(errText(e)); });
+      if (settings.autoplay) speak(j.reply);
+    })
+    .catch(function(e){ meet.busy = false; drawMeetChat(); toast(errText(e)); });
 }
 
-function sendMeet(text) {
+function sendMeetStudy(text) {
   text = (text||'').trim();
   if(!text || meet.busy) return;
   $('#meetMsg').value = '';
@@ -902,36 +872,101 @@ function sendMeet(text) {
   meet.turns.push(ut);
   meet.busy = true;
   drawMeetChat();
-  
   var cat = MEET_DATA.find(function(c){ return c.id === meet.catId; });
-  var qs = cat.questions.map(function(q){ return q.q; }).join('\n');
-  var prompt = 'You are Ildar. You are doing a pressured Q&A practice with Armin.\n' +
-    'Here are the questions you MUST ask him one by one: ' + qs + '\n' +
-    'Rules:\n' +
-    '1. Ask ONLY ONE question at a time from the list above.\n' +
-    '2. React to his answer briefly, evaluate it, and move to the next question.\n' +
-    '3. Return ONLY valid JSON: {"reply":"your question","reply_fa":"ترجمه","analysis":{"score":1-10,"is_correct":true,"corrected":"...","perfect_version":"...","mistakes":[],"tip_fa":"..."}}';
-    
-  var history = meet.turns.filter(function(t){ return (t.role === 'ai' || t.role === 'me') && !t.err; }).map(function(t){
+  var prompt = "You are Ildar, Armin's Russian IT manager. Natural, step-by-step conversation. Context: " + cat.context + "\n" +
+    "Rules:\n1. React to Armin's last message, then continue the conversation.\n2. Provide 3 hints for Armin's NEXT reply.\n" +
+    "Return ONLY JSON: {\"reply\":\"your line\",\"reply_fa\":\"Persian translation\",\"hints\":[\"hint1\",\"hint2\",\"hint3\"]}";
+  var history = meet.turns.filter(function(t){ return !t.err; }).map(function(t){
+    return { role: t.role === 'ai' ? 'assistant' : 'user', content: t.text };
+  });
+  callAI(prompt, history, 1200, {json:true})
+    .then(function(raw){
+      var j = parseJSON(raw);
+      ut.pending = false;
+      meet.turns.push({role:'ai', text:j.reply, fa:j.reply_fa, hints:j.hints});
+      meet.busy = false;
+      drawMeetChat();
+      if (settings.autoplay) speak(j.reply);
+    })
+    .catch(function(e){ meet.busy = false; ut.pending = false; ut.err = true; drawMeetChat(); toast(errText(e)); });
+}
+
+function startMeetPressure(cat) {
+  meet.view = 'pressure';
+  meet.turns = [];
+  meet.busy = true;
+  meet.catId = cat.id;
+  go('meet');
+  drawMeetChat();
+  var prompt = "You are Ildar, Armin's Russian IT manager. You are testing him under pressure. Context: " + cat.context + "\n" +
+    "Rules:\n1. Ask ONLY ONE question at a time based on the context.\n" +
+    "Return ONLY JSON: {\"reply\":\"your question\",\"reply_fa\":\"Persian translation\"}";
+  callAI(prompt, [{role:'user',content:'[START]'}], 1000, {json:true})
+    .then(function(raw){
+      var j = parseJSON(raw);
+      meet.turns.push({role:'ai', text:j.reply, fa:j.reply_fa});
+      meet.busy = false;
+      drawMeetChat();
+      if (settings.autoplay) speak(j.reply);
+      startTimer();
+    })
+    .catch(function(e){ meet.busy = false; drawMeetChat(); toast(errText(e)); });
+}
+
+function sendMeetPressure(text) {
+  text = (text||'').trim();
+  if(!text || meet.busy) return;
+  clearInterval(meet.timer);
+  $('#meetMsg').value = '';
+  var ut = {role:'me', text:text, pending:true};
+  meet.turns.push(ut);
+  meet.busy = true;
+  drawMeetChat();
+  var cat = MEET_DATA.find(function(c){ return c.id === meet.catId; });
+  var prompt = "You are Ildar, Armin's Russian IT manager. You are testing him under pressure. Context: " + cat.context + "\n" +
+    "Rules:\n1. Evaluate Armin's answer. React briefly and ask the NEXT question.\n" +
+    "Return ONLY JSON: {\"reply\":\"your line\",\"reply_fa\":\"Persian translation\",\"analysis\":{\"score\":1-10,\"is_correct\":true,\"corrected\":\"...\",\"perfect_version\":\"...\",\"mistakes\":[],\"tip_fa\":\"...\"}}";
+  var history = meet.turns.filter(function(t){ return !t.err; }).map(function(t){
     if (t.role === 'ai') return { role: 'assistant', content: JSON.stringify({reply: t.text, analysis:{score:8, is_correct:true, corrected:'', perfect_version:'', mistakes:[], tip_fa:''}}) };
     return { role: 'user', content: t.text };
   });
-
   callAI(prompt, history, 1500, {json:true})
     .then(function(raw){
-      var j; try{j=parseJSON(raw)}catch(e){j={reply:raw, reply_fa:''}};
+      var j = parseJSON(raw);
       ut.pending = false;
       ut.an = j.analysis || {score:7, is_correct:true, mistakes:[]};
-      meet.turns.push({role:'ai', text:j.reply, fa:j.reply_fa, id:Date.now()});
+      meet.turns.push({role:'ai', text:j.reply, fa:j.reply_fa});
       meet.busy = false;
       drawMeetChat();
-      if(settings.autoplay) speak(j.reply);
-    }).catch(function(e){ meet.busy=false; ut.pending=false; ut.err=true; drawMeetChat(); toast(errText(e)); });
+      if (settings.autoplay) speak(j.reply);
+      startTimer();
+    })
+    .catch(function(e){ meet.busy = false; ut.pending = false; ut.err = true; drawMeetChat(); toast(errText(e)); });
+}
+
+function startTimer() {
+  clearInterval(meet.timer);
+  meet.timeLeft = parseInt(meet.level);
+  var el = $('#timerDisplay');
+  if (el) el.innerHTML = '⏱️ ' + meet.timeLeft + 's';
+  meet.timer = setInterval(function() {
+    meet.timeLeft--;
+    var el = $('#timerDisplay');
+    if (el) {
+      el.innerHTML = '⏱️ ' + meet.timeLeft + 's';
+      if (meet.timeLeft <= 3) el.style.color = 'var(--bad)';
+      else el.style.color = 'var(--brand)';
+    }
+    if (meet.timeLeft <= 0) {
+      clearInterval(meet.timer);
+      if (!meet.busy) sendMeetPressure('(Time out)');
+    }
+  }, 1000);
 }
 
 function drawMeetChat() {
   var c = $('#meetChat'); if(!c) return;
-  c.innerHTML = meet.turns.map(jobBubble).join('') + (meet.busy && !meet.turns.some(function(t){return t.pending}) ? '<div class="b ai"><span class="dots"><i></i><i></i><i></i></span></div>' : '');
+  c.innerHTML = meet.turns.map(meetBubble).join('') + (meet.busy && !meet.turns.some(function(t){return t.pending}) ? '<div class="b ai"><span class="dots"><i></i><i></i><i></i></span></div>' : '');
   window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
 }
 
