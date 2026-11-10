@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '127';
+var APP_VERSION = '128';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -850,15 +850,19 @@ function startMeetStudy(cat) {
   meet.catId = cat.id;
   go('meet');
   drawMeetChat();
+  
   var prompt = "You are Ildar, Armin's Russian IT manager. We are doing a PIECE-BY-PIECE conversation practice.\n" +
-    "CRITICAL RULE: Ask ONLY ONE SHORT QUESTION at a time. NEVER combine multiple questions in one turn. Keep your response to 1-2 short sentences maximum.\n" +
-    "Context: " + cat.context + "\n" +
-    "If starting, greet him and ask the FIRST question from the context.\n" +
-    "Provide 3 hints for Armin's next reply (simple, professional, question).\n" +
-    "Return ONLY JSON: {\"reply\":\"your line\",\"reply_fa\":\"Persian translation\",\"hints\":[\"hint1\",\"hint2\",\"hint3\"]}";
+    "CHARACTER: You are busy, direct, friendly, but professional. You speak short, direct English.\n" +
+    "CONTEXT: " + cat.context + "\n" +
+    "CRITICAL RULE: Ask ONLY ONE SHORT QUESTION at a time. NEVER combine multiple questions in one turn. Keep your response to 1-2 short sentences maximum. Wait for Armin to answer before moving to the next point.\n" +
+    "If starting, greet him and ask the FIRST question based on the context.\n" +
+    "You MUST provide exactly 3 hints for Armin's next reply (one simple, one professional, one asking a question back).\n" +
+    "Return ONLY valid JSON: {\"reply\":\"your line\",\"reply_fa\":\"Persian translation\",\"hints\":[\"hint1\",\"hint2\",\"hint3\"]}";
+
   callAI(prompt, [{role:'user',content:'[START]'}], 1200, {json:true})
     .then(function(raw){
-      var j = parseJSON(raw);
+      var j;
+      try { j = parseJSON(raw); } catch(e) { j = { reply: "Hi Armin, good to see you. How are you doing?", reply_fa: "سلام آرمین، خوشحالم می‌بینمت. چطوری؟", hints: ["I'm fine, thanks.", "Doing well, how about you?", "All good."] }; }
       meet.turns.push({role:'ai', text:j.reply, fa:j.reply_fa, hints:j.hints});
       meet.busy = false;
       drawMeetChat();
@@ -875,19 +879,34 @@ function sendMeetStudy(text) {
   meet.turns.push(ut);
   meet.busy = true;
   drawMeetChat();
+  
   var cat = MEET_DATA.find(function(c){ return c.id === meet.catId; });
   var prompt = "You are Ildar, Armin's Russian IT manager. We are doing a PIECE-BY-PIECE conversation practice.\n" +
+    "CHARACTER: You are busy, direct, friendly, but professional. You speak short, direct English.\n" +
+    "CONTEXT: " + cat.context + "\n" +
     "CRITICAL RULE: Ask ONLY ONE SHORT QUESTION at a time. NEVER combine multiple questions in one turn. Keep your response to 1-2 short sentences maximum.\n" +
-    "Context: " + cat.context + "\n" +
-    "React briefly to Armin's last message, then ask the NEXT question from the context.\n" +
-    "Provide 3 hints for Armin's NEXT reply (simple, professional, question).\n" +
-    "Return ONLY JSON: {\"reply\":\"your line\",\"reply_fa\":\"Persian translation\",\"hints\":[\"hint1\",\"hint2\",\"hint3\"]}";
+    "React briefly to Armin's last message, then ask the NEXT question based on the context.\n" +
+    "You MUST provide exactly 3 hints for Armin's NEXT reply (one simple, one professional, one asking a question back).\n" +
+    "Return ONLY valid JSON: {\"reply\":\"your line\",\"reply_fa\":\"Persian translation\",\"hints\":[\"hint1\",\"hint2\",\"hint3\"]}";
+
+  // 🔑 فیکس: بازسازی تاریخچه به فرمت JSON تا هوش مصنوعی یادش نره JSON بده
   var history = meet.turns.filter(function(t){ return !t.err; }).map(function(t){
-    return { role: t.role === 'ai' ? 'assistant' : 'user', content: t.text };
+    if (t.role === 'ai') {
+      return { 
+        role: 'assistant', 
+        content: JSON.stringify({ reply: t.text, reply_fa: t.fa || '', hints: t.hints || [] }) 
+      };
+    }
+    return { role: 'user', content: t.text };
   });
-  callAI(prompt, history, 1200, {json:true})
+
+  callAI(prompt, history, 1500, {json:true})
     .then(function(raw){
-      var j = parseJSON(raw);
+      var j;
+      try { j = parseJSON(raw); } catch(e) { 
+        console.warn('JSON Error in Study:', raw);
+        j = { reply: "I see. Let's continue. What is the next update?", reply_fa: "متوجه شدم. بیا ادامه بدیم. آپدیت بعدی چیه؟", hints: ["Yes, sure.", "Let me check.", "I will handle it."] }; 
+      }
       ut.pending = false;
       meet.turns.push({role:'ai', text:j.reply, fa:j.reply_fa, hints:j.hints});
       meet.busy = false;
@@ -904,12 +923,16 @@ function startMeetPressure(cat) {
   meet.catId = cat.id;
   go('meet');
   drawMeetChat();
-  var prompt = "You are Ildar, Armin's Russian IT manager. You are testing him under pressure. Context: " + cat.context + "\n" +
-    "Rules:\n1. Ask ONLY ONE question at a time based on the context.\n" +
-    "Return ONLY JSON: {\"reply\":\"your question\",\"reply_fa\":\"Persian translation\"}";
+  
+  var prompt = "You are Ildar, Armin's Russian IT manager. You are testing him under pressure. You speak short, direct English.\n" +
+    "CONTEXT: " + cat.context + "\n" +
+    "Rules:\n1. Ask ONLY ONE question at a time based on the context.\n2. Keep it short (1 sentence).\n" +
+    "Return ONLY valid JSON: {\"reply\":\"your question\",\"reply_fa\":\"Persian translation\"}";
+
   callAI(prompt, [{role:'user',content:'[START]'}], 1000, {json:true})
     .then(function(raw){
-      var j = parseJSON(raw);
+      var j;
+      try { j = parseJSON(raw); } catch(e) { j = { reply: "Armin, give me a quick status.", reply_fa: "آرمین، یه وضعیت سریع بده." }; }
       meet.turns.push({role:'ai', text:j.reply, fa:j.reply_fa});
       meet.busy = false;
       drawMeetChat();
@@ -928,17 +951,25 @@ function sendMeetPressure(text) {
   meet.turns.push(ut);
   meet.busy = true;
   drawMeetChat();
+  
   var cat = MEET_DATA.find(function(c){ return c.id === meet.catId; });
-  var prompt = "You are Ildar, Armin's Russian IT manager. You are testing him under pressure. Context: " + cat.context + "\n" +
-    "Rules:\n1. Evaluate Armin's answer. React briefly and ask the NEXT question.\n" +
-    "Return ONLY JSON: {\"reply\":\"your line\",\"reply_fa\":\"Persian translation\",\"analysis\":{\"score\":1-10,\"is_correct\":true,\"corrected\":\"...\",\"perfect_version\":\"...\",\"mistakes\":[],\"tip_fa\":\"...\"}}";
+  var prompt = "You are Ildar, Armin's Russian IT manager. You are testing him under pressure. You speak short, direct English.\n" +
+    "CONTEXT: " + cat.context + "\n" +
+    "Rules:\n1. Evaluate Armin's answer. React briefly and ask the NEXT question.\n2. Keep it short (1 sentence).\n" +
+    "Return ONLY valid JSON: {\"reply\":\"your line\",\"reply_fa\":\"Persian translation\",\"analysis\":{\"score\":1-10,\"is_correct\":true,\"corrected\":\"...\",\"perfect_version\":\"...\",\"mistakes\":[],\"tip_fa\":\"...\"}}";
+
   var history = meet.turns.filter(function(t){ return !t.err; }).map(function(t){
     if (t.role === 'ai') return { role: 'assistant', content: JSON.stringify({reply: t.text, analysis:{score:8, is_correct:true, corrected:'', perfect_version:'', mistakes:[], tip_fa:''}}) };
     return { role: 'user', content: t.text };
   });
+
   callAI(prompt, history, 1500, {json:true})
     .then(function(raw){
-      var j = parseJSON(raw);
+      var j;
+      try { j = parseJSON(raw); } catch(e) {
+        console.warn('JSON Error in Pressure:', raw);
+        j = { reply: "Okay, let's move to the next task.", reply_fa: "باشه، بریم سراغ کار بعدی.", analysis: {score:7, is_correct:true, corrected:'', perfect_version:'', mistakes:[], tip_fa:''} };
+      }
       ut.pending = false;
       ut.an = j.analysis || {score:7, is_correct:true, mistakes:[]};
       meet.turns.push({role:'ai', text:j.reply, fa:j.reply_fa});
