@@ -4780,7 +4780,36 @@ function m33LiveSend(text){
 window.renderMeet = renderMeetV133;
 
 // ============ LISTEN v137: حالت گوش‌دادن (فقط گوش بده، جواب نمی‌دی) ============
-// این بلوک رو درست «بعد از» بلوک meet-v133 و قبل از  "// ============ INIT ============"  بذار.
+// این بلوک رو درست «بعد از» بلوک meet-v133 و قبل از  "// ============ v138.1 Follow-up Category Patch ============
+(function(){
+  if (typeof M33_CATS !== 'undefined' && !M33_CATS.some(function(c){ return c.id === 'followup'; })) {
+    M33_CATS.push({id:'followup',icon:'🔄',title:'پیگیری و وضعیت',desc:'FTTH، فاکتور، قرارداد — گذشته + آینده'});
+  }
+  if (typeof M33_Q !== 'undefined' && !M33_Q.followup) {
+    M33_Q.followup = [
+      ["Any update on the FTTH installation?","خبری از نصب فیبر نوری هست؟","I spoke with TCI. They said 3-4 days.","I spoke with Mr. Nadali, the TCI branch manager. He promised it will be installed within 3-4 days. I'm following up daily."],
+      ["What did Mr. Bahrami say about the TIC approval?","آقای بهرامی درباره تاییدیه TIC چی گفت؟","He said approvals were verbal.","He said the approvals were given verbally and internally, so he doesn't have written documents. I asked him to send me a written explanation."],
+      ["Did you talk to Ms. Hoda about the invoice?","درباره فاکتور با خانم هدا صحبت کردی؟","Yes, she will send it tomorrow.","Yes, I called her this morning. She said there was an internal issue. She will send the corrected invoice by tomorrow."],
+      ["Why is Arianet taking so long?","چرا آریانِت اینقدر طول کشیده؟","The PD group hasn't added them.","The PD team accepts invoices based on their list. Arianet hasn't been added yet, so they can't accept it. I'm following up with Reza."],
+      ["Was invoice 9068 fixed?","فاکتور 9068 درست شد؟","Yes, it was a mistake from their side.","Yes, it was rejected by mistake. Saad Mohammadi corrected it on his side, and we have the originals now."],
+      ["What is the status of the Cimatech contract?","وضعیت قرارداد Cimatech چیه؟","Milad will stamp it today.","I collected it from Pavel and took it to Milad for stamping. After that, I will hand it to the PD group."],
+      ["When will the equipment list be ready?","لیست تجهیزات کی آماده می‌شه؟","I sent it by email yesterday.","I completed the list and sent it to you by email yesterday. It covers 25 laptops for NVGS and 30 for MPS."],
+      ["Did you hand over the MCI SIM cards?","سیم‌کارت‌های MCI رو تحویل دادی؟","Not yet. Raushan wasn't in office.","Not yet. Raushan wasn't in the office on Wednesday or Thursday. I asked Ali Hosseyni to hand them over, but Raushan left for Ahvaz. I will try to find another person."],
+      ["Did you fix Mr. Rajab's RDP access?","دسترسی RDP آقای رجب رو درست کردی؟","Yes, I used the external link.","Yes, I was using the wrong link. He is an internal user, so I used the correct external link you sent me."],
+      ["Did Saad Mohammadi accept the corrected invoice?","سعد محمدی فاکتور اصلاح‌شده رو قبول کرد؟","Yes, it is fixed now.","Yes, he said it was a mistake on his side. He corrected it, and PD will prepare it for payment."],
+      ["Did you coordinate with Aryan about the FCC certificate?","درباره گواهی FCC با آریان هماهنگ کردی؟","Yes, he said he will reply.","I spoke with Aryan and explained the issue. He said he received the email and will reply soon."],
+      ["When will the fiber be ready, exactly?","دقیقاً فیبر کی آماده می‌شه؟","They said 3-4 days, but I am not sure.","The TCI branch manager said 3-4 days, but the same promise was made before. I will visit him again on Saturday to push them."],
+      ["What did Milad say about the contract?","میلاد درباره قرارداد چی گفت؟","He said he will sign it today.","He said one contract for MPS is still pending. He will give it to Mr. Rajab for signing today."],
+      ["Did you inform Hoda about the contract date issue?","به هدا درباره مشکل تاریخ قرارداد اطلاع دادی؟","Yes, I will ask her to send corrected versions.","Yes, I will ask her to send corrected versions of 9113 and 9063 with the right date. If the last invoice is rejected, we will change it."],
+      ["Why did the FTTH take 4 weeks?","چرا فیبر ۴ هفته طول کشید؟","TCI and TIC approvals took long.","We needed two approvals, one from TIC and one from TCI. Both were given verbally, so there were no documents. The installation team also had delays."]
+    ];
+  }
+  if (typeof M33_TPL !== 'undefined' && !M33_TPL.some(function(t){ return String(t[0]).indexOf('I spoke with X') === 0; })) {
+    M33_TPL.push(["I spoke with X. He said Y. So I will Z.","I spoke with Hoda. She said the invoice was wrong. So I will ask her to resend it."]);
+  }
+})();
+
+// ============ INIT ============"  بذار.
 // چیزی از قبلی‌ها پاک یا عوض نمی‌شه؛ فقط یه حالت جدید بهش اضافه می‌شه.
 APP_VERSION = '138';
 
