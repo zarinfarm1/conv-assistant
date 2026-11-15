@@ -1,9 +1,6 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '131';
-var APP_VERSION = '132';
-var APP_VERSION = '134';
 var APP_VERSION = '136';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
@@ -4756,6 +4753,288 @@ function m33LiveSend(text){
 }
 
 window.renderMeet = renderMeetV133;
+
+// ============ LISTEN v136: حالت گوش‌دادن (فقط گوش بده، جواب نمی‌دی) ============
+// این بلوک رو درست «بعد از» بلوک meet-v133 و قبل از  "// ============ INIT ============"  بذار.
+// چیزی از قبلی‌ها پاک یا عوض نمی‌شه؛ فقط یه حالت جدید بهش اضافه می‌شه.
+APP_VERSION = '136';
+
+var A34 = {playing:false, idx:0, tracks:[], tok:0, seg:0, wake:null, audioEl:null,
+  cfg:{qa:true, rescue:true, tpl:true, gram:true, cat:'all', shuffle:true, think:5, speed:0.85, repeat:true, fa:true, loop:true, mix:true}};
+(function(){ var c=store.get('zy_audio_cfg',null); if(c && typeof c==='object'){ Object.keys(c).forEach(function(k){ A34.cfg[k]=c[k]; }); } })();
+function a34Save(){ store.set('zy_audio_cfg',A34.cfg); }
+
+// ---------- درس‌های کوتاه گرامر (برای گوش دادن) ----------
+var A34_GRAM = [
+ {t:'Past Simple. What I did.', fa:'برای کاری که تموم شده. فعل با ed می‌گیره. بعضی فعل‌ها بی‌قاعده‌ان، مثل go که می‌شه went. منفی‌اش did not و بعدش فعل ساده.',
+  ex:['Yesterday I finished the printer issue.','I called Ms. Hoda this morning.','I went to Denis\'s office.','I didn\'t get the invoices yet.','Did you send the email? Yes, I did.']},
+ {t:'Present Continuous. What I am doing now.', fa:'برای کاری که همین الان در حال انجامه. am یا is یا are و بعد فعل با ing.',
+  ex:['I\'m checking the router.','We\'re waiting for the supplier.','He\'s installing Office now.','I\'m not working on it right now.','Are you waiting for him?']},
+ {t:'Will. Promises and quick decisions.', fa:'برای قول دادن و تصمیم لحظه‌ای. I will، کوتاه‌شده I\'ll، و بعدش فعل ساده. هیچ s یا ing نمی‌گیره.',
+  ex:['I\'ll check it.','I\'ll send you an email today.','I\'ll call her now.','I won\'t forget.','I\'ll let you know.']},
+ {t:'Present Perfect. Already, yet, just.', fa:'have یا has و بعد فعل سوم. برای نتیجه‌ی الان. already یعنی قبلاً. yet یعنی هنوز، توی منفی و سوالی. just یعنی همین الان.',
+  ex:['I\'ve already sent the list.','I haven\'t received it yet.','She has just called me.','Have you checked it yet?','We\'ve scanned four laptops.']},
+ {t:'Have and Has. We have.', fa:'با I و you و we و they می‌گیم have. با he و she و it می‌گیم has.',
+  ex:['We have four laptops.','He has the key.','Do we have spare monitors?','I don\'t have that information.','She has a meeting now.']},
+ {t:'Third person S.', fa:'توی حال ساده، با he و she و it فعل s می‌گیره. توی منفی و سوالی، s به does می‌ره و فعل ساده می‌مونه.',
+  ex:['He works in Moscow.','She sends the invoices.','Ildar speaks fast.','The printer doesn\'t work.','Does he know?']},
+ {t:'Could you please. Polite requests.', fa:'Could you و بعد فعل ساده. مؤدبانه‌ترین راه برای خواهش کردنه. آخرش please بگو.',
+  ex:['Could you repeat that, please?','Could you speak a little slower?','Could you send me an email?','Could you approve it, please?','Could you show me the file?']},
+ {t:'Don\'t and Didn\'t. Saying no.', fa:'برای منفی: توی حال don\'t یا doesn\'t، توی گذشته didn\'t. بعدش فعل همیشه ساده است.',
+  ex:['I don\'t know yet.','He doesn\'t have access.','I didn\'t understand.','We don\'t have spare keyboards.','She didn\'t reply.']},
+ {t:'There is and There are.', fa:'برای وجود داشتن. There is با مفرد. There are با جمع.',
+  ex:['There is a problem with the invoice.','There are three tickets open.','There isn\'t any paper.','Is there a backup?','Are there any spare cables?']},
+ {t:'Articles. A, an, the.', fa:'a یا an برای یه چیز نامشخص، اولین بار. the برای چیز مشخصی که هر دو می‌شناسید. با اسم جمع و بعضی اسم‌ها هیچی نمی‌ذاریم.',
+  ex:['I have a laptop for Reza.','The laptop is ready.','I need an adapter.','I called the supplier.','We have internet problems.']},
+ {t:'Time words. Yesterday, today, tomorrow, by.', fa:'yesterday یعنی گذشته. today یعنی الان. tomorrow یعنی آینده، با I\'ll. by یعنی تا، برای مهلت.',
+  ex:['I did it yesterday.','I\'m doing it today.','I\'ll do it tomorrow.','I\'ll finish it by Friday.','I\'ll send it by tomorrow morning.']},
+ {t:'Daily report formula.', fa:'برای گزارش روزانه: Yesterday I، و کار تموم‌شده با گذشته. Today I am، و کار در حال انجام. و آخرش No blockers یعنی مشکلی نیست.',
+  ex:['Yesterday I finished the printer issue.','Today I\'m setting up two laptops.','No blockers right now.','I\'m waiting for one approval.','I\'ll send the report by the end of the day.']}
+];
+
+// ---------- صدا ----------
+function a34Voices(){
+  var all=('speechSynthesis' in window)?speechSynthesis.getVoices():[];
+  function lg(v){ return String(v.lang||'').replace('_','-').toLowerCase(); }
+  var en=all.filter(function(v){ return lg(v).indexOf('en')===0; });
+  var faV=all.filter(function(v){ return /^(fa|pes|prs)/.test(lg(v)); });
+  var A=en.filter(function(v){ return v.name===settings.voice; })[0] || en.filter(function(v){ return lg(v)==='en-us'; })[0] || en[0] || null;
+  var B=en.filter(function(v){ return v!==A && lg(v)==='en-us'; })[0] || en.filter(function(v){ return v!==A; })[0] || A;
+  return {A:A, B:B, fa:faV[0]||null};
+}
+function a34Say(s, done){
+  if(!('speechSynthesis' in window)){ done(); return; }
+  var V=a34Voices(), u=new SpeechSynthesisUtterance(s.text);
+  if(s.lang==='fa'){ u.lang=(V.fa&&V.fa.lang)||'fa-IR'; if(V.fa) u.voice=V.fa; u.rate=Math.min(1,A34.cfg.speed+0.1); u.pitch=1; }
+  else{
+    var v=(s.role==='A')?V.A:V.B; if(v){ u.voice=v; u.lang=v.lang; } else u.lang='en-US';
+    u.rate=A34.cfg.speed*(s.rate||1); u.pitch=(s.role==='A')?0.85:1.05;
+  }
+  var fin=false, tok=A34.tok, wd;
+  var end=function(){ if(fin) return; fin=true; clearTimeout(wd); done(); };
+  u.onend=end; u.onerror=end;
+  wd=setTimeout(end, Math.max(5000, s.text.length*190/Math.max(0.5,u.rate)+4000));
+  try{ speechSynthesis.cancel(); }catch(e){}
+  setTimeout(function(){ if(tok===A34.tok && A34.playing){ try{ speechSynthesis.speak(u); }catch(e){ end(); } } else end(); }, 60);
+}
+
+// ---------- ساخت قطعه‌ها ----------
+function a34FaOn(){ return !!(A34.cfg.fa && a34Voices().fa); }
+function a34QA(it){
+  var c=A34.cfg, th=c.think*1000;
+  var lines=[{k:'q',text:it.q},{k:'fa',text:it.fa},{k:'s',text:it.s},{k:'p',text:it.p}];
+  var segs=[{t:'say',text:it.q,role:'A',line:0},{t:'say',text:it.fa,lang:'fa',line:1},{t:'pause',ms:th},
+    {t:'say',text:'Answer.',role:'B',line:2},{t:'say',text:it.s,role:'B',line:2},{t:'pause',ms:1000}];
+  if(c.repeat) segs.push({t:'say',text:it.s,role:'B',rate:0.8,line:2},{t:'pause',ms:1000});
+  segs.push({t:'say',text:'Better answer.',role:'B',line:3},{t:'say',text:it.p,role:'B',line:3},{t:'pause',ms:1800});
+  return {kind:'❓ سوال و جواب',lines:lines,segs:segs};
+}
+function a34Rescue(r){
+  return {kind:'🚑 جمله نجات‌بخش',lines:[{k:'p',text:r[0]},{k:'fa',text:r[1]}],
+    segs:[{t:'say',text:r[0],role:'B',line:0},{t:'pause',ms:900},{t:'say',text:r[0],role:'B',rate:0.8,line:0},{t:'pause',ms:800},{t:'say',text:r[1],lang:'fa',line:1},{t:'pause',ms:1500}]};
+}
+function a34Tpl(r){
+  return {kind:'🧩 قالب جواب',lines:[{k:'h',text:r[0]},{k:'p',text:r[1]}],
+    segs:[{t:'say',text:'Pattern.',role:'A',line:0},{t:'say',text:r[1],role:'B',line:1},{t:'pause',ms:900},{t:'say',text:r[1],role:'B',rate:0.8,line:1},{t:'pause',ms:1500}]};
+}
+function a34Gram(g){
+  var lines=[{k:'h',text:g.t},{k:'fa',text:g.fa}], segs=[{t:'say',text:'Grammar. '+g.t,role:'A',line:0},{t:'say',text:g.fa,lang:'fa',line:1},{t:'pause',ms:1500}];
+  g.ex.forEach(function(e,i){
+    lines.push({k:'p',text:e});
+    segs.push({t:'say',text:e,role:'B',line:2+i},{t:'pause',ms:900},{t:'say',text:e,role:'B',rate:0.75,line:2+i},{t:'pause',ms:1200});
+  });
+  return {kind:'📐 درس گرامر',lines:lines,segs:segs};
+}
+function a34Build(){
+  var c=A34.cfg, main=[], extra=[];
+  if(c.qa){
+    var items=(c.cat==='all')?m33Pool('all'):m33Items(c.cat);
+    if(c.shuffle) items=m33Shuffle(items);
+    items.forEach(function(it){ main.push(a34QA(it)); });
+  }
+  if(c.rescue) M33_RESCUE.forEach(function(r){ extra.push(a34Rescue(r)); });
+  if(c.tpl) M33_TPL.forEach(function(r){ extra.push(a34Tpl(r)); });
+  if(c.gram) A34_GRAM.forEach(function(g){ extra.push(a34Gram(g)); });
+  if(c.shuffle) extra=m33Shuffle(extra);
+  if(!main.length) return extra;
+  if(!c.mix || !extra.length) return main.concat(extra);
+  var out=[], ei=0;
+  main.forEach(function(t,i){ out.push(t); if((i+1)%6===0 && ei<extra.length) out.push(extra[ei++]); });
+  return out.concat(extra.slice(ei));
+}
+
+// ---------- پخش ----------
+function a34Run(){
+  var tok=++A34.tok;
+  if(!A34.playing) return;
+  if(A34.idx>=A34.tracks.length){
+    if(A34.cfg.loop){ A34.tracks=a34Build(); A34.idx=0; if(!A34.tracks.length){ a34Stop(); return; } }
+    else { a34Stop(); A34.idx=0; a34DrawNow(true); return; }
+  }
+  var tr=A34.tracks[A34.idx]; A34.seg=0;
+  a34DrawNow();
+  (function step(){
+    if(tok!==A34.tok || !A34.playing) return;
+    if(view!=='meet' || M33.view!=='audioplay'){ a34Stop(); return; }
+    if(A34.seg>=tr.segs.length){ A34.idx++; setTimeout(function(){ if(tok===A34.tok && A34.playing) a34Run(); },400); return; }
+    var s=tr.segs[A34.seg++];
+    if(s.t==='pause'){ setTimeout(step,s.ms); return; }
+    if(s.lang==='fa' && !a34FaOn()){ step(); return; }
+    a34Hi(s.line);
+    a34Say(s,step);
+  })();
+}
+function a34Play(){
+  if(A34.playing) return;
+  if(!A34.tracks.length){ A34.tracks=a34Build(); A34.idx=0; }
+  if(!A34.tracks.length){ toast('چیزی برای پخش انتخاب نشده'); return; }
+  A34.playing=true; a34KeepAwake(true); a34SilentAudio(true); a34Media();
+  a34Run(); a34DrawBtns();
+}
+function a34Stop(){
+  A34.playing=false; A34.tok++;
+  if('speechSynthesis' in window){ try{speechSynthesis.cancel()}catch(e){} }
+  a34KeepAwake(false); a34SilentAudio(false);
+  a34DrawBtns();
+}
+function a34Jump(d){
+  if(!A34.tracks.length) return;
+  var was=A34.playing;
+  A34.tok++; if('speechSynthesis' in window){ try{speechSynthesis.cancel()}catch(e){} }
+  A34.idx=Math.max(0,Math.min(A34.tracks.length-1,A34.idx+d));
+  a34DrawNow();
+  if(was){ A34.playing=true; a34Run(); }
+}
+
+// ---------- نگه داشتن صفحه، صدای بی‌صدا و کنترل قفل‌صفحه ----------
+function a34KeepAwake(on){
+  try{
+    if(on){ if(navigator.wakeLock && !A34.wake){ navigator.wakeLock.request('screen').then(function(l){ A34.wake=l; l.addEventListener('release',function(){ A34.wake=null; }); }).catch(function(){}); } }
+    else if(A34.wake){ A34.wake.release(); A34.wake=null; }
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible' && A34.playing) a34KeepAwake(true); });
+function a34SilentAudio(on){
+  try{
+    if(on){
+      if(!A34.audioEl){
+        var n=8000, b=new Uint8Array(44+n), i;
+        var w=function(o,s){ for(var k=0;k<s.length;k++) b[o+k]=s.charCodeAt(k); };
+        var d=function(o,v){ b[o]=v&255; b[o+1]=(v>>8)&255; b[o+2]=(v>>16)&255; b[o+3]=(v>>24)&255; };
+        w(0,'RIFF'); d(4,36+n); w(8,'WAVE'); w(12,'fmt '); d(16,16); b[20]=1; b[22]=1; d(24,8000); d(28,8000); b[32]=1; b[34]=8; w(36,'data'); d(40,n);
+        for(i=0;i<n;i++) b[44+i]=128;
+        var a=new Audio(URL.createObjectURL(new Blob([b],{type:'audio/wav'}))); a.loop=true; A34.audioEl=a;
+      }
+      A34.audioEl.play().catch(function(){});
+    } else if(A34.audioEl){ A34.audioEl.pause(); }
+  }catch(e){}
+}
+function a34Media(){
+  try{
+    if(!('mediaSession' in navigator)) return;
+    navigator.mediaSession.metadata=new MediaMetadata({title:'آمادگی ایلدار',artist:'زبان‌یار',album:'حالت گوش‌دادن'});
+    navigator.mediaSession.setActionHandler('play',function(){ a34Play(); });
+    navigator.mediaSession.setActionHandler('pause',function(){ a34Stop(); });
+    navigator.mediaSession.setActionHandler('nexttrack',function(){ a34Jump(1); });
+    navigator.mediaSession.setActionHandler('previoustrack',function(){ a34Jump(-1); });
+  }catch(e){}
+}
+
+// ---------- صفحه تنظیمات ----------
+function a34Chip(key,label){ return '<button type="button" class="chip" data-a34t="'+key+'" aria-pressed="'+(!!A34.cfg[key])+'">'+label+'</button>'; }
+function a34Setup(el){
+  var c=A34.cfg, V=a34Voices(), hasFa=!!V.fa;
+  var h='<button type="button" class="link" id="a34Back">← بازگشت</button>';
+  h+='<h1>🎧 حالت گوش‌دادن</h1><p class="sub">فقط گوش بده. سوال، جواب، توضیح و گرامر پشت‌سرهم پخش می‌شن. بین سوال و جواب مکث هست که توی ذهنت جواب بدی.</p>';
+  h+='<div class="card stack" style="margin-top:12px"><b>چی پخش بشه؟</b><div class="chips">'+a34Chip('qa','❓ سوال و جواب')+a34Chip('rescue','🚑 نجات‌بخش‌ها')+a34Chip('tpl','🧩 قالب‌ها')+a34Chip('gram','📐 گرامر')+'</div>';
+  h+='<div class="field"><label>دسته‌ی سوال‌ها</label><select id="a34Cat"><option value="all">همه‌ی دسته‌ها</option>';
+  M33_CATS.forEach(function(x){ h+='<option value="'+x.id+'"'+(c.cat===x.id?' selected':'')+'>'+esc(x.title)+'</option>'; });
+  h+='</select></div></div>';
+  h+='<div class="card stack" style="margin-top:12px"><b>تنظیمات پخش</b><div class="chips">'+a34Chip('shuffle','🔀 رندوم')+a34Chip('mix','🔗 قاطی کردن گرامر لابه‌لای سوال‌ها')+a34Chip('repeat','🔁 جواب کوتاه دو بار')+a34Chip('loop','♾️ تکرار بی‌نهایت')+a34Chip('fa','🇮🇷 خوندن توضیح فارسی')+'</div>';
+  h+='<div class="field"><label>مکث برای فکر کردن بعد از سوال</label><div class="chips" id="a34Think">';
+  [[3,'۳ ثانیه'],[5,'۵ ثانیه'],[8,'۸ ثانیه']].forEach(function(x){ h+='<button type="button" class="chip" data-th="'+x[0]+'" aria-pressed="'+(c.think===x[0])+'">'+x[1]+'</button>'; });
+  h+='</div></div><div class="field"><label>سرعت صدا</label><div class="chips" id="a34Speed">';
+  [[0.7,'آهسته'],[0.85,'عادی'],[1,'سریع']].forEach(function(x){ h+='<button type="button" class="chip" data-sp="'+x[0]+'" aria-pressed="'+(c.speed===x[0])+'">'+x[1]+'</button>'; });
+  h+='</div></div></div>';
+  if(!hasFa) h+='<div class="card" style="margin-top:12px;background:var(--accent-soft);border-color:var(--accent);font-size:.85rem">ℹ️ صدای فارسی روی این دستگاه پیدا نشد. توضیح‌های فارسی فقط روی صفحه نوشته می‌شن و انگلیسی‌ها پخش می‌شن. اگه می‌خوای فارسی هم خونده بشه، توی تنظیمات گوشی (Text-to-speech) صدای فارسی نصب کن.</div>';
+  h+='<div class="card" style="margin-top:12px;font-size:.85rem;color:var(--muted)">💡 بهترین کار: هندزفری بزن، صفحه رو روشن نگه دار (خودکار روشن می‌مونه) و می‌تونی روشنایی رو کم کنی. بعضی گوشی‌ها وقتی صفحه قفل بشه صدا رو قطع می‌کنن.</div>';
+  h+='<div class="row" style="margin-top:14px"><button type="button" class="btn brand" id="a34Start" style="flex:1">▶ شروع پخش</button><button type="button" class="btn ghost" id="a34Work">🎧 حالت کار (همه چیز)</button></div>';
+  el.innerHTML=h;
+  $('#a34Back').onclick=function(){ m33Go('home'); };
+  $$('[data-a34t]').forEach(function(b){ b.onclick=function(){ var k=b.getAttribute('data-a34t'); A34.cfg[k]=!A34.cfg[k]; b.setAttribute('aria-pressed',String(!!A34.cfg[k])); a34Save(); }; });
+  $('#a34Cat').onchange=function(){ A34.cfg.cat=this.value; a34Save(); };
+  $$('#a34Think .chip').forEach(function(b){ b.onclick=function(){ $$('#a34Think .chip').forEach(function(x){x.setAttribute('aria-pressed','false')}); b.setAttribute('aria-pressed','true'); A34.cfg.think=+b.getAttribute('data-th'); a34Save(); }; });
+  $$('#a34Speed .chip').forEach(function(b){ b.onclick=function(){ $$('#a34Speed .chip').forEach(function(x){x.setAttribute('aria-pressed','false')}); b.setAttribute('aria-pressed','true'); A34.cfg.speed=+b.getAttribute('data-sp'); a34Save(); }; });
+  $('#a34Start').onclick=function(){ a34Launch(); };
+  $('#a34Work').onclick=function(){ A34.cfg.qa=A34.cfg.rescue=A34.cfg.tpl=A34.cfg.gram=A34.cfg.shuffle=A34.cfg.mix=A34.cfg.loop=A34.cfg.repeat=true; A34.cfg.cat='all'; a34Save(); a34Launch(); };
+}
+function a34Launch(){
+  a34Stop(); A34.tracks=a34Build(); A34.idx=0;
+  if(!A34.tracks.length){ toast('حداقل یه مورد رو انتخاب کن'); return; }
+  M33.view='audioplay'; renderMeetV133(); window.scrollTo(0,0);
+  a34Play();
+}
+
+// ---------- پخش‌کننده ----------
+function a34Player(el){
+  var h='<button type="button" class="link" id="a34Exit">← پایان</button>';
+  h+='<div class="thead"><div><b>🎧 در حال پخش</b><div class="sub" id="a34Count"></div></div></div>';
+  h+='<div class="card" id="a34Now" style="margin-top:8px"></div>';
+  h+='<div class="row" style="justify-content:center;gap:12px;margin-top:14px"><button type="button" class="btn ghost" id="a34Prev" style="font-size:1.3rem">⏮</button><button type="button" class="btn brand" id="a34Toggle" style="font-size:1.3rem;min-width:90px"></button><button type="button" class="btn ghost" id="a34Next" style="font-size:1.3rem">⏭</button></div>';
+  h+='<div class="card" style="margin-top:14px;font-size:.82rem;color:var(--muted)">هندزفری بزن و کارت رو بکن. هر سوال: ایلدار می‌پرسه ← چند ثانیه مکث (توی ذهنت جواب بده) ← جواب کوتاه ← جواب حرفه‌ای‌تر. وسط‌هاش درس گرامر و جمله‌ی نجات‌بخش هم می‌آد.</div>';
+  el.innerHTML=h;
+  $('#a34Exit').onclick=function(){ a34Stop(); m33Go('audio'); };
+  $('#a34Prev').onclick=function(){ a34Jump(-1); };
+  $('#a34Next').onclick=function(){ a34Jump(1); };
+  $('#a34Toggle').onclick=function(){ if(A34.playing) a34Stop(); else a34Play(); };
+  a34DrawNow(); a34DrawBtns();
+}
+function a34DrawBtns(){ var b=$('#a34Toggle'); if(b) b.textContent=A34.playing?'⏸':'▶'; }
+function a34DrawNow(ended){
+  var box=$('#a34Now'), cnt=$('#a34Count'); if(!box) return;
+  var tr=A34.tracks[A34.idx];
+  if(cnt) cnt.textContent='قطعه '+fa(Math.min(A34.idx+1,A34.tracks.length))+' از '+fa(A34.tracks.length)+(A34.cfg.loop?' · تکرار':'');
+  if(!tr){ box.innerHTML='<b>✅ پخش تموم شد</b>'; return; }
+  var h='<div style="font-size:.78rem;color:var(--brand);font-weight:700;margin-bottom:8px">'+tr.kind+'</div>';
+  tr.lines.forEach(function(l,i){
+    var isFa=l.k==='fa';
+    var style='padding:8px 10px;border-radius:8px;margin-bottom:6px;transition:background .2s;';
+    if(l.k==='q') style+='font-size:1.15rem;font-weight:700;';
+    if(l.k==='h') style+='font-weight:700;color:var(--brand);';
+    h+='<div class="a34L" data-li="'+i+'" '+(isFa?'dir="rtl" style="'+style+'font-size:.9rem;color:var(--muted)"':'dir="ltr" style="'+style+'font-family:Lexend,sans-serif;text-align:left"')+'>'+esc(l.text)+'</div>';
+  });
+  box.innerHTML=h;
+}
+function a34Hi(i){
+  $$('.a34L').forEach(function(n){ n.style.background=(+n.getAttribute('data-li')===i)?'var(--brand-soft)':'transparent'; });
+}
+
+// ---------- اتصال به تب آمادگی (بدون دست زدن به کدهای قبلی) ----------
+var _m33Router = renderMeetV133;
+renderMeetV133 = function(){
+  var el=$('#main'); if(!el) return;
+  if(M33.view==='audio') return a34Setup(el);
+  if(M33.view==='audioplay') return a34Player(el);
+  _m33Router();
+  if(M33.view==='home') a34InjectHome(el);
+  if(M33.view==='cat') a34InjectCat(el);
+};
+function a34InjectHome(el){
+  var d=document.createElement('div'); d.className='card';
+  d.style.cssText='margin:12px 0;background:var(--prog-soft);border-color:var(--prog)';
+  d.innerHTML='<b>🎧 حالت گوش‌دادن (برای محل کار)</b><div class="sub" style="font-size:.85rem;margin:4px 0 10px">همه‌ی سوال‌ها و جواب‌ها، جمله‌های نجات‌بخش و درس گرامر به‌صورت صوتی. فقط گوش بده، جواب دادن لازم نیست.</div><button type="button" class="btn prog" id="a34Open">🎧 شروع</button>';
+  var first=el.querySelector('.card'); el.insertBefore(d,first||null);
+  $('#a34Open').onclick=function(){ A34.cfg.cat='all'; m33Go('audio'); };
+}
+function a34InjectCat(el){
+  var g=el.querySelector('.mode-grid'); if(!g) return;
+  var b=document.createElement('button'); b.type='button'; b.className='mode-card'; b.id='a34CatBtn';
+  b.innerHTML='<div class="mi">🎧</div><div class="mt">گوش بده</div><div class="md">صوتی، بدون جواب دادن</div>';
+  g.appendChild(b);
+  b.onclick=function(){ A34.cfg.cat=M33.catId; A34.cfg.qa=true; a34Save(); m33Go('audio'); };
+}
+window.renderMeet = renderMeetV133;
+
 
 // ============ INIT ============
 document.addEventListener('click', function(e){
