@@ -4819,14 +4819,12 @@ function a34Say(s, done){
 }
 
 // ---------- ساخت قطعه‌ها ----------
-function a34FaOn(){ return !!(A34.cfg.fa && a34Voices().fa); }
 function a34QA(it){
   var c=A34.cfg, th=c.think*1000;
-  var lines=[{k:'q',text:it.q},{k:'fa',text:it.fa},{k:'s',text:it.s},{k:'p',text:it.p}];
+  var lines=[{k:'q',text:it.q},{k:'fa',text:it.fa},{k:'s',text:it.s}];
   var segs=[{t:'say',text:it.q,role:'A',line:0},{t:'say',text:it.fa,lang:'fa',line:1},{t:'pause',ms:th},
     {t:'say',text:'Answer.',role:'B',line:2},{t:'say',text:it.s,role:'B',line:2},{t:'pause',ms:1000}];
-  if(c.repeat) segs.push({t:'say',text:it.s,role:'B',rate:0.8,line:2},{t:'pause',ms:1000});
-  segs.push({t:'say',text:'Better answer.',role:'B',line:3},{t:'say',text:it.p,role:'B',line:3},{t:'pause',ms:1800});
+  if(c.repeat) segs.push({t:'say',text:it.s,role:'B',rate:0.8,line:2},{t:'pause',ms:1500});
   return {kind:'❓ سوال و جواب',lines:lines,segs:segs};
 }
 function a34Rescue(r){
