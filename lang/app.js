@@ -4879,7 +4879,7 @@ function a34QA(it){
   var c=A34.cfg, th=c.think*1000;
   var lines=[{k:'q',text:it.q},{k:'fa',text:it.fa},{k:'s',text:it.s}];
   var segs=[{t:'say',text:it.q,role:'A',line:0},{t:'say',text:it.fa,lang:'fa',line:1},{t:'pause',ms:th},
-    {t:'say',text:'Answer.',role:'B',line:2},{t:'say',text:it.s,role:'B',line:2},{t:'pause',ms:1000}];
+  {t:'say',text:it.s,role:'B',line:2},{t:'pause',ms:1000}];
   if(c.repeat) segs.push({t:'say',text:it.s,role:'B',rate:0.8,line:2},{t:'pause',ms:1500});
   return {kind:'❓ سوال و جواب',lines:lines,segs:segs};
 }
