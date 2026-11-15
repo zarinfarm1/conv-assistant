@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '136';
+var APP_VERSION = '137';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -4151,7 +4151,7 @@ function m33LiveSend(text){
 window.renderMeet = renderMeetV133;
 
 // ============ MEET v135: آمادگی ۶ روزه ایلدار ============
-APP_VERSION = '136';
+APP_VERSION = '137';
 
 var M33 = {view:'home',catId:null,deck:[],pos:0,revealed:false,showFa:false,yes:0,no:0,missed:[],
   secs:45,timed:false,left:0,timer:null,tok:0,timedOut:false,ans:'',title:'',lastItems:[],lastOpts:{},
@@ -4754,10 +4754,10 @@ function m33LiveSend(text){
 
 window.renderMeet = renderMeetV133;
 
-// ============ LISTEN v136: حالت گوش‌دادن (فقط گوش بده، جواب نمی‌دی) ============
+// ============ LISTEN v137: حالت گوش‌دادن (فقط گوش بده، جواب نمی‌دی) ============
 // این بلوک رو درست «بعد از» بلوک meet-v133 و قبل از  "// ============ INIT ============"  بذار.
 // چیزی از قبلی‌ها پاک یا عوض نمی‌شه؛ فقط یه حالت جدید بهش اضافه می‌شه.
-APP_VERSION = '136';
+APP_VERSION = '137';
 
 var A34 = {playing:false, idx:0, tracks:[], tok:0, seg:0, wake:null, audioEl:null,
   cfg:{qa:true, rescue:true, tpl:true, gram:true, cat:'all', shuffle:true, think:5, speed:0.85, repeat:true, fa:true, loop:true, mix:true}};
@@ -4909,11 +4909,11 @@ function a34Jump(d){
 // ---------- نگه داشتن صفحه، صدای بی‌صدا و کنترل قفل‌صفحه ----------
 function a34KeepAwake(on){
   try{
-    if(on){ if(navigator.wakeLock && !A34.wake){ navigator.wakeLock.request('screen').then(function(l){ A34.wake=l; l.addEventListener('release',function(){ A34.wake=null; }); }).catch(function(){}); } }
+    if(on){ if(navigator.wakeLock && !A34.wake){ navigator.wakeLock.request('screen').then(function(l){ A34.wake=l; l.addEventListener('release',function(){ A34.wake=null; if(A34.playing) a34KeepAwake(true); }); }).catch(function(){}); } }
     else if(A34.wake){ A34.wake.release(); A34.wake=null; }
   }catch(e){}
 }
-document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible' && A34.playing) a34KeepAwake(true); });
+document.addEventListener('visibilitychange',function(){ if(A34.playing){ if(document.visibilityState==='visible') a34KeepAwake(true); try{ if(navigator.mediaSession) navigator.mediaSession.playbackState='playing'; }catch(e){} } });
 function a34SilentAudio(on){
   try{
     if(on){
@@ -4923,7 +4923,7 @@ function a34SilentAudio(on){
         var d=function(o,v){ b[o]=v&255; b[o+1]=(v>>8)&255; b[o+2]=(v>>16)&255; b[o+3]=(v>>24)&255; };
         w(0,'RIFF'); d(4,36+n); w(8,'WAVE'); w(12,'fmt '); d(16,16); b[20]=1; b[22]=1; d(24,8000); d(28,8000); b[32]=1; b[34]=8; w(36,'data'); d(40,n);
         for(i=0;i<n;i++) b[44+i]=128;
-        var a=new Audio(URL.createObjectURL(new Blob([b],{type:'audio/wav'}))); a.loop=true; A34.audioEl=a;
+        var a=new Audio(URL.createObjectURL(new Blob([b],{type:'audio/wav'}))); a.loop=true; a.volume=0.001; try{a.setAttribute('playsinline','true'); a.setAttribute('webkit-playsinline','true');}catch(_e){} A34.audioEl=a;
       }
       A34.audioEl.play().catch(function(){});
     } else if(A34.audioEl){ A34.audioEl.pause(); }
@@ -4933,6 +4933,7 @@ function a34Media(){
   try{
     if(!('mediaSession' in navigator)) return;
     navigator.mediaSession.metadata=new MediaMetadata({title:'آمادگی ایلدار',artist:'زبان‌یار',album:'حالت گوش‌دادن'});
+    try{ navigator.mediaSession.playbackState='playing'; }catch(e){}
     navigator.mediaSession.setActionHandler('play',function(){ a34Play(); });
     navigator.mediaSession.setActionHandler('pause',function(){ a34Stop(); });
     navigator.mediaSession.setActionHandler('nexttrack',function(){ a34Jump(1); });
