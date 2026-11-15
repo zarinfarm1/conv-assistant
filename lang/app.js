@@ -4,7 +4,7 @@
 var APP_VERSION = '131';
 var APP_VERSION = '132';
 var APP_VERSION = '134';
-var APP_VERSION = '135';
+var APP_VERSION = '136';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -4154,7 +4154,7 @@ function m33LiveSend(text){
 window.renderMeet = renderMeetV133;
 
 // ============ MEET v135: آمادگی ۶ روزه ایلدار ============
-APP_VERSION = '135';
+APP_VERSION = '136';
 
 var M33 = {view:'home',catId:null,deck:[],pos:0,revealed:false,showFa:false,yes:0,no:0,missed:[],
   secs:45,timed:false,left:0,timer:null,tok:0,timedOut:false,ans:'',title:'',lastItems:[],lastOpts:{},
