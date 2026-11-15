@@ -1,7 +1,7 @@
 'use strict';
 
 // ============ APP VERSION ============
-var APP_VERSION = '137';
+var APP_VERSION = '138';
 console.log('%c Zabanyar v' + APP_VERSION + ' loaded', 'background:#0e9a9a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:bold;font-size:13px');
 
 // ============ GLOBAL ERROR HANDLER ============
@@ -1049,7 +1049,13 @@ var SPRINT_EXTRA_SCENARIOS = [
   // دستورات و وظایف
   { cat: 'وظایف', title: 'تحویل تجهیزات', opening: 'Please give this laptop to Azat Garaev. He is in Shadegan wing.', hint: 'تأیید کن و بگو انجام می‌دی.' },
   { cat: 'وظایف', title: 'لیست کاربران', opening: 'Prepare a list of all users in the domain by tomorrow.', hint: 'تأیید کن و بپرس فرمت خاصی می‌خواد یا نه.' },
-  { cat: 'وظایف', title: 'تشخیص مشکل شبکه', opening: 'The internet is down in the whole building. What is the problem?', hint: 'بگو داری چک می‌کنی و اولویت اولته.' }
+  { cat: 'وظایف', title: 'تشخیص مشکل شبکه', opening: 'The internet is down in the whole building. What is the problem?', hint: 'بگو داری چک می‌کنی و اولویت اولته.' },
+  { cat: 'پیگیری', title: 'وضعیت فیبر نوری', opening: 'Any update on the FTTH installation?', hint: 'گذشته + آینده: I spoke with X. He said Y. I will do Z.' },
+  { cat: 'پیگیری', title: 'فاکتور آریانِت', opening: 'Did you fix the invoice problem with Arianet?', hint: 'I called Hoda. She said X. Now the PD group...' },
+  { cat: 'پیگیری', title: 'قرارداد Cimatech', opening: 'Did you talk to Milad about the Cimatech contract?', hint: 'I collected it from Pavel. I gave it to Milad. He said...' },
+  { cat: 'پیگیری', title: 'تحویل سیم‌کارت', opening: 'Did you hand over the SIM cards to Raushan?', hint: 'Not yet. Because... I will...' },
+  { cat: 'پیگیری', title: 'گزارش تأخیر', opening: 'Why is the fiber optic taking so long?', hint: 'پذیرش مسئولیت + دلیل + ETA' },
+  { cat: 'پیگیری', title: 'تاییدیه اداری', opening: 'What did Mr. Bahrami say about TIC approval?', hint: 'He said X. I asked him to Y. I will Z.' }
 ];
 
 var FULL_DAY_SCENARIOS = [
@@ -3563,7 +3569,7 @@ function drawMeetChatV132() {
 // Override the router to use the new version
 window.renderMeet = renderMeetV132;
 // ============ MEET v134: آمادگی ۶ روزه ایلدار ============
-APP_VERSION = '134';
+APP_VERSION = '138';
 
 var M33 = {view:'home',catId:null,deck:[],pos:0,revealed:false,showFa:false,yes:0,no:0,missed:[],
   secs:45,timed:false,left:0,timer:null,tok:0,timedOut:false,ans:'',title:'',lastItems:[],lastOpts:{},
@@ -3588,7 +3594,8 @@ var M33_CATS = [
   {id:'users',icon:'🧑‍💻',title:'پشتیبانی کاربران',desc:'تیکت، پرینتر، رمز، آماده‌سازی لپ‌تاپ'},
   {id:'plan',icon:'💡',title:'پیشنهاد و برنامه',desc:'ایده، بودجه، هدف سال بعد، آموزش'},
   {id:'save',icon:'🚑',title:'نفهمیدم / نمی‌دونم',desc:'سوال‌هایی که جوابشون رو نمی‌دونی یا تند گفته'},
-  {id:'small',icon:'☕',title:'گپ کوتاه و خداحافظی',desc:'هوا، ناهار، رستوران، خداحافظی'}
+  {id:'small',icon:'☕',title:'گپ کوتاه و خداحافظی',desc:'هوا، ناهار، رستوران، خداحافظی'},
+  {id:'followup',icon:'🔄',title:'پیگیری و وضعیت',desc:'FTTH، فاکتور، قرارداد — گذشته + آینده'}
 ];
 
 var M33_Q = {
@@ -3775,6 +3782,23 @@ small:[
 ["Thank you for your time today.","ممنون از وقتی که گذاشتی.","Thank you too, Ildar.","Thank you, Ildar. It was great to meet you."],
 ["See you tomorrow, OK?","فردا می‌بینمت، باشه؟","Yes, see you tomorrow.","Yes, see you tomorrow. Have a good evening."],
 ["Have a good rest of the day!","بقیه روزت خوش!","You too. Goodbye.","You too, Ildar. Take care."]
+],
+followup:[
+["Any update on the FTTH installation?","خبری از نصب فیبر نوری هست؟","I spoke with TCI. They said 3-4 days.","I spoke with Mr. Nadali, the TCI branch manager. He promised it will be installed within 3-4 days. I'm following up daily."],
+["What did Mr. Bahrami say about the TIC approval?","آقای بهرامی درباره تاییدیه TIC چی گفت؟","He said approvals were verbal.","He said the approvals were given verbally and internally, so he doesn't have written documents. I asked him to send me a written explanation."],
+["Did you talk to Ms. Hoda about the invoice?","درباره فاکتور با خانم هدا صحبت کردی؟","Yes, she will send it tomorrow.","Yes, I called her this morning. She said there was an internal issue. She will send the corrected invoice by tomorrow."],
+["Why is Arianet taking so long?","چرا آریانِت اینقدر طول کشیده؟","The PD group hasn't added them.","The PD team accepts invoices based on their list. Arianet hasn't been added yet, so they can't accept it. I'm following up with Reza."],
+["Was invoice 9068 fixed?","فاکتور 9068 درست شد؟","Yes, it was a mistake from their side.","Yes, it was rejected by mistake. Saad Mohammadi corrected it on his side, and we have the originals now."],
+["What is the status of the Cimatech contract?","وضعیت قرارداد Cimatech چیه؟","Milad will stamp it today.","I collected it from Pavel and took it to Milad for stamping. After that, I will hand it to the PD group."],
+["When will the equipment list be ready?","لیست تجهیزات کی آماده می‌شه؟","I sent it by email yesterday.","I completed the list and sent it to you by email yesterday. It covers 25 laptops for NVGS and 30 for MPS."],
+["Did you hand over the MCI SIM cards?","سیم‌کارت‌های MCI رو تحویل دادی؟","Not yet. Raushan wasn't in office.","Not yet. Raushan wasn't in the office on Wednesday or Thursday. I asked Ali Hosseyni to hand them over, but Raushan left for Ahvaz. I will try to find another person."],
+["Did you fix Mr. Rajab's RDP access?","دسترسی RDP آقای رجب رو درست کردی؟","Yes, I used the external link.","Yes, I was using the wrong link. He is an internal user, so I used the correct external link you sent me."],
+["Did Saad Mohammadi accept the corrected invoice?","سعد محمدی فاکتور اصلاح‌شده رو قبول کرد؟","Yes, it is fixed now.","Yes, he said it was a mistake on his side. He corrected it, and PD will prepare it for payment."],
+["Did you coordinate with Aryan about the FCC certificate?","درباره گواهی FCC با آریان هماهنگ کردی؟","Yes, he said he will reply.","I spoke with Aryan and explained the issue. He said he received the email and will reply soon."],
+["When will the fiber be ready, exactly?","دقیقاً فیبر کی آماده می‌شه؟","They said 3-4 days, but I am not sure.","The TCI branch manager said 3-4 days, but the same promise was made before. I will visit him again on Saturday to push them."],
+["What did Milad say about the contract?","میلاد درباره قرارداد چی گفت؟","He said he will sign it today.","He said one contract for MPS is still pending. He will give it to Mr. Rajab for signing today."],
+["Did you inform Hoda about the contract date issue?","به هدا درباره مشکل تاریخ قرارداد اطلاع دادی؟","Yes, I will ask her to send corrected versions.","Yes, I will ask her to send corrected versions of 9113 and 9063 with the right date. If the last invoice is rejected, we will change it."],
+["Why did the FTTH take 4 weeks?","چرا فیبر ۴ هفته طول کشید؟","TCI and TIC approvals took long.","We needed two approvals, one from TIC and one from TCI. Both were given verbally, so there were no documents. The installation team also had delays."]
 ]
 };
 
@@ -3813,14 +3837,15 @@ var M33_TPL = [
 ["Do you approve? / Should I proceed?","A user requested a monitor. Do you approve?"],
 ["Sorry for + اسم","Sorry for the delay."],
 ["I'm waiting for + X","I'm waiting for his request."],
-["I don't know yet. I'll find out.","I don't know yet. I'll find out and tell you."]
+["I don't know yet. I'll find out.","I don't know yet. I'll find out and tell you."],
+  ["I spoke with X. He said Y. So I will Z.","I spoke with Hoda. She said the invoice was wrong. So I will ask her to resend it."]
 ];
 
 var M33_PLAN = [
  {t:'روز ۱ — شروع و نجات‌بخش‌ها',cats:['greet','small','save'],timed:0,note:'اول جمله‌های نجات‌بخش رو بلند بخون و صداشون رو گوش بده، بعد فلش‌کارت.'},
  {t:'روز ۲ — خودت و کارت',cats:['year','stock','users'],timed:0,note:'جواب‌های کوتاه رو حفظ کن. عددها رو با واقعیت خودت عوض کن (✏️).'},
  {t:'روز ۳ — خرید و دستور رفتن',cats:['buy','go','stock'],timed:0,note:'قالب «I\'ll + فعل» رو توی همه‌ی جواب‌ها استفاده کن.'},
- {t:'روز ۴ — پیگیری و فیبر',cats:['follow','go','fiber'],timed:60,note:'حالت تایمر ۱ دقیقه‌ای. اگه نرسیدی، جواب کوتاه رو بگو.'},
+ {t:'روز ۴ — پیگیری و فیبر',cats:['followup','follow','fiber'],timed:60,note:'زنجیره: I spoke with X. He said Y. So I will Z. با تایمر ۶۰ ثانیه.'},
  {t:'روز ۵ — فنی، امنیت و دستورها',cats:['net','sec','tasks','plan'],timed:45,note:'یه دور گفتگوی زنده با ایلدار (AI) هم بزن.'},
  {t:'روز ۶ — شبیه‌سازی کامل',cats:'all',timed:30,n:25,note:'ترکیبی و تایمر ۳۰ ثانیه. مثل روز واقعی.'}
 ];
@@ -4151,7 +4176,7 @@ function m33LiveSend(text){
 window.renderMeet = renderMeetV133;
 
 // ============ MEET v135: آمادگی ۶ روزه ایلدار ============
-APP_VERSION = '137';
+APP_VERSION = '138';
 
 var M33 = {view:'home',catId:null,deck:[],pos:0,revealed:false,showFa:false,yes:0,no:0,missed:[],
   secs:45,timed:false,left:0,timer:null,tok:0,timedOut:false,ans:'',title:'',lastItems:[],lastOpts:{},
@@ -4408,7 +4433,7 @@ var M33_PLAN = [
  {t:'روز ۱ — شروع و نجات‌بخش‌ها',cats:['greet','small','save'],timed:0,note:'اول جمله‌های نجات‌بخش رو بلند بخون و صداشون رو گوش بده، بعد فلش‌کارت.'},
  {t:'روز ۲ — خودت و کارت',cats:['year','stock','users'],timed:0,note:'جواب‌های کوتاه رو حفظ کن. عددها رو با واقعیت خودت عوض کن (✏️).'},
  {t:'روز ۳ — خرید و دستور رفتن',cats:['buy','go','stock'],timed:0,note:'قالب «I\'ll + فعل» رو توی همه‌ی جواب‌ها استفاده کن.'},
- {t:'روز ۴ — پیگیری و فیبر',cats:['follow','go','fiber'],timed:60,note:'حالت تایمر ۱ دقیقه‌ای. اگه نرسیدی، جواب کوتاه رو بگو.'},
+ {t:'روز ۴ — پیگیری و فیبر',cats:['followup','follow','fiber'],timed:60,note:'زنجیره: I spoke with X. He said Y. So I will Z. با تایمر ۶۰ ثانیه.'},
  {t:'روز ۵ — فنی، امنیت و دستورها',cats:['net','sec','tasks','plan'],timed:45,note:'یه دور گفتگوی زنده با ایلدار (AI) هم بزن.'},
  {t:'روز ۶ — شبیه‌سازی کامل',cats:'all',timed:30,n:25,note:'ترکیبی و تایمر ۳۰ ثانیه. مثل روز واقعی.'}
 ];
@@ -4757,7 +4782,7 @@ window.renderMeet = renderMeetV133;
 // ============ LISTEN v137: حالت گوش‌دادن (فقط گوش بده، جواب نمی‌دی) ============
 // این بلوک رو درست «بعد از» بلوک meet-v133 و قبل از  "// ============ INIT ============"  بذار.
 // چیزی از قبلی‌ها پاک یا عوض نمی‌شه؛ فقط یه حالت جدید بهش اضافه می‌شه.
-APP_VERSION = '137';
+APP_VERSION = '138';
 
 var A34 = {playing:false, idx:0, tracks:[], tok:0, seg:0, wake:null, audioEl:null,
   cfg:{qa:true, rescue:true, tpl:true, gram:true, cat:'all', shuffle:true, think:5, speed:0.85, repeat:true, fa:true, loop:true, mix:true}};
