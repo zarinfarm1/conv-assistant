@@ -4819,6 +4819,8 @@ function a34Say(s, done){
 }
 
 // ---------- ساخت قطعه‌ها ----------
+function a34FaOn()
+{ return !!(A34.cfg.fa && a34Voices().fa); }
 function a34QA(it){
   var c=A34.cfg, th=c.think*1000;
   var lines=[{k:'q',text:it.q},{k:'fa',text:it.fa},{k:'s',text:it.s}];
