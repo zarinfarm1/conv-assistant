@@ -7,6 +7,7 @@
   var CFG_KEY = 'zy_audio8_cfg';
   var cfg = readCfg();
   var queue = [];
+  var queueBuilt = false;
   var index = 0;
   var playing = false;
   var paused = false;
@@ -81,6 +82,7 @@
   }
   function buildQueue(){
     queue = [];
+    queueBuilt = true;
     var weeks = window.PROGRAM || [];
     weeks.forEach(function(w){
       (w.lessons||[]).forEach(function(l){
@@ -134,7 +136,7 @@
   }
   function currentLines(){ return queue[index] ? queue[index].lines : []; }
   function renderAudio(){
-    buildQueue();
+    if(!queueBuilt) buildQueue();
     var counts={lesson:0,grammar:0,scenario:0,personal:0,review:0};
     queue.forEach(function(t){counts[t.group]=(counts[t.group]||0)+1;});
     var t=queue[index];
@@ -176,9 +178,9 @@
     document.querySelectorAll('[data-a8-filter]').forEach(function(b){b.onclick=function(){activeFilter=b.getAttribute('data-a8-filter');renderAudio();};});
     document.querySelectorAll('[data-a8-item]').forEach(function(b){b.onclick=function(){index=Number(b.getAttribute('data-a8-item'))||0;stopSpeechOnly();start();renderAudio();};});
     (el=document.getElementById('a8-rate')) && (el.oninput=function(){cfg.rate=Number(this.value);saveCfg();var lab=document.getElementById('a8-rate-label');if(lab)lab.textContent=cfg.rate.toFixed(2)+'x';});
-    (el=document.getElementById('a8-shuffle')) && (el.onchange=function(){cfg.shuffle=this.checked;saveCfg();renderAudio();});
-    (el=document.getElementById('a8-custom')) && (el.onchange=function(){cfg.includeCustom=this.checked;saveCfg();renderAudio();});
-    (el=document.getElementById('a8-mistakes')) && (el.onchange=function(){cfg.includeMistakes=this.checked;saveCfg();renderAudio();});
+    (el=document.getElementById('a8-shuffle')) && (el.onchange=function(){cfg.shuffle=this.checked;saveCfg();queueBuilt=false;renderAudio();});
+    (el=document.getElementById('a8-custom')) && (el.onchange=function(){cfg.includeCustom=this.checked;saveCfg();queueBuilt=false;renderAudio();});
+    (el=document.getElementById('a8-mistakes')) && (el.onchange=function(){cfg.includeMistakes=this.checked;saveCfg();queueBuilt=false;renderAudio();});
     (el=document.getElementById('a8-repeat')) && (el.onchange=function(){cfg.repeat=this.value;saveCfg();});
   }
   function acquireWakeLock(){
