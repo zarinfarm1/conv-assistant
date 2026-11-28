@@ -194,7 +194,7 @@
     {en:"I don't know exactly. I don't want to give you incorrect information.",fa:"دقیقاً نمی‌دانم. نمی‌خواهم اطلاعات اشتباه بدهم."},
     {en:"I wasn't there when it happened, so I can't say exactly when or how it happened.",fa:"من زمانی که این اتفاق افتاد آنجا نبودم، بنابراین نمی‌توانم دقیقاً بگویم چه زمانی یا چگونه اتفاق افتاده است."}
   ];
-  var secIndex=0, secRecognition=null, secRecording=false, secShowAnswer=false, secListenQueue=[], secListenPos=0;
+  var secIndex=0, secRecognition=null, secRecording=false, secShowAnswer=false, secListenQueue=[], secListenPos=0, secListenActive=false;
   var SEC_PROGRESS_KEY='zy_security_sfp_practice_v1';
   function secEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function secProgress(){try{return JSON.parse(localStorage.getItem(SEC_PROGRESS_KEY)||'{}')||{};}catch(e){return {};}}
@@ -222,9 +222,9 @@
   }
   function secSpeak(text,onend){if(!window.speechSynthesis||!window.SpeechSynthesisUtterance){if(onend)onend();return;}acquireWakeLock();var u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.rate=cfg.rate||0.9;u.onend=function(){releaseWakeLock();if(onend)onend();};u.onerror=function(){releaseWakeLock();if(onend)onend();};speechSynthesis.speak(u);}
   function secBuildListenQueue(){var a=[];securityQuestions.forEach(function(q,i){a.push({text:'Question '+(i+1)+'. '+q.q});a.push({text:'Answer. '+q.a});});securityPhrases.forEach(function(p,i){a.push({text:'Useful phrase '+(i+1)+'. '+p.en});});return a;}
-  function secPlayNext(){if(secListenPos>=secListenQueue.length){var st=document.getElementById('sec-listen-status');if(st)st.textContent='پخش کامل شد.';return;}var item=secListenQueue[secListenPos++];var st=document.getElementById('sec-listen-status');if(st)st.textContent='در حال پخش '+secListenPos+' از '+secListenQueue.length;secSpeak(item.text,secPlayNext);}
-  function secStartListen(){stop();if(window.speechSynthesis)speechSynthesis.cancel();secListenQueue=secBuildListenQueue();secListenPos=0;secPlayNext();}
-  function secStopListen(){if(window.speechSynthesis)speechSynthesis.cancel();secListenPos=secListenQueue.length;var st=document.getElementById('sec-listen-status');if(st)st.textContent='پخش متوقف شد.';}
+  function secPlayNext(){if(!secListenActive)return;if(secListenPos>=secListenQueue.length){secListenActive=false;var st=document.getElementById('sec-listen-status');if(st)st.textContent='پخش کامل شد.';return;}var item=secListenQueue[secListenPos++];var st=document.getElementById('sec-listen-status');if(st)st.textContent='در حال پخش '+secListenPos+' از '+secListenQueue.length;secSpeak(item.text,secPlayNext);}
+  function secStartListen(){stop();if(window.speechSynthesis)speechSynthesis.cancel();secListenQueue=secBuildListenQueue();secListenPos=0;secListenActive=true;secPlayNext();}
+  function secStopListen(){secListenActive=false;if(window.speechSynthesis)speechSynthesis.cancel();secListenPos=secListenQueue.length;var st=document.getElementById('sec-listen-status');if(st)st.textContent='پخش متوقف شد.';}
   function secToggleListen(){if(!window.speechSynthesis)return;if(speechSynthesis.paused){speechSynthesis.resume();}else if(speechSynthesis.speaking){speechSynthesis.pause();}else if(secListenQueue.length&&secListenPos<secListenQueue.length){secPlayNext();}else{secStartListen();}}
   function secNormalize(s){return String(s||'').toLowerCase().replace(/[^a-z0-9']/g,' ').split(/\s+/).filter(function(w){return w.length>1&&!/^(the|and|for|you|did|was|were|that|this|with|have|had|has|are|is|to|of|a|an|i|it|in|on|or|do|be)$/.test(w);});}
   function secCheckAnswer(){var box=document.getElementById('sec-answer'),fb=document.getElementById('sec-feedback'),model=document.getElementById('sec-model-answer');if(!box||!fb)return;var answer=box.value.trim();if(!answer){fb.textContent='اول پاسخ را با صدا بگو یا تایپ کن.';return;}secSaveProgress(secIndex,answer);var expected=secNormalize(securityQuestions[secIndex].a),actual=secNormalize(answer),hits=actual.filter(function(w){return expected.indexOf(w)>=0;}).length,score=expected.length?Math.round(hits/expected.length*100):0;fb.textContent='پاسخت ذخیره شد. شباهت واژگانی با جواب نمونه: '+score+'٪. این امتیاز ارزیابی دقیق تلفظ یا گرامر نیست؛ جواب نمونه را بررسی کن و دوباره تمرین کن.';if(model)model.style.display='block';secShowAnswer=true;}
@@ -296,7 +296,7 @@
     if(window.speechSynthesis){speechSynthesis.resume();paused=false;acquireWakeLock();mediaHandlers();}
   }
   function stopSpeechOnly(){ if(window.speechSynthesis) speechSynthesis.cancel(); }
-  function stop(){playing=false;paused=false;stopSpeechOnly();releaseWakeLock();}
+  function stop(){playing=false;paused=false;secListenActive=false;stopSpeechOnly();releaseWakeLock();}
   function finishTrack(){
     if(cfg.repeat==='one'){lineIndex=0;speakLine(currentLines()[0]);return;}
     if(index<queue.length-1){index++;lineIndex=0;mediaHandlers();speakLine(currentLines()[0]);}
