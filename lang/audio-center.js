@@ -166,9 +166,86 @@
     });
     if(!shown) h+='<div class="sub">در این دسته هنوز محتوایی موجود نیست.</div>';
     h+='</div><p class="sub" style="margin-top:14px">نکته: اگر متن کامل یک درس یا گرامر هنوز در حافظه برنامه ساخته نشده باشد، عنوان و محور آن برای مرور پخش می‌شود. با باز کردن و ساختن درس در بخش اصلی، نسخه کامل آن به این فهرست اضافه خواهد شد.</p></div>';
+    h += renderSecurityPanel();
     var main=document.getElementById('main'); if(main) main.innerHTML=h;
     bindAudioUI();
+    bindSecurityUI();
   }
+
+  // ===== Security incident: SFP socket interview practice =====
+  var securityQuestions = [
+    {q:"Who recommended or introduced the contractor?",faQ:"چه کسی پیمانکار را معرفی کرد؟",a:"We contacted Mr. Amani about the installation. He coordinated with Mr. Leili, and Mr. Leili introduced the contractor to us.",faA:"ما برای انجام نصب با آقای امانی صحبت کردیم. ایشان با آقای لیلی هماهنگ کردند و آقای لیلی پیمانکار را به ما معرفی کردند."},
+    {q:"Did you inform security before the contractors arrived?",faQ:"آیا قبل از رسیدن پیمانکارها، حراست را مطلع کرده بودی؟",a:"Yes. I informed the security team by email and also informed Ildar before they arrived.",faA:"بله. قبل از رسیدن پیمانکارها، از طریق ایمیل به حراست اطلاع دادم و ایلدار را هم در جریان گذاشتم."},
+    {q:"Did the contractors have permission to enter the building?",faQ:"آیا پیمانکارها اجازه ورود به ساختمان را داشتند؟",a:"Yes. I had already informed the security team by email.",faA:"بله. من از قبل از طریق ایمیل حراست را مطلع کرده بودم."},
+    {q:"When did you notice that the SFP socket was broken?",faQ:"چه زمانی متوجه شدی سوکت SFP شکسته است؟",a:"I don't know exactly when it happened. About 20 minutes after the contractors left, Hesam called me and told me that the SFP socket was broken.",faA:"دقیقاً نمی‌دانم چه زمانی این اتفاق افتاده است. حدود ۲۰ دقیقه بعد از رفتن پیمانکارها، حسام با من تماس گرفت و گفت سوکت SFP شکسته است."},
+    {q:"Were you with the contractors during the installation?",faQ:"آیا هنگام نصب همراه پیمانکارها بودی؟",a:"Yes, I was with the contractors the whole time.",faA:"بله، من تمام مدت همراه پیمانکارها بودم."},
+    {q:"Did you see anyone touching or working on the network equipment?",faQ:"آیا دیدی کسی به تجهیزات شبکه دست بزند یا روی آن‌ها کار کند؟",a:"No, I didn't see anyone touching the equipment.",faA:"نه، ندیدم کسی به تجهیزات دست بزند."},
+    {q:"Did you notice anything unusual in the server room that day?",faQ:"آیا آن روز در اتاق سرور متوجه موضوع غیرعادی یا مشکوکی شدی؟",a:"No, I didn't notice anything unusual in the server room that day.",faA:"نه، آن روز متوجه هیچ موضوع غیرعادی در اتاق سرور نشدم."},
+    {q:"Did you have access to the server room during that day?",faQ:"آیا آن روز به اتاق سرور دسترسی داشتی؟",a:"Yes, I had the key that day. I asked Hesam for it.",faA:"بله، آن روز کلید دست من بود. من کلید را از حسام خواستم."},
+    {q:"Did anyone else have access to the server room while you had the key?",faQ:"در مدتی که کلید دست تو بود، شخص دیگری هم به اتاق سرور دسترسی داشت؟",a:"I don't know. I'm not sure if anyone else had access to the server room.",faA:"نمی‌دانم. مطمئن نیستم که شخص دیگری هم به اتاق سرور دسترسی داشته یا نه."},
+    {q:"Did you lock the server room when you left?",faQ:"وقتی از اتاق سرور خارج شدی، در اتاق را قفل کردی؟",a:"Yes, I did.",faA:"بله، قفل کردم."},
+    {q:"Did you report the broken SFP socket to anyone?",faQ:"آیا خرابی سوکت SFP را به کسی گزارش دادی؟",a:"Yes. After Hesam told me about it, I reported it to Ildar.",faA:"بله. بعد از اینکه حسام موضوع را به من گفت، آن را به ایلدار گزارش دادم."},
+    {q:"Did you touch or move any network equipment in the server room that day?",faQ:"آیا آن روز در اتاق سرور به تجهیزات شبکه دست زدی یا آن‌ها را جابه‌جا کردی؟",a:"No, I didn't touch or move any network equipment. I was only watching the contractors.",faA:"نه، به هیچ‌کدام از تجهیزات شبکه دست نزدم یا آن‌ها را جابه‌جا نکردم. فقط مراقب کار پیمانکارها بودم."},
+    {q:"Did the contractors touch any network equipment?",faQ:"آیا پیمانکارها به تجهیزات شبکه دست زدند؟",a:"No, they only brought the fiber optic cable down from above the rack. They didn't work on the network equipment.",faA:"خیر، آن‌ها فقط کابل فیبر نوری را از بالای رک به پایین آوردند. روی تجهیزات شبکه کاری انجام ندادند."}
+  ];
+  var securityPhrases = [
+    {en:"Could you please repeat the question slowly?",fa:"لطفاً می‌توانید سؤال را آهسته‌تر تکرار کنید؟"},
+    {en:"Let me think for a moment, please.",fa:"لطفاً اجازه بدهید یک لحظه فکر کنم."},
+    {en:"I don't know exactly. I don't want to give you incorrect information.",fa:"دقیقاً نمی‌دانم. نمی‌خواهم اطلاعات اشتباه بدهم."},
+    {en:"I wasn't there when it happened, so I can't say exactly when or how it happened.",fa:"من زمانی که این اتفاق افتاد آنجا نبودم، بنابراین نمی‌توانم دقیقاً بگویم چه زمانی یا چگونه اتفاق افتاده است."}
+  ];
+  var secIndex=0, secRecognition=null, secRecording=false, secShowAnswer=false, secListenQueue=[], secListenPos=0;
+  var SEC_PROGRESS_KEY='zy_security_sfp_practice_v1';
+  function secEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function secProgress(){try{return JSON.parse(localStorage.getItem(SEC_PROGRESS_KEY)||'{}')||{};}catch(e){return {};}}
+  function secSaveProgress(qid,text){var p=secProgress();p[qid]={answer:text,updatedAt:Date.now(),attempts:(p[qid]&&p[qid].attempts||0)+1};try{localStorage.setItem(SEC_PROGRESS_KEY,JSON.stringify(p));}catch(e){}}
+  function renderSecurityPanel(){
+    var q=securityQuestions[secIndex], progress=secProgress(), saved=progress[secIndex]||{};
+    var h='<section class="card" style="border:1px solid var(--line);padding:18px;margin-top:18px">';
+    h+='<div class="row between" style="align-items:center;flex-wrap:wrap"><div><h2 style="margin:0">🛡️ تمرین جلسه حراست – خرابی سوکت SFP</h2><div class="sub">۱۳ سؤال و جواب واقعی + ۴ جمله ضروری جلسه</div></div><span class="badge">مستقل از آمادگی ۶ روزه</span></div>';
+    h+='<div class="row" style="gap:8px;flex-wrap:wrap;margin:14px 0"><button class="btn brand" type="button" id="sec-mode-listen">🎧 گوش‌دادن کامل</button><button class="btn ghost" type="button" id="sec-mode-practice">🎙️ تمرین پاسخ با صدا</button></div>';
+    h+='<div class="card" style="padding:14px;background:var(--bg);margin:10px 0"><b>گوش‌دادن به کل سناریو</b><p class="sub">ابتدا سؤال و سپس جواب انگلیسی هر مورد پخش می‌شود. ترجمه فارسی برای مطالعه روی صفحه است و با صدا خوانده نمی‌شود.</p>';
+    h+='<div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn brand" type="button" id="sec-listen-all">▶ پخش همه سؤال و جواب‌ها</button><button class="btn ghost" type="button" id="sec-listen-pause">⏸ مکث / ادامه</button><button class="btn ghost" type="button" id="sec-listen-stop">⏹ توقف</button></div><div class="sub" id="sec-listen-status" aria-live="polite" style="margin-top:8px">آماده پخش · ۱۳ سؤال و ۴ جمله ضروری</div></div>';
+    h+='<div class="card" style="padding:14px;margin:12px 0"><div class="row between"><b>سؤال‌های جلسه</b><span class="sub">'+securityQuestions.length+' سؤال</span></div>';
+    securityQuestions.forEach(function(x,i){h+='<details style="padding:10px 0;border-bottom:1px solid var(--line)" '+(i===secIndex?'open':'')+'><summary style="cursor:pointer;font-weight:600;direction:ltr;text-align:left">'+(i+1)+'. '+secEsc(x.q)+'</summary><div style="margin-top:8px;direction:rtl">'+secEsc(x.faQ)+'</div><div style="direction:ltr;text-align:left;font-family:Lexend,sans-serif;margin-top:8px">'+secEsc(x.a)+'</div><div class="sub" style="margin-top:5px">'+secEsc(x.faA)+'</div></details>';});
+    h+='</div><div class="card" style="padding:14px;margin:12px 0"><b>جملات ضروری برای جلسه</b>';
+    securityPhrases.forEach(function(x,i){h+='<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div style="direction:ltr;text-align:left;font-family:Lexend,sans-serif">'+secEsc(x.en)+'</div><div class="sub">'+secEsc(x.fa)+'</div><button type="button" class="btn ghost" data-sec-phrase="'+i+'" style="margin-top:6px">🔊 پخش جمله</button></div>';});
+    h+='</div><div class="card" style="padding:14px;margin:12px 0"><div class="row between" style="align-items:center"><b>🎙️ تمرین پاسخ به سؤال‌ها</b><span class="sub">سؤال '+(secIndex+1)+' از '+securityQuestions.length+'</span></div>';
+    h+='<div style="direction:ltr;text-align:left;font:600 1.15rem Lexend,sans-serif;margin:12px 0">'+secEsc(q.q)+'</div><div class="sub">'+secEsc(q.faQ)+'</div>';
+    h+='<div class="row" style="gap:8px;flex-wrap:wrap;margin:12px 0"><button type="button" class="btn ghost" id="sec-say-question">🔊 شنیدن سؤال</button><button type="button" class="btn brand" id="sec-mic">'+(secRecording?'🔴 در حال ضبط...':'🎙️ پاسخ با میکروفون')+'</button></div>';
+    h+='<label for="sec-answer">پاسخ تو (اگر میکروفون پشتیبانی نشد، تایپ کن):</label><textarea id="sec-answer" rows="3" dir="ltr" style="font-family:Lexend,sans-serif;text-align:left;margin-top:6px" placeholder="Speak or type your answer...">'+secEsc(saved.answer||'')+'</textarea>';
+    h+='<div class="row" style="gap:8px;flex-wrap:wrap;margin:10px 0"><button type="button" class="btn brand" id="sec-check">بررسی پاسخ و نمایش جواب نمونه</button><button type="button" class="btn ghost" id="sec-show-answer">نمایش جواب نمونه</button></div>';
+    h+='<div id="sec-feedback" class="sub" aria-live="polite"></div><div id="sec-model-answer" style="display:'+(secShowAnswer?'block':'none')+';margin-top:10px;padding:12px;background:var(--bg);border-radius:10px"><b>جواب پیشنهادی:</b><div style="direction:ltr;text-align:left;font-family:Lexend,sans-serif;margin:8px 0">'+secEsc(q.a)+'</div><div class="sub">'+secEsc(q.faA)+'</div><button type="button" class="btn ghost" id="sec-say-answer" style="margin-top:8px">🔊 شنیدن جواب نمونه</button></div>';
+    h+='<div class="row between" style="gap:8px;margin-top:14px"><button type="button" class="btn ghost" id="sec-prev" '+(secIndex===0?'disabled':'')+'>سؤال قبلی</button><button type="button" class="btn brand" id="sec-next">'+(secIndex===securityQuestions.length-1?'پایان':'سؤال بعدی')+'</button></div>';
+    h+='<p class="sub" style="margin-top:12px">پاسخ‌ها فقط در همین مرورگر و با کلید ذخیره‌سازی جداگانه نگهداری می‌شوند. تشخیص گفتار به پشتیبانی مرورگر و اجازه میکروفون نیاز دارد؛ در صورت نبود این قابلیت می‌توانی پاسخ را تایپ کنی.</p></div></section>';
+    return h;
+  }
+  function secSpeak(text,onend){if(!window.speechSynthesis||!window.SpeechSynthesisUtterance){if(onend)onend();return;}var u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.rate=cfg.rate||0.9;u.onend=function(){if(onend)onend();};u.onerror=function(){if(onend)onend();};speechSynthesis.speak(u);}
+  function secBuildListenQueue(){var a=[];securityQuestions.forEach(function(q,i){a.push({text:'Question '+(i+1)+'. '+q.q});a.push({text:'Answer. '+q.a});});securityPhrases.forEach(function(p,i){a.push({text:'Useful phrase '+(i+1)+'. '+p.en});});return a;}
+  function secPlayNext(){if(secListenPos>=secListenQueue.length){var st=document.getElementById('sec-listen-status');if(st)st.textContent='پخش کامل شد.';return;}var item=secListenQueue[secListenPos++];var st=document.getElementById('sec-listen-status');if(st)st.textContent='در حال پخش '+secListenPos+' از '+secListenQueue.length;secSpeak(item.text,secPlayNext);}
+  function secStartListen(){stop();if(window.speechSynthesis)speechSynthesis.cancel();secListenQueue=secBuildListenQueue();secListenPos=0;secPlayNext();}
+  function secStopListen(){if(window.speechSynthesis)speechSynthesis.cancel();secListenPos=secListenQueue.length;var st=document.getElementById('sec-listen-status');if(st)st.textContent='پخش متوقف شد.';}
+  function secToggleListen(){if(!window.speechSynthesis)return;if(speechSynthesis.paused){speechSynthesis.resume();}else if(speechSynthesis.speaking){speechSynthesis.pause();}else if(secListenQueue.length&&secListenPos<secListenQueue.length){secPlayNext();}else{secStartListen();}}
+  function secNormalize(s){return String(s||'').toLowerCase().replace(/[^a-z0-9']/g,' ').split(/\s+/).filter(function(w){return w.length>1&&!/^(the|and|for|you|did|was|were|that|this|with|have|had|has|are|is|to|of|a|an|i|it|in|on|or|do|be)$/.test(w);});}
+  function secCheckAnswer(){var box=document.getElementById('sec-answer'),fb=document.getElementById('sec-feedback'),model=document.getElementById('sec-model-answer');if(!box||!fb)return;var answer=box.value.trim();if(!answer){fb.textContent='اول پاسخ را با صدا بگو یا تایپ کن.';return;}secSaveProgress(secIndex,answer);var expected=secNormalize(securityQuestions[secIndex].a),actual=secNormalize(answer),hits=actual.filter(function(w){return expected.indexOf(w)>=0;}).length,score=expected.length?Math.round(hits/expected.length*100):0;fb.textContent='پاسخت ذخیره شد. شباهت واژگانی با جواب نمونه: '+score+'٪. این امتیاز ارزیابی دقیق تلفظ یا گرامر نیست؛ جواب نمونه را بررسی کن و دوباره تمرین کن.';if(model)model.style.display='block';secShowAnswer=true;}
+  function secStartRecognition(){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){var fb=document.getElementById('sec-feedback');if(fb)fb.textContent='تشخیص گفتار در این مرورگر پشتیبانی نمی‌شود. پاسخ را در کادر تایپ کن.';return;}try{if(secRecognition){try{secRecognition.stop();}catch(e){}}secRecognition=new SR();secRecognition.lang='en-US';secRecognition.interimResults=false;secRecognition.continuous=false;secRecording=true;var mic=document.getElementById('sec-mic');if(mic){mic.textContent='🔴 در حال ضبط...';mic.disabled=true;}var fb=document.getElementById('sec-feedback');if(fb)fb.textContent='در حال گوش‌دادن... انگلیسی صحبت کن.';secRecognition.onresult=function(ev){var text=Array.from(ev.results).map(function(r){return r[0].transcript;}).join(' ');var box=document.getElementById('sec-answer');if(box)box.value=text;};secRecognition.onerror=function(ev){var f=document.getElementById('sec-feedback');if(f)f.textContent='خطای میکروفون: '+(ev.error||'unknown')+'. می‌توانی پاسخ را تایپ کنی.';};secRecognition.onend=function(){secRecording=false;var m=document.getElementById('sec-mic');if(m){m.textContent='🎙️ پاسخ با میکروفون';m.disabled=false;}};secRecognition.start();}catch(e){secRecording=false;var m=document.getElementById('sec-mic');if(m){m.textContent='🎙️ پاسخ با میکروفون';m.disabled=false;}var f=document.getElementById('sec-feedback');if(f)f.textContent='امکان شروع میکروفون نبود؛ پاسخ را تایپ کن.';}}
+  function bindSecurityUI(){
+    var el;
+    (el=document.getElementById('sec-listen-all'))&&(el.onclick=secStartListen);
+    (el=document.getElementById('sec-listen-stop'))&&(el.onclick=secStopListen);
+    (el=document.getElementById('sec-listen-pause'))&&(el.onclick=secToggleListen);
+    (el=document.getElementById('sec-mode-listen'))&&(el.onclick=function(){document.getElementById('sec-listen-all').scrollIntoView({behavior:'smooth',block:'center'});});
+    (el=document.getElementById('sec-mode-practice'))&&(el.onclick=function(){document.getElementById('sec-answer').focus();});
+    document.querySelectorAll('[data-sec-phrase]').forEach(function(b){b.onclick=function(){var p=securityPhrases[Number(b.getAttribute('data-sec-phrase'))];stop();speechSynthesis.cancel();secSpeak(p.en);};});
+    (el=document.getElementById('sec-say-question'))&&(el.onclick=function(){stop();speechSynthesis.cancel();secSpeak(securityQuestions[secIndex].q);});
+    (el=document.getElementById('sec-say-answer'))&&(el.onclick=function(){stop();speechSynthesis.cancel();secSpeak(securityQuestions[secIndex].a);});
+    (el=document.getElementById('sec-mic'))&&(el.onclick=secStartRecognition);
+    (el=document.getElementById('sec-check'))&&(el.onclick=secCheckAnswer);
+    (el=document.getElementById('sec-show-answer'))&&(el.onclick=function(){secShowAnswer=true;var m=document.getElementById('sec-model-answer');if(m)m.style.display='block';});
+    (el=document.getElementById('sec-next'))&&(el.onclick=function(){if(secIndex<securityQuestions.length-1)secIndex++;secShowAnswer=false;renderAudio();});
+    (el=document.getElementById('sec-prev'))&&(el.onclick=function(){if(secIndex>0)secIndex--;secShowAnswer=false;renderAudio();});
+  }
+
   function bindAudioUI(){
     var el;
     (el=document.getElementById('a8-play')) && (el.onclick=function(){ if(playing&&!paused) pause(); else if(paused) resume(); else start(); renderAudio(); });
